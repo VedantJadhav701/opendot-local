@@ -9,17 +9,11 @@ import { getSetting, setSetting } from "./db";
 import { seal, unseal } from "./vault";
 import type { RuleDecision, ToolkitState } from "@/lib/types";
 
-// Composio For You: Composio's consumer product. The user signs in with their own Composio account
-// (OAuth, no developer key) and their dots get the user's apps through Composio's hosted MCP server.
-// Every tool call still runs through our loop, so rules and approval cards apply.
-
 export const MCP_URL = "https://connect.composio.dev/mcp";
 const APP_URL = process.env.DOTS_PUBLIC_URL ?? "http://localhost:3100";
 const REDIRECT_URL = `${APP_URL}/api/composio/oauth`;
 export const SUGGESTED = ["gmail", "googlecalendar", "slack", "notion", "github", "googledrive", "linear", "outlook"];
 const HIDDEN_TOOLS = /REMOTE_BASH|REMOTE_WORKBENCH|SKILL|SUBMIT_FEEDBACK|WAIT_FOR_CONNECTIONS/;
-
-// ---------- OAuth storage (sealed with the vault key) ----------
 
 type Stored = { client?: OAuthClientInformationMixed; tokens?: OAuthTokens; verifier?: string; discovery?: OAuthDiscoveryState };
 const load = (): Stored => {
@@ -81,13 +75,11 @@ class Provider implements OAuthClientProvider {
   }
 }
 
-// ---------- connection ----------
-
 type State = {
   client: Client | null;
-  pending: StreamableHTTPClientTransport | null; // transport waiting for the OAuth code
+  pending: StreamableHTTPClientTransport | null;
   tools: McpTool[];
-  connected: string[]; // app slugs connected in the user's Composio account
+  connected: string[];
   connecting: Promise<void> | null;
 };
 const g = globalThis as unknown as { __dotsComposio?: State };
@@ -95,7 +87,6 @@ const st = (g.__dotsComposio ??= { client: null, pending: null, tools: [], conne
 
 export const signedIn = () => Boolean(st.client) || Boolean(load().tokens);
 
-/** Connect with saved tokens, or return the sign-in URL if the user needs to (re)authorize. */
 async function connect(): Promise<{ url: string } | null> {
   const provider = new Provider();
   const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), { authProvider: provider });
@@ -107,34 +98,36 @@ async function connect(): Promise<{ url: string } | null> {
       st.pending = transport;
       return { url: provider.pendingUrl.toString() };
     }
+    console.warn("[composio] connection failed:", err instanceof Error ? err.message : err);
     throw err;
   }
   st.client = client;
   st.pending = null;
-  await refresh();
+  await refresh().catch(() => {});
   return null;
 }
 
-async function ensureClient(): Promise<Client> {
+async function ensureClient(): Promise<Client | null> {
   if (st.client) return st.client;
-  if (!load().tokens) throw new Error("Composio isn't connected. Sign in from Settings → Apps.");
+  if (!load().tokens) return null;
   st.connecting ??= connect()
     .then((r) => {
-      if (r) throw new Error("Your Composio sign-in expired. Sign in again from Settings → Apps.");
+      if (r) console.warn("[composio] sign-in expired");
+    })
+    .catch((err) => {
+      console.warn("[composio] ensureClient failed:", err instanceof Error ? err.message : err);
     })
     .finally(() => (st.connecting = null));
   await st.connecting;
-  return st.client!;
+  return st.client;
 }
 
-/** Start sign-in. Returns the Composio authorization URL, or null if already signed in. */
 export async function signIn(): Promise<string | null> {
   if (st.client) return null;
   const r = await connect();
   return r?.url ?? null;
 }
 
-/** OAuth redirect lands here with the code. */
 export async function finishSignIn(code: string) {
   if (!st.pending) throw new Error("No sign-in in progress.");
   await st.pending.finishAuth(code);
@@ -152,15 +145,19 @@ export async function signOut() {
   publish();
 }
 
-/** Re-list Composio's tools (their descriptions also carry which apps the user has connected). */
 export async function refresh() {
-  const client = st.client ?? (await ensureClient());
-  const { tools } = await client.listTools();
-  st.tools = tools.filter((t) => !HIDDEN_TOOLS.test(t.name));
-  const search = tools.find((t) => t.name === "COMPOSIO_SEARCH_TOOLS")?.description ?? "";
-  const listed = search.match(/connected the apps:\s*([^.\n]+)/i)?.[1];
-  if (listed) st.connected = listed.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  publish();
+  try {
+    const client = st.client ?? (await ensureClient());
+    if (!client) return;
+    const { tools } = await client.listTools();
+    st.tools = tools.filter((t) => !HIDDEN_TOOLS.test(t.name));
+    const search = tools.find((t) => t.name === "COMPOSIO_SEARCH_TOOLS")?.description ?? "";
+    const listed = search.match(/connected the apps:\s*([^.\n]+)/i)?.[1];
+    if (listed) st.connected = listed.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    publish();
+  } catch (err) {
+    console.warn("[composio] refresh failed:", err instanceof Error ? err.message : err);
+  }
 }
 
 export function apps(): ToolkitState[] {
@@ -179,13 +176,12 @@ const NAMES: Record<string, string> = {
 };
 const prettyName = (slug: string) => NAMES[slug] ?? slug.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-// ---------- calling tools ----------
-
 const clip = (s: string, n = 30_000) => (s.length > n ? `${s.slice(0, n)}…[truncated]` : s);
 
 export async function callTool(name: string, args: Record<string, unknown>): Promise<string> {
   const run = async () => {
     const client = await ensureClient();
+    if (!client) return "Composio app is not connected.";
     const res = await client.callTool({ name, arguments: args }, undefined, { timeout: 5 * 60_000 });
     const content = (res.content ?? []) as { type: string; text?: string }[];
     const text = content.map((c) => (c.type === "text" ? c.text : `[${c.type}]`)).join("\n");
@@ -194,14 +190,11 @@ export async function callTool(name: string, args: Record<string, unknown>): Pro
   try {
     return await run();
   } catch (err) {
-    // Session dropped (e.g. server restarted it): reconnect once with the saved tokens.
     st.client = null;
     if (err instanceof Error && /expired|isn't connected/.test(err.message)) throw err;
-    return run();
+    return run().catch((e) => `Error calling Composio tool: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
-
-// ---------- read vs write, for approvals ----------
 
 const READ_VERB = /_(GET|LIST|SEARCH|FETCH|FIND|READ|RETRIEVE|QUERY|DESCRIBE|LOOKUP|VIEW|CHECK|COUNT|EXPORT|DOWNLOAD)(_|$)/;
 type ExecItem = { tool_slug?: string; arguments?: unknown };
@@ -210,7 +203,6 @@ export function executeItems(args: Record<string, unknown>): ExecItem[] {
   return Array.isArray(args.tools) ? (args.tools as ExecItem[]) : [];
 }
 
-/** Reads run automatically; anything else (send, post, create, update, delete…) asks first. */
 export function executeDecision(args: Record<string, unknown>): RuleDecision {
   const items = executeItems(args);
   return items.length && items.every((i) => READ_VERB.test(String(i.tool_slug ?? "").toUpperCase())) ? "allow" : "ask";
@@ -234,11 +226,9 @@ export function mcpTools(): McpTool[] {
   return st.tools;
 }
 
-// ---------- connecting an app ----------
-
 export async function isConnected(toolkit: string): Promise<boolean> {
   if (st.connected.includes(toolkit)) return true;
-  const out = await callTool("COMPOSIO_MANAGE_CONNECTIONS", { toolkits: [{ name: toolkit, action: "list" }] });
+  const out = await callTool("COMPOSIO_MANAGE_CONNECTIONS", { toolkits: [{ name: toolkit, action: "list" }] }).catch(() => "");
   const active = /"status"\s*:\s*"ACTIVE"/i.test(out);
   if (active && !st.connected.includes(toolkit)) {
     st.connected.push(toolkit);
@@ -247,7 +237,6 @@ export async function isConnected(toolkit: string): Promise<boolean> {
   return active;
 }
 
-/** Create a Composio auth link for an app. `wait()` resolves once the connection is active. */
 export async function startConnect(toolkit: string) {
   if (await isConnected(toolkit)) return { already: true as const };
   const out = await callTool("COMPOSIO_MANAGE_CONNECTIONS", { toolkits: [{ name: toolkit, action: "add" }] });
