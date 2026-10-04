@@ -33,13 +33,14 @@ export function modeFor(dotId: string): ComputerMode {
 const isCloud = (dotId: string) => modeFor(dotId) === "cloud";
 
 export function describe(dotId: string): string {
+  const osName = process.platform === "win32" ? "Windows (PowerShell)" : process.platform === "darwin" ? "macOS (zsh)" : "Linux (bash)";
   switch (modeFor(dotId)) {
     case "cloud":
       return `a cloud Linux desktop (1280×800) with Google Chrome and a persistent ${cloud.WORKSPACE}; it keeps running while the user is away`;
     case "docker":
       return `a Linux container (${BOX_IMAGE}) with a persistent /workspace, plus a Chromium browser`;
     default:
-      return "a sandbox folder on the user's Mac (commands ask first) plus a Chromium browser";
+      return `a sandbox folder on the user's ${osName} computer (commands ask first) plus a Chromium browser`;
   }
 }
 
