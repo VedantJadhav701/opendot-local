@@ -3,7 +3,7 @@ import { OllamaProvider } from "./ollama";
 import type { LLMProvider, ModelInfo } from "./types";
 import { getSetting, setSetting } from "../db";
 
-const DEFAULT_MAIN_MODELS = ["qwen3:4b", "qwen2.5:7b", "llama3.2:3b", "llama3.1:8b", "mistral:7b", "qwen:7b"];
+const DEFAULT_MAIN_MODELS = ["qwen3:4b", "qwen2.5:7b", "llama3.2:3b", "llama3.1:8b", "mistral:7b", "qwen:7b", "qwen2.5:1.5b", "qwen2.5:3b"];
 const DEFAULT_REVIEW_MODELS = ["qwen3:0.6b", "qwen3:1.7b", "llama3.2:1b", "qwen2.5:0.5b", "qwen3:4b"];
 
 let activeProvider: LLMProvider = new OllamaProvider();
@@ -55,18 +55,28 @@ export async function resolveModels(): Promise<{ main: string; review: string; a
 }
 
 export async function activeModel(override?: string | null): Promise<string> {
-  if (override) return override;
-  const saved = getSetting("default_model");
-  if (saved) return saved;
   const res = await resolveModels();
-  return res.main;
+  const available = res.available;
+  const target = override || getSetting("default_model");
+
+  if (target && available.length > 0 && !available.includes(target)) {
+    console.warn(`[ollama] Model '${target}' not installed locally. Falling back to installed model '${available[0]}'`);
+    return available[0];
+  }
+
+  return target || res.main;
 }
 
 export async function activeReviewModel(): Promise<string> {
-  const saved = getSetting("review_model");
-  if (saved) return saved;
   const res = await resolveModels();
-  return res.review;
+  const available = res.available;
+  const target = getSetting("review_model");
+
+  if (target && available.length > 0 && !available.includes(target)) {
+    return available[0];
+  }
+
+  return target || res.review;
 }
 
 export function setDefaultModel(modelId: string) {
