@@ -398,7 +398,10 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   );
 
   if (draftMessageId) {
-    repo.updateMessage(draftMessageId, { text: accumulatedText || "…" });
+    const { sanitizeResponseUrls } = await import("./url-validator");
+    const cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
+    repo.updateMessage(draftMessageId, { text: cleanText || "…" });
+    responseMsg.content = cleanText;
   }
 
   return responseMsg;
