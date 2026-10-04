@@ -55,24 +55,39 @@ let chromeUA: string | null = null;
  * launch on a locked profile just hangs. The profile only ever belongs to this dot's browser, so close it.
  */
 async function freeProfile(dir: string) {
-  let pid: number;
+  const lockFile = path.join(dir, "SingletonLock");
+  const cookieFile = path.join(dir, "SingletonCookie");
+  const socketFile = path.join(dir, "SingletonSocket");
+
+  let pid: number | null = null;
   try {
-    pid = Number(fs.readlinkSync(path.join(dir, "SingletonLock")).split("-").pop());
+    const target = fs.readlinkSync(lockFile);
+    pid = Number(target.split("-").pop());
   } catch {
-    return;
+    // If not readable as a symlink, check if file exists
   }
-  const alive = () => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
+
+  if (pid && pid !== process.pid) {
+    const alive = () => {
+      try {
+        process.kill(pid!, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (alive()) {
+      try { process.kill(pid, "SIGTERM"); } catch {}
+      for (let i = 0; i < 50 && alive(); i++) await new Promise((r) => setTimeout(r, 100));
+      if (alive()) try { process.kill(pid, "SIGKILL"); } catch {}
     }
-  };
-  if (!pid || pid === process.pid || !alive()) return;
-  process.kill(pid, "SIGTERM");
-  for (let i = 0; i < 50 && alive(); i++) await new Promise((r) => setTimeout(r, 100));
-  if (alive()) process.kill(pid, "SIGKILL");
+  }
+
+  for (const f of [lockFile, cookieFile, socketFile]) {
+    try {
+      if (fs.existsSync(f)) fs.rmSync(f, { force: true });
+    } catch {}
+  }
 }
 
 async function launch(dotId: string): Promise<Session> {
