@@ -3,6 +3,49 @@ import https from "node:https";
 import { URL } from "node:url";
 import type { ChatChunk, ChatMessage, ChatRequest, FunctionToolCall, LLMProvider, ModelInfo } from "./types";
 
+export function stripThinking(text: string): string {
+  if (!text) return "";
+  let clean = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  if (clean.includes("</think>")) {
+    clean = clean.split("</think>").pop() || "";
+  }
+  return clean;
+}
+
+type QueueTask<T> = {
+  fn: (queueWaitMs: number) => Promise<T>;
+  resolve: (val: T) => void;
+  reject: (err: unknown) => void;
+  enqueueTime: number;
+};
+
+const gQueue = globalThis as unknown as { __llmQueue?: QueueTask<any>[]; __isProcessingLLMQueue?: boolean };
+const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
+
+function enqueueLLMRequest<T>(fn: (queueWaitMs: number) => Promise<T>): Promise<T> {
+  const enqueueTime = Date.now();
+  return new Promise<T>((resolve, reject) => {
+    queue.push({ fn, resolve, reject, enqueueTime });
+    processLLMQueue();
+  });
+}
+
+async function processLLMQueue() {
+  if (gQueue.__isProcessingLLMQueue || queue.length === 0) return;
+  gQueue.__isProcessingLLMQueue = true;
+  const task = queue.shift()!;
+  const queueWaitMs = Date.now() - task.enqueueTime;
+  try {
+    const res = await task.fn(queueWaitMs);
+    task.resolve(res);
+  } catch (err) {
+    task.reject(err);
+  } finally {
+    gQueue.__isProcessingLLMQueue = false;
+    processLLMQueue();
+  }
+}
+
 export class OllamaProvider implements LLMProvider {
   public name = "ollama";
   private baseUrl: string;
@@ -51,7 +94,7 @@ export class OllamaProvider implements LLMProvider {
     let toolCalls: FunctionToolCall[] = [];
     let finishReason = "stop";
 
-    await this.chatStream(
+    const msg = await this.chatStream(
       req,
       (chunk) => {
         if (chunk.delta?.content) {
@@ -79,11 +122,7 @@ export class OllamaProvider implements LLMProvider {
     );
 
     return {
-      message: {
-        role: "assistant",
-        content: fullText,
-        ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
-      },
+      message: msg,
       finishReason,
     };
   }
@@ -93,200 +132,205 @@ export class OllamaProvider implements LLMProvider {
     onChunk: (chunk: ChatChunk) => void,
     signal?: AbortSignal
   ): Promise<ChatMessage> {
-    const formattedMessages = req.messages.map((m) => {
-      const msg: Record<string, unknown> = {
-        role: m.role,
-        content: m.content || "",
+    return enqueueLLMRequest(async (queueWaitMs) => {
+      const formattedMessages = req.messages.map((m) => {
+        const msg: Record<string, unknown> = {
+          role: m.role,
+          content: m.content || "",
+        };
+        if (m.name) msg.name = m.name;
+        if (m.tool_calls && m.tool_calls.length > 0) {
+          msg.tool_calls = m.tool_calls.map((tc) => ({
+            function: {
+              name: tc.function.name,
+              arguments: typeof tc.function.arguments === "string" ? safeJsonParse(tc.function.arguments) : tc.function.arguments,
+            },
+          }));
+        }
+        return msg;
+      });
+
+      const body: Record<string, unknown> = {
+        model: req.model,
+        messages: formattedMessages,
+        stream: true,
+        think: false,
+        keep_alive: "30m",
       };
-      if (m.name) msg.name = m.name;
-      if (m.tool_calls && m.tool_calls.length > 0) {
-        msg.tool_calls = m.tool_calls.map((tc) => ({
+
+      if (req.tools && req.tools.length > 0) {
+        body.tools = req.tools.map((t) => ({
+          type: "function",
           function: {
-            name: tc.function.name,
-            arguments: typeof tc.function.arguments === "string" ? safeJsonParse(tc.function.arguments) : tc.function.arguments,
+            name: t.function.name,
+            description: t.function.description,
+            parameters: t.function.parameters,
           },
         }));
       }
-      return msg;
-    });
 
-    const body: Record<string, unknown> = {
-      model: req.model,
-      messages: formattedMessages,
-      stream: true,
-      think: false,
-      keep_alive: "30m",
-    };
+      const optionsObj: Record<string, unknown> = {
+        num_ctx: req.context_length || 4096,
+        num_predict: 600,
+      };
+      if (typeof req.temperature === "number") {
+        optionsObj.temperature = req.temperature;
+      }
+      body.options = optionsObj;
 
-    if (req.tools && req.tools.length > 0) {
-      body.tools = req.tools.map((t) => ({
-        type: "function",
-        function: {
-          name: t.function.name,
-          description: t.function.description,
-          parameters: t.function.parameters,
-        },
-      }));
-    }
+      const startTime = Date.now();
+      let ttftMs = 0;
+      let promptTokens = 0;
+      let completionTokens = 0;
+      let accumulatedText = "";
+      const accumulatedToolCalls: FunctionToolCall[] = [];
+      let buffer = "";
 
-    const optionsObj: Record<string, unknown> = {
-      num_ctx: req.context_length || 4096,
-      num_predict: 600,
-    };
-    if (typeof req.temperature === "number") {
-      optionsObj.temperature = req.temperature;
-    }
-    body.options = optionsObj;
+      await new Promise<void>((resolve, reject) => {
+        const targetUrl = new URL(`${this.baseUrl}/api/chat`);
+        const transport = targetUrl.protocol === "https:" ? https : http;
+        const bodyStr = JSON.stringify(body);
 
-    const startTime = Date.now();
-    let ttftMs = 0;
-    let promptTokens = 0;
-    let completionTokens = 0;
-    let accumulatedText = "";
-    const accumulatedToolCalls: FunctionToolCall[] = [];
-    let buffer = "";
-
-    await new Promise<void>((resolve, reject) => {
-      const targetUrl = new URL(`${this.baseUrl}/api/chat`);
-      const transport = targetUrl.protocol === "https:" ? https : http;
-      const bodyStr = JSON.stringify(body);
-
-      const request = transport.request(
-        targetUrl,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(bodyStr),
+        const request = transport.request(
+          targetUrl,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(bodyStr),
+            },
           },
-        },
-        (res) => {
-          if (res.statusCode && res.statusCode >= 400) {
-            let errText = "";
-            res.on("data", (c) => (errText += c));
-            res.on("end", () => reject(new Error(`Ollama error (${res.statusCode}): ${errText}`)));
-            return;
-          }
+          (res) => {
+            if (res.statusCode && res.statusCode >= 400) {
+              let errText = "";
+              res.on("data", (c) => (errText += c));
+              res.on("end", () => reject(new Error(`Ollama error (${res.statusCode}): ${errText}`)));
+              return;
+            }
 
-          res.setEncoding("utf8");
-          res.on("data", (chunkData: string) => {
-            buffer += chunkData;
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+            res.setEncoding("utf8");
+            res.on("data", (chunkData: string) => {
+              buffer += chunkData;
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
 
-              try {
-                const parsed = JSON.parse(trimmed) as {
-                  message?: {
-                    content?: string;
-                    tool_calls?: Array<{
-                      function?: {
-                        name?: string;
-                        arguments?: Record<string, unknown> | string;
-                      };
-                    }>;
+                try {
+                  const parsed = JSON.parse(trimmed) as {
+                    message?: {
+                      content?: string;
+                      tool_calls?: Array<{
+                        function?: {
+                          name?: string;
+                          arguments?: Record<string, unknown> | string;
+                        };
+                      }>;
+                    };
+                    done?: boolean;
+                    done_reason?: string;
+                    prompt_eval_count?: number;
+                    eval_count?: number;
                   };
-                  done?: boolean;
-                  done_reason?: string;
-                  prompt_eval_count?: number;
-                  eval_count?: number;
-                };
 
-                if (parsed.message?.content || (parsed.message?.tool_calls && parsed.message.tool_calls.length > 0)) {
-                  if (ttftMs === 0) {
-                    ttftMs = Date.now() - startTime;
-                  }
-                }
-
-                if (parsed.message?.content) {
-                  accumulatedText += parsed.message.content;
-                  onChunk({ delta: { content: parsed.message.content } });
-                }
-
-                if (parsed.message?.tool_calls) {
-                  for (const tc of parsed.message.tool_calls) {
-                    if (tc.function?.name) {
-                      const callId = `call_${Math.random().toString(36).substring(2, 9)}`;
-                      const argsStr =
-                        typeof tc.function.arguments === "string"
-                          ? tc.function.arguments
-                          : JSON.stringify(tc.function.arguments || {});
-
-                      const toolCall: FunctionToolCall = {
-                        id: callId,
-                        type: "function",
-                        function: {
-                          name: tc.function.name,
-                          arguments: argsStr,
-                        },
-                      };
-
-                      accumulatedToolCalls.push(toolCall);
-                      onChunk({
-                        delta: {
-                          tool_calls: [
-                            {
-                              id: callId,
-                              type: "function",
-                              function: {
-                                name: tc.function.name,
-                                arguments: argsStr,
-                              },
-                            },
-                          ],
-                        },
-                      });
+                  if (parsed.message?.content || (parsed.message?.tool_calls && parsed.message.tool_calls.length > 0)) {
+                    if (ttftMs === 0) {
+                      ttftMs = Date.now() - startTime;
                     }
                   }
-                }
 
-                if (typeof parsed.prompt_eval_count === "number") promptTokens = parsed.prompt_eval_count;
-                if (typeof parsed.eval_count === "number") completionTokens = parsed.eval_count;
+                  if (parsed.message?.content) {
+                    accumulatedText += parsed.message.content;
+                    onChunk({ delta: { content: parsed.message.content } });
+                  }
 
-                if (parsed.done) {
-                  onChunk({ finishReason: parsed.done_reason || "stop" });
+                  if (parsed.message?.tool_calls) {
+                    for (const tc of parsed.message.tool_calls) {
+                      if (tc.function?.name) {
+                        const callId = `call_${Math.random().toString(36).substring(2, 9)}`;
+                        const argsStr =
+                          typeof tc.function.arguments === "string"
+                            ? tc.function.arguments
+                            : JSON.stringify(tc.function.arguments || {});
+
+                        const toolCall: FunctionToolCall = {
+                          id: callId,
+                          type: "function",
+                          function: {
+                            name: tc.function.name,
+                            arguments: argsStr,
+                          },
+                        };
+
+                        accumulatedToolCalls.push(toolCall);
+                        onChunk({
+                          delta: {
+                            tool_calls: [
+                              {
+                                id: callId,
+                                type: "function",
+                                function: {
+                                  name: tc.function.name,
+                                  arguments: argsStr,
+                                },
+                              },
+                            ],
+                          },
+                        });
+                      }
+                    }
+                  }
+
+                  if (typeof parsed.prompt_eval_count === "number") promptTokens = parsed.prompt_eval_count;
+                  if (typeof parsed.eval_count === "number") completionTokens = parsed.eval_count;
+
+                  if (parsed.done) {
+                    onChunk({ finishReason: parsed.done_reason || "stop" });
+                  }
+                } catch {
+                  // Ignore incomplete line parse errors
                 }
-              } catch {
-                // Ignore incomplete line parse errors
               }
-            }
+            });
+
+            res.on("end", () => resolve());
+            res.on("error", (err) => reject(err));
+          }
+        );
+
+        request.on("error", (err) => reject(err));
+
+        if (signal) {
+          signal.addEventListener("abort", () => {
+            request.destroy();
+            reject(signal.reason || new Error("Aborted"));
           });
-
-          res.on("end", () => resolve());
-          res.on("error", (err) => reject(err));
         }
-      );
 
-      request.on("error", (err) => reject(err));
+        request.write(bodyStr);
+        request.end();
+      });
 
-      if (signal) {
-        signal.addEventListener("abort", () => {
-          request.destroy();
-          reject(signal.reason || new Error("Aborted"));
-        });
-      }
+      const totalTimeMs = Date.now() - startTime;
+      if (ttftMs === 0) ttftMs = totalTimeMs;
 
-      request.write(bodyStr);
-      request.end();
+      const cleanText = stripThinking(accumulatedText);
+
+      return {
+        role: "assistant",
+        content: cleanText,
+        ...(accumulatedToolCalls.length > 0 ? { tool_calls: accumulatedToolCalls } : {}),
+        metrics: {
+          queueWaitMs,
+          ttftMs,
+          totalTimeMs,
+          promptTokens,
+          completionTokens,
+        },
+      };
     });
-
-    const totalTimeMs = Date.now() - startTime;
-    if (ttftMs === 0) ttftMs = totalTimeMs;
-
-    return {
-      role: "assistant",
-      content: accumulatedText,
-      ...(accumulatedToolCalls.length > 0 ? { tool_calls: accumulatedToolCalls } : {}),
-      metrics: {
-        ttftMs,
-        totalTimeMs,
-        promptTokens,
-        completionTokens,
-      },
-    };
   }
 }
 

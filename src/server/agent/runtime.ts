@@ -11,6 +11,7 @@ import { emit } from "../bus";
 import * as composio from "../composio";
 import type { AppTrigger, Attachment, CardData, Dot, Routine } from "@/lib/types";
 import * as files from "../files";
+import { getTaskChunks } from "../context/db";
 
 type Pending = {
   responseId: string;
@@ -225,57 +226,139 @@ function notifyFinished(dot: Dot, since: number) {
   emit({ type: "notify", dotId: dot.id, title: last.role === "card" ? `${dot.name} needs you` : dot.name, body: body.slice(0, 160) });
 }
 
+async function preprocessUrls(text: string, dotId: string): Promise<string> {
+  const urlMatch = text.match(/https?:\/\/[^\s]+/i);
+  if (!urlMatch) return text;
+
+  const url = urlMatch[0].replace(/[.,;)]+$/, "");
+  const lowerText = text.toLowerCase();
+  const isPdfUrl = url.toLowerCase().endsWith(".pdf") || lowerText.includes("download");
+
+  try {
+    if (isPdfUrl) {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (res.ok) {
+        const arrayBuf = await res.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        const { extractPdf, isPdfBuffer } = await import("../context/pdf");
+        if (isPdfBuffer(buf) || url.toLowerCase().endsWith(".pdf")) {
+          const pdfRes = await extractPdf(buf);
+          const { chunkText } = await import("../context/chunker");
+          const { saveChunks } = await import("../context/db");
+
+          const fileName = url.split("/").pop() || "downloaded.pdf";
+          const taskId = `task_preroute_${Date.now()}`;
+          const chunks = chunkText({
+            text: pdfRes.fullText,
+            source: fileName,
+            taskId,
+            dotId,
+          });
+          saveChunks(chunks);
+
+          const sampleText = pdfRes.fullText.slice(0, 5000);
+          return `${text}\n\n[Pre-fetched URL Content (${url}) - Extracted PDF ${pdfRes.pageCount} pages, ${chunks.length} chunks stored in chunk_store]:\n${sampleText}`;
+        }
+      }
+    } else {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (res.ok) {
+        const html = await res.text();
+        const cleanText = html.replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, "\n")
+          .replace(/\n\s*\n/g, "\n")
+          .trim();
+        const sampleText = cleanText.slice(0, 5000);
+        return `${text}\n\n[Pre-fetched URL Content (${url})]:\n${sampleText}`;
+      }
+    }
+  } catch (err) {
+    console.error("[dots] URL pre-routing failed:", err);
+  }
+  return text;
+}
+
 async function turn(dotId: string, text: string, trigger: Trigger, signal: AbortSignal, attachments: Attachment[], conversationId: string) {
   repo.routeToConversation(dotId, conversationId);
   repo.routeToChannel(dotId, trigger.kind === "channel" ? trigger.channelId : null);
   const dot = repo.getDot(dotId)!;
 
-  const messages: ChatMessage[] = rebuildContextMessages(dotId, text);
-  messages.push(userInput(text, attachments));
+  const processedText = await preprocessUrls(text, dotId);
+  const messages: ChatMessage[] = rebuildContextMessages(dotId, processedText);
+  messages.push(userInput(dotId, processedText, attachments));
 
   await drive(dot, messages, trigger, signal);
 }
 
 async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal) {
+  let turnTotalTimeMs = 0;
+  let turnPromptTokens = 0;
+  let turnCompletionTokens = 0;
+  let totalSteps = 0;
+  const seenCalls = new Set<string>();
+
   for (let step = 0; step < MAX_STEPS; step++) {
+    totalSteps = step + 1;
     signal.throwIfAborted();
     let assistantMessage: ChatMessage;
     try {
-      assistantMessage = await respond(dot, messages, trigger, signal);
+      const omitTools = step === MAX_STEPS - 1;
+      assistantMessage = await respond(dot, messages, trigger, signal, omitTools);
     } catch (err) {
       if (signal.aborted) throw err;
       throw err;
     }
 
+    if (assistantMessage.metrics) {
+      const m = assistantMessage.metrics;
+      turnTotalTimeMs += m.totalTimeMs;
+      turnPromptTokens += m.promptTokens;
+      turnCompletionTokens += m.completionTokens;
+      console.log(
+        `[dots] Turn Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Queue Wait: ${m.queueWaitMs ?? 0}ms | TTFT: ${m.ttftMs}ms | Total: ${m.totalTimeMs}ms | Prompt Tokens: ${m.promptTokens} | Completion Tokens: ${m.completionTokens}`
+      );
+    }
+
     messages.push(assistantMessage);
 
     const calls = assistantMessage.tool_calls || [];
-    if (!calls.length) return;
+    if (!calls.length) {
+      console.log(
+        `[dots] Turn Summary | Total Time: ${turnTotalTimeMs}ms | Steps: ${totalSteps} | Total Prompt Tokens: ${turnPromptTokens}`
+      );
+      return;
+    }
 
     const responseId = `resp_${Date.now()}`;
     const pending: Pending = { responseId, calls, outputs: [], index: 0, cardId: null, trigger };
 
-    if (await processCalls(dot, pending, signal)) return; // Waiting for user input/card
+    if (await processCalls(dot, pending, signal, seenCalls)) return; // Waiting for user input/card
 
     for (const toolOutputMsg of pending.outputs) {
       messages.push(toolOutputMsg);
     }
   }
+  console.log(
+    `[dots] Turn Summary | Total Time: ${turnTotalTimeMs}ms | Steps: ${totalSteps} | Total Prompt Tokens: ${turnPromptTokens}`
+  );
   repo.addMessage({ dotId: dot.id, role: "system", text: `Stopped after ${MAX_STEPS} steps. Say "continue" to keep going.` });
 }
 
-async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal): Promise<ChatMessage> {
+async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false): Promise<ChatMessage> {
   const modelName = await activeModel(dot.model);
   const provider = getProvider();
 
-  const toolDefs: ToolDefinition[] = toolsForDot(dot).map((t) => ({
-    type: "function",
-    function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters as ToolDefinition["function"]["parameters"],
-    },
-  }));
+  const toolDefs: ToolDefinition[] = omitTools
+    ? []
+    : toolsForDot(dot).map((t) => ({
+        type: "function",
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters as ToolDefinition["function"]["parameters"],
+        },
+      }));
 
   const systemMsg: ChatMessage = {
     role: "system",
@@ -293,7 +376,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     {
       model: modelName,
       messages: fullMessages,
-      tools: toolDefs,
+      tools: toolDefs.length ? toolDefs : undefined,
       temperature: 0.2,
       context_length: 8192,
     },
@@ -317,11 +400,23 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   return responseMsg;
 }
 
-async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal): Promise<boolean> {
+async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, seenCalls: Set<string>): Promise<boolean> {
   for (; pending.index < pending.calls.length; pending.index++) {
     signal.throwIfAborted();
     savePending(dot.id, pending);
     const call = pending.calls[pending.index];
+
+    const callKey = `${call.function.name}:${call.function.arguments}`;
+    if (seenCalls.has(callKey)) {
+      pending.outputs.push({
+        role: "tool",
+        name: call.function.name,
+        tool_call_id: call.id,
+        content: "Tool already executed with these exact parameters",
+      });
+      continue;
+    }
+    seenCalls.add(callKey);
 
     const def = findTool(call.function.name);
     const args = safeParse(call.function.arguments);
@@ -454,10 +549,40 @@ setConsult(async (target, message, from, _depth, signal) => {
 
 // ---------------------------------------------------------------- helpers
 
-function userInput(text: string, attachments: Attachment[]): ChatMessage {
+function userInput(dotId: string, text: string, attachments: Attachment[], maxEvidenceTokens = 2500): ChatMessage {
   if (!attachments.length) return { role: "user", content: text };
+
+  let pdfContext = "";
+  for (const a of attachments) {
+    if (a.mime === "application/pdf" || a.name.toLowerCase().endsWith(".pdf")) {
+      const taskId = `task_${a.id}`;
+      const chunks = getTaskChunks(taskId);
+      if (chunks.length > 0) {
+        let currentTokens = 0;
+        const selectedChunks: typeof chunks = [];
+        for (const c of chunks) {
+          const chunkTokens = Math.ceil(c.text.length / 4);
+          if (currentTokens + chunkTokens > maxEvidenceTokens && selectedChunks.length > 0) {
+            break;
+          }
+          selectedChunks.push(c);
+          currentTokens += chunkTokens;
+        }
+
+        const overflowCount = chunks.length - selectedChunks.length;
+        const overflowNotice = overflowCount > 0
+          ? `\n\n[Note to Model: ${overflowCount} additional chunks (${chunks.length} total) from ${a.name} are stored locally in SQLite chunk_store database and can be recalled]`
+          : "";
+
+        pdfContext += `\n\n[Attached PDF Content (${a.name}) - Evidence Budget: ~${currentTokens}/${maxEvidenceTokens} tokens (${selectedChunks.length}/${chunks.length} chunks included)]:\n` +
+          selectedChunks.map((c, i) => `--- Chunk ${i + 1} (Page ${c.page ?? "?"}) ---\n${c.text}`).join("\n\n") +
+          overflowNotice;
+      }
+    }
+  }
+
   const note = `\n\n[Attached: ${attachments.map((a) => `${a.name} (saved in workspace at ${files.boxPathOf(a.id) ?? `uploads/${a.name}`})`).join("; ")}]`;
-  return { role: "user", content: (text || "See attached files.") + note };
+  return { role: "user", content: (text || "See attached files.") + note + pdfContext };
 }
 
 function activity(dotId: string, label: string, detail?: string) {

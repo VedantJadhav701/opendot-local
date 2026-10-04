@@ -9,12 +9,21 @@ export type FunctionToolCall = {
   };
 };
 
+export type StepMetrics = {
+  queueWaitMs?: number;
+  ttftMs: number;
+  totalTimeMs: number;
+  promptTokens: number;
+  completionTokens: number;
+};
+
 export type ChatMessage = {
   role: Role;
   content: string;
   name?: string;
   tool_call_id?: string;
   tool_calls?: FunctionToolCall[];
+  metrics?: StepMetrics;
 };
 
 export type ToolProperty = {
