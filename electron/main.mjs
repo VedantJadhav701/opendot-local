@@ -28,6 +28,9 @@ let quitting = false;
 
 // Apps opened from Finder get a bare PATH; dots need the user's tools (git, docker, python, brew…).
 function loginPath() {
+  if (process.platform === "win32") {
+    return process.env.PATH || "";
+  }
   try {
     const shellPath = process.env.SHELL || "/bin/zsh";
     return execFileSync(shellPath, ["-ilc", "printf %s \"$PATH\""], { timeout: 5000, encoding: "utf8" }).trim();
@@ -96,16 +99,13 @@ function createWindow() {
     height: 880,
     minWidth: 380,
     minHeight: 560,
-    title: "Open Dot",
+    title: "Open Dot Local",
     backgroundColor: "#f6f6f6",
     show: false,
     webPreferences: { contextIsolation: true, sandbox: true },
   });
   win.once("ready-to-show", () => win.show());
 
-  // Links and sign-ins open in the default browser, never in an Electron window. The app opens Composio sign-in
-  // as a blank popup and points it at the real URL a moment later, so that popup is kept hidden and its first
-  // real address is handed to the browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url === "about:blank") return { action: "allow", overrideBrowserWindowOptions: { show: false } };
     if (/^https?:|^mailto:/.test(url)) void shell.openExternal(url);
@@ -120,7 +120,6 @@ function createWindow() {
     };
     child.webContents.on("will-navigate", forward);
     child.webContents.on("did-start-navigation", forward);
-    // Nothing to hand off (the app closed the popup, or it never got a URL): don't leave a hidden window behind.
     setTimeout(() => !child.isDestroyed() && child.destroy(), 30_000);
   });
   win.webContents.on("will-navigate", (e, url) => {
@@ -129,7 +128,6 @@ function createWindow() {
     if (/^https?:|^mailto:/.test(url)) void shell.openExternal(url);
   });
 
-  // Keep the server (and the dots) running when the window closes; ⌘Q quits for real.
   win.on("close", (e) => {
     if (process.platform === "darwin" && !quitting) {
       e.preventDefault();
@@ -140,7 +138,6 @@ function createWindow() {
   return win;
 }
 
-// Microphone (voice mode), notifications and clipboard, for our own pages only.
 const ALLOWED = new Set(["media", "notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen"]);
 function setPermissions() {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) =>

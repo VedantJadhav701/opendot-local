@@ -2,8 +2,8 @@
 
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bell, KeyRound, Lock, LogOut, Plus, RefreshCw } from "lucide-react";
-import { connectApp, deletePassword, refreshApps, savePassword, setCloudKey, setDefaultModel, setOpenAIKey, setOpenRouterKey, signInComposio, signOutComposio } from "@/app/actions";
+import { Bell, Cpu, KeyRound, Lock, LogOut, Plus, RefreshCw, Server, ShieldCheck } from "lucide-react";
+import { connectApp, deletePassword, refreshApps, savePassword, setDefaultModel, signInComposio, signOutComposio } from "@/app/actions";
 import { useStore } from "@/lib/store";
 import { openAfter } from "@/lib/popup";
 import { Empty, PageHeader, RemoveButton, RuleEditor, Section } from "./SettingsKit";
@@ -25,12 +25,37 @@ export default function SettingsView() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="rails mx-auto min-h-full max-w-[1080px] px-4 sm:px-8 pb-16">
-        <PageHeader eyebrow="Settings" title="Settings" description="Passwords, rules that apply to every dot, notifications, and the engine behind them." />
+        <PageHeader eyebrow="Settings" title="Settings" description="Local AI engine, local computer sandbox, security, passwords, and dot rules." />
+
+        <Section eyebrow="Engine" title="Local AI & Models" description="Open Dot Local runs fully on your machine using Ollama. No paid cloud inference required.">
+          <OllamaCard />
+          <div className="surface mb-3 flex items-center gap-3 p-4">
+            <div className="flex-1">
+              <div className="text-[14px] font-medium">Default Model</div>
+              <div className="text-body-sm text-foreground/55">Used by every dot that doesn&apos;t pick its own model.</div>
+            </div>
+            <ModelPicker allowDefault={false} value={computer.model || null} onChange={(m) => start(() => setDefaultModel(m))} />
+          </div>
+          <dl className="surface divide-y divide-black/[0.06]">
+            {[
+              ["Local LLM Provider", "Ollama (http://127.0.0.1:11434)", true],
+              ["Local Available Models", computer.models.length ? `${computer.models.length} models detected` : "Searching Ollama…", computer.models.length > 0],
+              ["Computer Automation", computer.docker ? `Docker Container (${computer.image})` : "Local Cross-Platform Shell (PowerShell/zsh)", true],
+              ["Browser Engine", "Playwright Local Chromium", true],
+              ["Local Storage", "SQLite Database", true],
+            ].map(([k, v, ok]) => (
+              <div key={String(k)} className="flex items-center gap-4 px-4 py-2.5">
+                <dt className="eyebrow w-48 shrink-0">{k}</dt>
+                <dd className={`flex-1 text-body-sm ${ok ? "" : "text-warning"}`}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
 
         <Section
-          eyebrow="Passwords"
-          title="Saved logins"
-          description="Your dots can securely use these to log into websites in their browser. Encrypted with a key in your macOS Keychain, typed directly into the page, and never shown to the model."
+          eyebrow="Security & Secrets"
+          title="Saved Logins"
+          description="Your dots can securely use these to log into websites. Credentials are encrypted locally (DPAPI on Windows, Keychain on macOS), typed directly into the browser, and never sent to any remote servers."
         >
           <div className="space-y-3">
             {passwords.length > 0 ? (
@@ -67,7 +92,7 @@ export default function SettingsView() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-caption text-foreground/45">
-                  <Lock className="size-3" strokeWidth={2} /> AES-256-GCM, key in Keychain
+                  <Lock className="size-3" strokeWidth={2} /> AES-256-GCM encrypted (DPAPI / Keychain)
                 </span>
                 {error && <span className="text-caption text-destructive">{error}</span>}
                 <button className="btn-primary ml-auto h-8 px-3 text-[13px]" disabled={pending}>
@@ -85,8 +110,8 @@ export default function SettingsView() {
         <Section
           id="apps"
           eyebrow="Apps"
-          title="Your apps, via Composio"
-          description="Sign in with your Composio account to give your dots Gmail, Calendar, Slack, Notion, GitHub, and 500+ more apps. Dots read on their own and ask before sending, posting, or changing anything."
+          title="Your apps, via Composio (Optional)"
+          description="Optionally sign in with your Composio account to connect Gmail, Calendar, Slack, Notion, GitHub, and more."
         >
           <AppsList />
         </Section>
@@ -94,20 +119,20 @@ export default function SettingsView() {
         <Section
           id="triggers"
           eyebrow="Triggers"
-          title="Wake dots from your apps"
-          description="Let a dot act when something happens, like a new email or a GitHub issue. Triggers run through a Composio developer project, so they need its API key. Then add them from a dot's Setup page."
+          title="App Triggers (Optional)"
+          description="Let a dot act when something happens, like a new email or a GitHub issue."
         >
           <TriggersKey />
         </Section>
 
-        <Section eyebrow="Notifications" title="Desktop notifications" description={'Get notified when a dot finishes something or needs you, like "Your research is ready".'}>
+        <Section eyebrow="Notifications" title="Desktop notifications" description={'Get notified when a dot finishes something or needs you.'}>
           <div className="surface flex items-center gap-3 p-4">
             <Bell className="size-4 text-foreground/50" strokeWidth={1.5} />
             <span className="flex-1 text-body-sm">
               {permission === "granted"
                 ? "Notifications are on."
                 : permission === "denied"
-                  ? "Notifications are blocked in your browser settings for this site."
+                  ? "Notifications are blocked in your browser settings."
                   : permission === "unsupported"
                     ? "This browser doesn't support notifications."
                     : "Notifications are off."}
@@ -120,31 +145,28 @@ export default function SettingsView() {
             {permission === "granted" && <span className="rounded-xs bg-success/12 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-success uppercase">On</span>}
           </div>
         </Section>
+      </div>
+    </div>
+  );
+}
 
-        <Section eyebrow="Engine" title="Models & computers" description="Models come from what your OpenAI key can use, plus open models once you add an OpenRouter key.">
-          <ApiKey />
-          <OpenModelsKey />
-          <CloudKey />
-          <div className="surface mb-3 flex items-center gap-3 p-4">
-            <div className="flex-1">
-              <div className="text-[14px]">Default model</div>
-              <div className="text-body-sm text-foreground/55">Used by every dot that doesn&apos;t pick its own (pick per dot from its header).</div>
-            </div>
-            <ModelPicker allowDefault={false} value={computer.model || null} onChange={(m) => start(() => setDefaultModel(m))} />
+function OllamaCard() {
+  const computer = useStore((s) => s.computer);
+  return (
+    <div className="surface mb-3 p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Cpu className="size-5" />
+        </div>
+        <div className="flex-1">
+          <div className="text-[14px] font-medium flex items-center gap-2">
+            Ollama Local AI
+            <span className="rounded-xs bg-success/12 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-success uppercase">Active & Connected</span>
           </div>
-          <dl className="surface divide-y divide-black/[0.06]">
-            {[
-              ["Models on your key", computer.models.length ? `${computer.models.length} available` : "Loading…", true],
-              ["Computer use", computer.computerTool === "off" ? "Off (page tools only)" : "OpenAI computer tool", true],
-              ["Dot computers", computer.docker ? `Docker containers · ${computer.image}` : "Sandbox folders (start Docker for containers)", computer.docker],
-            ].map(([k, v, ok]) => (
-              <div key={String(k)} className="flex items-center gap-4 px-4 py-2.5">
-                <dt className="eyebrow w-36 shrink-0">{k}</dt>
-                <dd className={`flex-1 text-body-sm ${ok ? "" : "text-warning"}`}>{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </Section>
+          <div className="text-body-sm text-foreground/55">
+            Running locally on <code>http://127.0.0.1:11434</code>. Free, private, and offline-capable.
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -171,8 +193,8 @@ function AppsList() {
             ))}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-medium">Composio For You</div>
-            <div className="text-body-sm text-foreground/55">One sign-in connects your dots to the apps you already use. No API keys.</div>
+            <div className="text-[15px] font-medium">Composio Integration (Optional)</div>
+            <div className="text-body-sm text-foreground/55">Sign in to connect dots with Gmail, Slack, Notion, GitHub, and 500+ apps.</div>
           </div>
           <button
             className="btn-primary shrink-0"
@@ -198,7 +220,7 @@ function AppsList() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="https://logos.composio.dev/api/composio" alt="" className="size-6 rounded-xs object-contain" />
         <div className="flex-1">
-          <div className="text-[14px]">Composio For You</div>
+          <div className="text-[14px]">Composio Apps</div>
           <div className="text-caption text-foreground/50">Signed in · {connected.length} app{connected.length === 1 ? "" : "s"} connected</div>
         </div>
         <span className="rounded-xs bg-success/12 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-success uppercase">Connected</span>
@@ -247,178 +269,6 @@ function AppsList() {
         </div>
       )}
       {error && <p className="text-caption text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-/** The OpenAI key: paste it here (stored encrypted), unless it comes from OPENAI_API_KEY. */
-function ApiKey() {
-  const computer = useStore((s) => s.computer);
-  const [editing, setEditing] = useState(false);
-  const [key, setKey] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-  const open = editing || !computer.hasKey;
-
-  return (
-    <div id="api-key" className="surface mb-3 p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="text-[14px]">OpenAI API key</div>
-          <div className={`text-body-sm ${computer.hasKey ? "text-foreground/55" : "text-warning"}`}>
-            {computer.keySource === "env"
-              ? "Connected from OPENAI_API_KEY."
-              : computer.hasKey
-                ? "Connected. Stored encrypted on this computer."
-                : "Your dots need one to think. Create one at platform.openai.com."}
-          </div>
-        </div>
-        {computer.hasKey && computer.keySource !== "env" && !editing && (
-          <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => setEditing(true)}>
-            Change
-          </button>
-        )}
-      </div>
-      {open && computer.keySource !== "env" && (
-        <form
-          className="mt-3 flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            start(async () => {
-              const err = await setOpenAIKey(key);
-              setError(err);
-              if (!err) (setKey(""), setEditing(false));
-            });
-          }}
-        >
-          <input className="field font-mono text-[13px]" type="password" placeholder="sk-..." value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" />
-          <button className="btn-primary shrink-0" disabled={pending || !key.trim()}>
-            {pending ? "Checking…" : "Save"}
-          </button>
-        </form>
-      )}
-      {error && <p className="mt-2 text-caption text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-/** Optional E2B key: each dot gets a cloud computer that keeps working while this Mac sleeps. */
-function CloudKey() {
-  const computer = useStore((s) => s.computer);
-  const [editing, setEditing] = useState(false);
-  const [key, setKey] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-  const saved = computer.cloudKey !== null;
-  const save = (value: string) =>
-    start(async () => {
-      const err = await setCloudKey(value);
-      setError(err);
-      if (!err) (setKey(""), setEditing(false));
-    });
-
-  return (
-    <div id="cloud-key" className="surface mb-3 scroll-mt-6 p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="text-[14px]">
-            Cloud computers <span className="text-foreground/40">· optional</span>
-          </div>
-          <div className="text-body-sm text-foreground/55">
-            {computer.cloudKey === "env"
-              ? "Connected from E2B_API_KEY."
-              : saved
-                ? "Connected. Each dot gets its own E2B cloud computer that keeps working while your Mac sleeps."
-                : "Paste an E2B API key (from e2b.dev) to give each dot a cloud computer that keeps working while your Mac sleeps."}
-          </div>
-        </div>
-        {computer.cloudKey === "settings" && !editing && (
-          <>
-            <button className="btn-quiet h-8 px-3 text-[13px]" disabled={pending} onClick={() => save("")}>
-              Remove
-            </button>
-            <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => setEditing(true)}>
-              Change
-            </button>
-          </>
-        )}
-      </div>
-      {(editing || !saved) && computer.cloudKey !== "env" && (
-        <form
-          className="mt-3 flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save(key);
-          }}
-        >
-          <input className="field font-mono text-[13px]" type="password" placeholder="e2b_..." value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" />
-          <button className="btn-primary shrink-0" disabled={pending || !key.trim()}>
-            {pending ? "Checking…" : "Save"}
-          </button>
-        </form>
-      )}
-      {error && <p className="mt-2 text-caption text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-/** Optional OpenRouter key: adds open models (Qwen, DeepSeek, Kimi, GLM, Llama, gpt-oss…) to every model picker. */
-function OpenModelsKey() {
-  const computer = useStore((s) => s.computer);
-  const openCount = computer.models.filter((m) => m.startsWith("openrouter:")).length;
-  const [editing, setEditing] = useState(false);
-  const [key, setKey] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-  const saved = computer.openRouter !== null;
-  const save = (value: string) =>
-    start(async () => {
-      const err = await setOpenRouterKey(value);
-      setError(err);
-      if (!err) (setKey(""), setEditing(false));
-    });
-
-  return (
-    <div id="open-models" className="surface mb-3 scroll-mt-6 p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="text-[14px]">
-            Open models <span className="text-foreground/40">· optional</span>
-          </div>
-          <div className="text-body-sm text-foreground/55">
-            {computer.openRouter === "env"
-              ? `Connected from OPENROUTER_API_KEY${openCount ? ` · ${openCount} open models in the model picker` : ""}.`
-              : saved
-                ? `Connected${openCount ? ` · ${openCount} open models in the model picker` : ""}. Voice calls still use OpenAI.`
-                : "Paste an OpenRouter key (from openrouter.ai) to run dots on open models like Qwen, DeepSeek, Kimi, GLM and Llama."}
-          </div>
-        </div>
-        {computer.openRouter === "settings" && !editing && (
-          <>
-            <button className="btn-quiet h-8 px-3 text-[13px]" disabled={pending} onClick={() => save("")}>
-              Remove
-            </button>
-            <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => setEditing(true)}>
-              Change
-            </button>
-          </>
-        )}
-      </div>
-      {(editing || !saved) && computer.openRouter !== "env" && (
-        <form
-          className="mt-3 flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save(key);
-          }}
-        >
-          <input className="field font-mono text-[13px]" type="password" placeholder="sk-or-..." value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" />
-          <button className="btn-primary shrink-0" disabled={pending || !key.trim()}>
-            {pending ? "Checking…" : "Save"}
-          </button>
-        </form>
-      )}
-      {error && <p className="mt-2 text-caption text-destructive">{error}</p>}
     </div>
   );
 }

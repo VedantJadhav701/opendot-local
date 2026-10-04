@@ -3,6 +3,7 @@ import { execFile, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR } from "../db";
+import { runPlatformCommand } from "./platform";
 
 export const BOX_IMAGE = process.env.DOTS_BOX_IMAGE || "node:22-bookworm";
 const MAX_OUTPUT = 12_000;
@@ -51,18 +52,19 @@ async function ensureContainer(dotId: string): Promise<void> {
   ], { timeoutMs: 180_000 });
 }
 
-/** Run a shell command on the dot's own computer (its container, or its sandbox folder as a fallback). */
+/** Run a shell command on the dot's own computer (its container, or its cross-platform sandbox folder as fallback). */
 export async function runOnDotComputer(dotId: string, command: string, signal?: AbortSignal): Promise<string> {
   if (dockerAvailable()) {
     await ensureContainer(dotId);
     return run("docker", ["exec", "-w", "/workspace", containerName(dotId), "bash", "-lc", command], { timeoutMs: 120_000, signal });
   }
-  return run("bash", ["-lc", command], { cwd: workspaceDir(dotId), timeoutMs: 120_000, signal });
+  return runPlatformCommand(command, { cwd: workspaceDir(dotId), timeoutMs: 120_000, signal });
 }
 
 /** Run a command on the user's own machine (the computer running this app). Always gated by approvals. */
 export async function runOnUserComputer(command: string, signal?: AbortSignal): Promise<string> {
-  return run("bash", ["-lc", command], { cwd: process.env.HOME, timeoutMs: 120_000, signal });
+  const homeDir = process.env.USERPROFILE || process.env.HOME || process.cwd();
+  return runPlatformCommand(command, { cwd: homeDir, timeoutMs: 120_000, signal });
 }
 
 export function resolveWorkspacePath(dotId: string, p: string): string {

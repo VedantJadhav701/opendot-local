@@ -10,18 +10,18 @@
     "desktop:dev": "OPEN_DOT_DEV_URL=http://localhost:3100 electron electron",
     "desktop:prepare": "next build && node scripts/desktop-prepare.mjs",
     "desktop": "electron electron",
-    "desktop:build": "pnpm desktop:prepare && electron-builder --mac"
+    "desktop:build": "pnpm desktop:prepare && electron-builder",
+    "desktop:build:win": "pnpm desktop:prepare && electron-builder --win",
+    "desktop:build:mac": "pnpm desktop:prepare && electron-builder --mac"
   },
   "dependencies": {
     "@composio/core": "0.22.0",
-    "@e2b/desktop": "^2.4.0",
     "@modelcontextprotocol/sdk": "^1.30.1",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "croner": "^10.0.1",
     "lucide-react": "^1.48.0",
     "next": "16.3.6",
-    "openai": "^7.23.0",
     "playwright": "^1.63.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -48,7 +48,7 @@
   "packageManager": "pnpm@12.5.1",
   "build": {
     "appId": "dev.composio.opendot",
-    "productName": "Open Dot",
+    "productName": "Open Dot Local",
     "electronVersion": "44.4.5",
     "directories": {
       "app": "electron",
@@ -67,16 +67,28 @@
         {
           "target": "dmg",
           "arch": [
+            "x64",
             "arm64"
           ]
         }
       ],
       "icon": "build/icon.png",
-      "extendInfo": {
-        "NSMicrophoneUsageDescription": "Open Dot uses the microphone for voice mode."
-      },
       "identity": "-",
       "hardenedRuntime": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "files": [
       "main.mjs",
