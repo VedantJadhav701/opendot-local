@@ -1,0 +1,21 @@
+=== PDF EXTRACTION TEST REPORT ===
+File: C:\Users\HP\projects\open-dot\uploads\PatchMLPTS.pdf
+Size: 4027069 bytes
+Pages: 24
+Chunks: 108
+isScanned: false
+Sample Page 1:
+[Page 1]
+Published as a conference paper at ICLR 2023
+A TIME SERIES IS WORTH 64 WORDS:
+LONG-TERM FORECASTING WITH TRANSFORMERS
+Yuqi Nie1∗
+, Nam H. Nguyen2 ∗
+, Phanwadee Sinthong2, Jayant Kalagnanam2
+1Princeton University 2IBM Research
+ynie@princeton.edu, nnguyen@us.ibm.com, Gift.Sinthong@ibm.com,
+jayant@us.ibm.com
+ABSTRACT
+We propose an efficient design of Transformer-based models for multivariate
+time series forecasting and self-supervised representation learning. It is based on
+two key compone
