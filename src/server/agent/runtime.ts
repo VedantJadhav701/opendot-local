@@ -25,7 +25,7 @@ type Pending = {
 type InboxItem = { text: string; trigger: Trigger; conversationId: string; attachments?: Attachment[] };
 type RunState = { running: boolean; abort: AbortController | null; inbox: InboxItem[]; after: (() => void)[] };
 
-const MAX_STEPS = 6;
+const MAX_STEPS = 15;
 const g = globalThis as unknown as { __dotsRuns?: Map<string, RunState> };
 const runs = (g.__dotsRuns ??= new Map());
 const state = (dotId: string): RunState => {
@@ -399,7 +399,9 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
 
   if (draftMessageId) {
     const { sanitizeResponseUrls } = await import("./url-validator");
-    const cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
+    const { sanitizeAnswerStyle } = await import("./answer-style");
+    let cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
+    cleanText = sanitizeAnswerStyle(cleanText);
     repo.updateMessage(draftMessageId, { text: cleanText || "…" });
     responseMsg.content = cleanText;
   }
