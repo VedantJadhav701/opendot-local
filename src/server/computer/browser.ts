@@ -173,7 +173,7 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
 export async function readPage(dotId: string): Promise<string> {
   const p = await page(dotId);
   const text = await p.evaluate(() => document.body?.innerText ?? "");
-  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 15_000);
+  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 4_000);
   return `URL: ${p.url()}\nTitle: ${await p.title()}\n\n${clipped}`;
 }
 

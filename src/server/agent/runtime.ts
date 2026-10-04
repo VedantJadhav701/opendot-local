@@ -416,9 +416,9 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
 
 function rebuildContextMessages(dotId: string, exclude: string): ChatMessage[] {
   return repo
-    .conversationMessages(repo.currentConversation(dotId), 40)
+    .conversationMessages(repo.currentConversation(dotId), 15)
     .filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude)
-    .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
+    .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text.slice(0, 2500) }));
 }
 
 // ---------------------------------------------------------------- dot-to-dot
