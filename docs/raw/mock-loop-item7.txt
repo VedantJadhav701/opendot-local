@@ -1,0 +1,33 @@
+=== MOCK PROVIDER LOOP GUARD AND PRE-ROUTING TEST REPORT ===
+
+--- TEST 1: DUPLICATE TOOL CALL LOOP GUARD ---
+Total LLM Call Steps Executed: 6
+
+[LLM Step 0] (Tools available: 21)
+  Last Input Role: user
+  Content: find a best headphone under 2000 rs
+
+[LLM Step 1] (Tools available: 21)
+  Last Input Role: tool
+  Tool Output Content: Unknown tool list_files
+
+[LLM Step 2] (Tools available: 21)
+  Last Input Role: tool
+  Tool Output Content: Unknown tool list_files
+
+[LLM Step 3] (Tools available: 21)
+  Last Input Role: tool
+  Tool Output Content: Unknown tool list_files
+
+[LLM Step 4] (Tools available: 21)
+  Last Input Role: tool
+  Tool Output Content: Unknown tool list_files
+
+[LLM Step 5] (Tools available: 0)
+  Last Input Role: tool
+  Tool Output Content: Unknown tool list_files
+
+--- TEST 2: URL PRE-ROUTING BEFORE FIRST MODEL CALL ---
+First Model Call User Message Present: true
+User Message Content Sample:
+go to this url: https://zenodo.org/records/23047307 and download the paper

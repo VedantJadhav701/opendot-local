@@ -235,36 +235,40 @@ async function preprocessUrls(text: string, dotId: string): Promise<string> {
   const isPdfUrl = url.toLowerCase().endsWith(".pdf") || lowerText.includes("download");
 
   try {
-    if (isPdfUrl) {
-      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-      if (res.ok) {
-        const arrayBuf = await res.arrayBuffer();
-        const buf = Buffer.from(arrayBuf);
-        const { extractPdf, isPdfBuffer } = await import("../context/pdf");
-        if (isPdfBuffer(buf) || url.toLowerCase().endsWith(".pdf")) {
-          const pdfRes = await extractPdf(buf);
-          const { chunkText } = await import("../context/chunker");
-          const { saveChunks } = await import("../context/db");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
 
-          const fileName = url.split("/").pop() || "downloaded.pdf";
-          const taskId = `task_preroute_${Date.now()}`;
-          const chunks = chunkText({
-            text: pdfRes.fullText,
-            source: fileName,
-            taskId,
-            dotId,
-          });
-          saveChunks(chunks);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
 
-          const sampleText = pdfRes.fullText.slice(0, 5000);
-          return `${text}\n\n[Pre-fetched URL Content (${url}) - Extracted PDF ${pdfRes.pageCount} pages, ${chunks.length} chunks stored in chunk_store]:\n${sampleText}`;
-        }
-      }
-    } else {
-      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-      if (res.ok) {
-        const html = await res.text();
-        const cleanText = html.replace(/<script[\s\S]*?<\/script>/gi, "")
+    if (res.ok) {
+      const arrayBuf = await res.arrayBuffer();
+      const buf = Buffer.from(arrayBuf);
+      const { extractPdf, isPdfBuffer } = await import("../context/pdf");
+
+      if (isPdfBuffer(buf) || url.toLowerCase().endsWith(".pdf")) {
+        const pdfRes = await extractPdf(buf);
+        const { chunkText } = await import("../context/chunker");
+        const { saveChunks } = await import("../context/db");
+
+        const fileName = url.split("/").pop() || "downloaded.pdf";
+        const taskId = `task_preroute_${Date.now()}`;
+        const chunks = chunkText({
+          text: pdfRes.fullText,
+          source: fileName,
+          taskId,
+          dotId,
+        });
+        saveChunks(chunks);
+
+        const sampleText = pdfRes.fullText.slice(0, 5000);
+        return `${text}\n\n[Pre-fetched URL Content (${url}) - Extracted PDF ${pdfRes.pageCount} pages, ${chunks.length} chunks stored in chunk_store]:\n${sampleText}`;
+      } else {
+        const html = buf.toString("utf-8");
+        const cleanText = html
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
           .replace(/<style[\s\S]*?<\/style>/gi, "")
           .replace(/<[^>]+>/g, "\n")
           .replace(/\n\s*\n/g, "\n")
@@ -296,7 +300,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
   let turnPromptTokens = 0;
   let turnCompletionTokens = 0;
   let totalSteps = 0;
-  const seenCalls = new Set<string>();
+  const seenCalls = new Map<string, string>();
 
   for (let step = 0; step < MAX_STEPS; step++) {
     totalSteps = step + 1;
@@ -400,7 +404,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   return responseMsg;
 }
 
-async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, seenCalls: Set<string>): Promise<boolean> {
+async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, seenCalls: Map<string, string>): Promise<boolean> {
   for (; pending.index < pending.calls.length; pending.index++) {
     signal.throwIfAborted();
     savePending(dot.id, pending);
@@ -408,15 +412,16 @@ async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, see
 
     const callKey = `${call.function.name}:${call.function.arguments}`;
     if (seenCalls.has(callKey)) {
+      const firstResult = seenCalls.get(callKey) || "No result";
+      const summary = firstResult.slice(0, 150).replace(/\s+/g, " ");
       pending.outputs.push({
         role: "tool",
         name: call.function.name,
         tool_call_id: call.id,
-        content: "Tool already executed with these exact parameters",
+        content: `Already tried with identical arguments. Result: ${summary}. Choose a different action or answer.`,
       });
       continue;
     }
-    seenCalls.add(callKey);
 
     const def = findTool(call.function.name);
     const args = safeParse(call.function.arguments);
@@ -483,6 +488,7 @@ async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, see
     }
 
     const outputText = await execTool(dot, call, signal);
+    seenCalls.set(callKey, outputText);
     pending.outputs.push({ role: "tool", name: call.function.name, tool_call_id: call.id, content: outputText });
   }
   savePending(dot.id, pending);
