@@ -124,9 +124,13 @@ export class OllamaProvider implements LLMProvider {
       }));
     }
 
+    const optionsObj: Record<string, unknown> = {
+      num_ctx: req.context_length || 8192,
+    };
     if (typeof req.temperature === "number") {
-      body.options = { temperature: req.temperature };
+      optionsObj.temperature = req.temperature;
     }
+    body.options = optionsObj;
 
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: "POST",

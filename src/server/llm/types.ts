@@ -46,6 +46,7 @@ export type ChatRequest = {
   messages: ChatMessage[];
   tools?: ToolDefinition[];
   temperature?: number;
+  context_length?: number;
   stream?: boolean;
 };
 

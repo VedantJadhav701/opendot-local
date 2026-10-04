@@ -295,6 +295,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
       messages: fullMessages,
       tools: toolDefs,
       temperature: 0.2,
+      context_length: 8192,
     },
     (chunk) => {
       if (chunk.delta?.content) {
