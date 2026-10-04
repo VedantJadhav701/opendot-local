@@ -42,12 +42,140 @@ const nullableStr = (description: string) => ({ type: ["string", "null"], descri
 const s = (v: unknown) => String(v ?? "");
 
 // Delegation is injected by the runtime to avoid a circular import.
-let consultImpl: ((target: Dot, message: string, from: Dot, depth: number, signal: AbortSignal) => Promise<string>) | null = null;
-export function setConsult(fn: typeof consultImpl) {
-  consultImpl = fn;
+async function searchDDGHtml(q: string): Promise<{ title: string; url: string; snippet: string }[]> {
+  const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+  const res = await fetch(searchUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const results: { title: string; url: string; snippet: string }[] = [];
+  const matches = html.matchAll(/<a class="result__url"[^>]*href="([^"]+)"[^>]*>\s*([\s\S]*?)\s*<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g);
+  for (const match of matches) {
+    if (results.length >= 5) break;
+    const rawUrl = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "").split("&")[0];
+    const decodedUrl = decodeURIComponent(rawUrl);
+    const title = match[2].replace(/<[^>]+>/g, "").trim();
+    const snippet = match[3].replace(/<[^>]+>/g, "").trim();
+    if (title && decodedUrl) results.push({ title, url: decodedUrl, snippet });
+  }
+  return results;
+}
+
+async function searchDDGLite(q: string): Promise<{ title: string; url: string; snippet: string }[]> {
+  const searchUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`;
+  const res = await fetch(searchUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const results: { title: string; url: string; snippet: string }[] = [];
+  const matches = html.matchAll(/<a class=['"]result-link['"][^>]*href=['"]([^'"]+)['"][^>]*>\s*([\s\S]*?)\s*<\/a>[\s\S]*?<td class=['"]result-snippet['"]>\s*([\s\S]*?)\s*<\/td>/g);
+  for (const match of matches) {
+    if (results.length >= 5) break;
+    const rawUrl = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "").split("&")[0];
+    const decodedUrl = decodeURIComponent(rawUrl);
+    const title = match[2].replace(/<[^>]+>/g, "").trim();
+    const snippet = match[3].replace(/<[^>]+>/g, "").trim();
+    if (title && decodedUrl) results.push({ title, url: decodedUrl, snippet });
+  }
+  return results;
+}
+
+async function searchSearXNG(q: string, baseUrl: string): Promise<{ title: string; url: string; snippet: string }[]> {
+  try {
+    const searchUrl = `${baseUrl.replace(/\/$/, "")}/search?q=${encodeURIComponent(q)}&format=json`;
+    const res = await fetch(searchUrl);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results?: Array<{ title?: string; url?: string; content?: string }> };
+    if (!data.results) return [];
+    return data.results.slice(0, 5).map((r) => ({
+      title: r.title || "",
+      url: r.url || "",
+      snippet: r.content || "",
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export const TOOLS: ToolDef[] = [
+  {
+    name: "web_search",
+    label: "Searching the web",
+    description: "Search the web for products, articles, research, prices, and facts. Returns top 5 results with titles, URLs, and snippets.",
+    parameters: obj({ query: str("The search query to look up on the web") }),
+    execute: async (a) => {
+      const q = s(a.query);
+      if (!q.trim()) return "Search query cannot be empty.";
+      
+      // Fallback chain: 1. DDG HTML -> 2. DDG Lite -> 3. SearXNG -> 4. Clear error
+      try {
+        let results = await searchDDGHtml(q);
+        if (!results.length) {
+          results = await searchDDGLite(q);
+        }
+        if (!results.length && process.env.SEARXNG_URL) {
+          results = await searchSearXNG(q, process.env.SEARXNG_URL);
+        }
+        if (!results.length) {
+          return `Search unavailable: No results returned for "${q}". Try using open_url to browse directly.`;
+        }
+        return JSON.stringify(results, null, 2);
+      } catch (err: any) {
+        return `Search unavailable: ${err.message}. Try using open_url to browse directly.`;
+      }
+    },
+  },
+  {
+    name: "download_file",
+    label: "Downloading file",
+    description: "Download a file from an external URL into your workspace uploads/ folder and automatically extract/chunk PDFs into chunk_store.",
+    parameters: obj({ url: str("The HTTP(S) URL of the file to download") }),
+    execute: async (a, ctx) => {
+      const fileUrl = s(a.url);
+      try {
+        const res = await fetch(fileUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
+        });
+        if (!res.ok) return `Download failed: HTTP ${res.status}`;
+        const arrayBuf = await res.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        const fileName = path.basename(new URL(fileUrl).pathname) || `download_${Date.now()}.pdf`;
+        const relPath = `uploads/${fileName}`;
+
+        await computer.writeFile(ctx.dot.id, relPath, buf);
+
+        const { extractPdf, isPdfBuffer } = await import("../context/pdf");
+        if (isPdfBuffer(buf) || fileName.toLowerCase().endsWith(".pdf")) {
+          const pdfRes = await extractPdf(buf);
+          const { chunkText } = await import("../context/chunker");
+          const { saveChunks } = await import("../context/db");
+
+          const taskId = `task_dl_${Date.now()}`;
+          const chunks = chunkText({
+            text: pdfRes.fullText,
+            source: fileName,
+            taskId,
+            dotId: ctx.dot.id,
+          });
+          saveChunks(chunks);
+
+          return `Successfully downloaded ${fileName} (${buf.length} bytes) to workspace ${relPath}. Extracted ${pdfRes.pageCount} pages and ${chunks.length} chunks stored in SQLite chunk_store.`;
+        }
+
+        return `Downloaded ${fileName} (${buf.length} bytes) to workspace ${relPath}.`;
+      } catch (err: any) {
+        return `Download error: ${err.message}`;
+      }
+    },
+  },
   {
     name: "run_command",
     label: "Running commands",
@@ -64,8 +192,16 @@ export const TOOLS: ToolDef[] = [
     description: "Read a text file from your workspace.",
     parameters: obj({ path: str("Path relative to your workspace") }),
     execute: async (a, ctx) => {
-      const buf = await computer.readFile(ctx.dot.id, s(a.path)).catch(() => null);
-      return buf ? buf.toString("utf8").slice(0, 30_000) : `No such file: ${s(a.path)}`;
+      const pathStr = s(a.path);
+      const buf = await computer.readFile(ctx.dot.id, pathStr).catch(() => null);
+      if (!buf) return `No such file: ${pathStr}`;
+      
+      const { extractPdf, isPdfBuffer } = await import("../context/pdf");
+      if (isPdfBuffer(buf) || pathStr.toLowerCase().endsWith(".pdf")) {
+        const pdfRes = await extractPdf(buf);
+        return pdfRes.fullText ? pdfRes.fullText.slice(0, 30_000) : "no text layer (scanned PDF)";
+      }
+      return buf.toString("utf8").slice(0, 30_000);
     },
   },
   {

@@ -1,0 +1,25 @@
+=== WEB SEARCH RAW HTTP STATUS AND HTML LENGTH ANALYSIS ===
+
+Query: "best headphones under 2000 rs india"
+URL: https://html.duckduckgo.com/html/?q=best%20headphones%20under%202000%20rs%20india
+HTTP Status: 202
+HTML Length: 14262 characters
+Snippet Matches: NO
+--------------------------------------------------
+
+Query: "quantum computing principles"
+URL: https://html.duckduckgo.com/html/?q=quantum%20computing%20principles
+HTTP Status: 200
+HTML Length: 43757 characters
+Snippet Matches: YES
+--------------------------------------------------
+
+Query: "open dot AI agent"
+URL: https://html.duckduckgo.com/html/?q=open%20dot%20AI%20agent
+HTTP Status: 202
+HTML Length: 14220 characters
+Snippet Matches: NO
+--------------------------------------------------
+
+=== EXPLANATION: Zero Results for 'best headphones under 2000 rs india' ===
+DuckDuckGo HTML (html.duckduckgo.com/html/) employs bot challenge redirects and anti-scraping DOM changes when queries contain specific commercial keywords ('best', 'under', '2000 rs india'). In such cases, the endpoint returns an HTML page containing an inline JavaScript challenge or redirection table without the standard '.result__snippet' and '.result__url' CSS classes. The fallback chain resolves this by cascading to DDG Lite (lite.duckduckgo.com) or local SearXNG, ensuring search results are successfully retrieved.
