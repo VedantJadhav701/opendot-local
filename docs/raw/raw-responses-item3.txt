@@ -1,0 +1,11 @@
+--- RAW RESPONSE 1 (Before/After) ---
+BEFORE: <think>I need to search for headphones under 2000 rupees.</think>Here are the best headphones.
+AFTER: Here are the best headphones.
+
+--- RAW RESPONSE 2 (Before/After) ---
+BEFORE: Analyzing options carefully...</think>The best headphone under 2000 INR is Boat Bassheads 225.
+AFTER: The best headphone under 2000 INR is Boat Bassheads 225.
+
+--- RAW RESPONSE 3 (Before/After) ---
+BEFORE: Direct response with no thinking tags.
+AFTER: Direct response with no thinking tags.
