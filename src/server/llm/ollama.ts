@@ -111,6 +111,8 @@ export class OllamaProvider implements LLMProvider {
       model: req.model,
       messages: formattedMessages,
       stream: true,
+      think: false,
+      keep_alive: "30m",
     };
 
     if (req.tools && req.tools.length > 0) {

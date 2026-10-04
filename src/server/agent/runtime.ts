@@ -24,7 +24,7 @@ type Pending = {
 type InboxItem = { text: string; trigger: Trigger; conversationId: string; attachments?: Attachment[] };
 type RunState = { running: boolean; abort: AbortController | null; inbox: InboxItem[]; after: (() => void)[] };
 
-const MAX_STEPS = 60;
+const MAX_STEPS = 6;
 const g = globalThis as unknown as { __dotsRuns?: Map<string, RunState> };
 const runs = (g.__dotsRuns ??= new Map());
 const state = (dotId: string): RunState => {

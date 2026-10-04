@@ -161,19 +161,59 @@ export async function lastScreenshot(dotId: string): Promise<Buffer | null> {
   return s ? (await s).lastShot : null;
 }
 
+const visitedUrls = new Map<string, Map<string, string>>();
+
+function isLocalhost(url: string): boolean {
+  try {
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.endsWith(".local")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function openUrl(dotId: string, url: string): Promise<string> {
-  const p = await page(dotId, false);
   const target = /^https?:\/\//.test(url) ? url : `https://${url}`;
+
+  if (isLocalhost(target)) {
+    return `Blocked: Access to local network address (${target}) is restricted.`;
+  }
+
+  let dotVisited = visitedUrls.get(dotId);
+  if (!dotVisited) {
+    dotVisited = new Map();
+    visitedUrls.set(dotId, dotVisited);
+  }
+
+  if (dotVisited.has(target)) {
+    const cached = dotVisited.get(target);
+    return `Already visited ${target}. Cached summary:\n${cached}\n\nDo not re-visit this URL. Provide your final response now.`;
+  }
+
+  const p = await page(dotId, false);
   await p.goto(target, { waitUntil: "domcontentloaded", timeout: 45_000 });
   await p.waitForTimeout(800);
   await screenshot(dotId);
-  return `Opened ${p.url()} — "${await p.title()}"`;
+
+  const text = await p.evaluate(() => document.body?.innerText ?? "");
+  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 2_500);
+  dotVisited.set(target, clipped);
+
+  return `Opened ${p.url()} — "${await p.title()}". Page Content:\n${clipped}\n\nYou have read the page. Provide your final response now.`;
 }
 
 export async function readPage(dotId: string): Promise<string> {
   const p = await page(dotId);
   const text = await p.evaluate(() => document.body?.innerText ?? "");
-  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 4_000);
+  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 2_500);
   return `URL: ${p.url()}\nTitle: ${await p.title()}\n\n${clipped}`;
 }
 
