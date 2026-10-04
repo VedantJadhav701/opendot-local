@@ -520,9 +520,19 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
 
 function rebuildContextMessages(dotId: string, exclude: string): ChatMessage[] {
   return repo
-    .conversationMessages(repo.currentConversation(dotId), 15)
+    .conversationMessages(repo.currentConversation(dotId), 10)
     .filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude)
-    .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text.slice(0, 2500) }));
+    .map((m) => {
+      if (m.role === "user") {
+        return { role: "user" as const, content: m.text.slice(0, 1000) };
+      }
+      const summaryText = m.text
+        .replace(/\[Pre-fetched URL Content[\s\S]*?\]/g, "")
+        .replace(/\[Attached PDF Content[\s\S]*?\]/g, "")
+        .trim();
+      const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
+      return { role: "assistant" as const, content: `[Prior turn summary]: ${shortSummary}` };
+    });
 }
 
 // ---------------------------------------------------------------- dot-to-dot

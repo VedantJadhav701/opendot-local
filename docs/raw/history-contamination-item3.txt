@@ -1,0 +1,15 @@
+=== ITEM 3 HISTORY CONTAMINATION REPORT ===
+Timestamp: 2026-10-05T04:49:30.000Z
+
+1. PREVIOUS IMPLEMENTATION IN rebuildContextMessages:
+- Fetched up to 15 messages from SQLite table `messages` via `repo.conversationMessages(convId, 15)`.
+- Filtered for roles `user` and `dot`.
+- Passed up to 2500 characters per prior assistant message (`m.text.slice(0, 2500)`).
+- Weakness: When prior turns contained full pre-fetched page HTML, PDF chunks, or long multi-step search outputs, 2500 chars per message flooded the model context with old topics, causing topic contamination and hallucinated cross-task references.
+
+2. UPDATED IMPLEMENTATION:
+- Fetches up to 10 past messages.
+- User messages: preserved up to 1000 characters (`m.text.slice(0, 1000)`).
+- Assistant messages: stripped of heavy inline pre-fetched attachments/chunks and capped at 200 characters (`[Prior turn summary]: ${shortSummary}`).
+- Intermediate tool output messages (`role: "tool"` / `role: "activity"`) are NOT carried across turn boundaries.
+- Result: Past conversation context remains concise and high-level, preventing old search results and task outputs from contaminating new user prompts.
