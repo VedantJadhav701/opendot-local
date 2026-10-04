@@ -1,0 +1,30 @@
+=== ZENODO DIAGNOSTIC TRACE ===
+URL: https://zenodo.org/api/files/23cb94edce629b576f8b369208b6d857/PatchMLPTS.pdf
+
+--- REQUEST HEADERS SENT ---
+{
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "Accept": "*/*"
+}
+
+--- RESPONSE STATUS ---
+Status: 403 Forbidden
+Final URL: https://zenodo.org/api/files/23cb94edce629b576f8b369208b6d857/PatchMLPTS.pdf
+
+--- RESPONSE HEADERS ---
+{
+  "content-length": "763",
+  "content-type": "text/html; charset=utf-8",
+  "date": "Sun, 04 Oct 2026 22:55:19 GMT",
+  "server": "nginx"
+}
+
+--- FIRST 500 CHARACTERS OF BODY ---
+
+          <html>
+          <head><title>403 Forbidden</title></head>
+          <body style="max-width: 600px; margin: 40px auto; padding: 0 20px; line-height: 1.6;">
+          <h1>403 Forbidden</h1>
+          <hr>
+          <p>Access to this resource has been restricted due to unusual traffic from your network.</p>
+          <p>If you believe this is a mistake, please <a href="/support?ref=7569baa3b20ea4e8690498868031605a&category=problem-report">contact our support line</a> and we will look in
