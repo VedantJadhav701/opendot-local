@@ -13,7 +13,7 @@ const geistSans = localFont({ src: "../fonts/Geist-Variable.woff2", weight: "100
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Open Dot",
+  title: "Open Dot Local",
   description: "Open-source personal AI agents that work on their own, on their own computers",
 };
 

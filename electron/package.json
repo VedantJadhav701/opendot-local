@@ -1,6 +1,6 @@
 {
   "name": "open-dot",
-  "productName": "Open Dot",
+  "productName": "Open Dot Local",
   "version": "0.1.0",
   "description": "Open-source personal AI agents that work on their own",
   "main": "main.mjs",

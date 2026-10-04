@@ -42,7 +42,7 @@ function loginPath() {
 function startServer() {
   const dir = app.isPackaged ? path.join(process.resourcesPath, "server") : path.join(import.meta.dirname, "..", ".next", "standalone");
   if (!fs.existsSync(path.join(dir, "server.js"))) {
-    dialog.showErrorBox("Open Dot", `The app server is missing (${dir}). Run \`pnpm desktop:prepare\` first.`);
+    dialog.showErrorBox("Open Dot Local", `The app server is missing (${dir}). Run \`pnpm desktop:prepare\` first.`);
     app.exit(1);
     return;
   }
@@ -67,7 +67,7 @@ function startServer() {
   server.on("exit", (code) => {
     server = null;
     if (quitting) return;
-    dialog.showErrorBox("Open Dot", `The app server stopped (code ${code}). Details are in ${path.join(app.getPath("userData"), "server.log")}.`);
+    dialog.showErrorBox("Open Dot Local", `The app server stopped (code ${code}). Details are in ${path.join(app.getPath("userData"), "server.log")}.`);
     app.quit();
   });
 }
@@ -91,7 +91,7 @@ const LOADING = `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype ht
   .dots span:nth-child(1){background:#0a0a0a}.dots span:nth-child(2){background:#51a2ff;animation-delay:.15s}.dots span:nth-child(3){background:#c8f169;animation-delay:.3s}
   @keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   p{margin:0;font-size:13px;color:#0a0a0a8c}
-</style></head><body><div class="dots"><span></span><span></span><span></span></div><p>Starting Open Dot…</p></body></html>`)}`;
+</style></head><body><div class="dots"><span></span><span></span><span></span></div><p>Starting Open Dot Local…</p></body></html>`)}`;
 
 function createWindow() {
   win = new BrowserWindow({
