@@ -11,17 +11,16 @@ export function sanitizeResponseUrls(text: string, contextMessages: ChatMessage[
   const urlRegex = /https?:\/\/[^\s)\]]+/gi;
 
   for (const m of contextMessages) {
-    if (m.role === "user" || m.role === "tool") {
-      const matches = m.content.match(urlRegex) || [];
-      for (const url of matches) {
-        const clean = url.replace(/[.,;)]+$/, "").toLowerCase();
-        allowedUrls.add(clean);
-        try {
-          const parsed = new URL(clean);
-          allowedUrls.add(parsed.hostname.toLowerCase());
-          allowedUrls.add(parsed.origin.toLowerCase());
-        } catch {}
-      }
+    const rawContent = typeof m.content === "string" ? m.content : JSON.stringify(m);
+    const matches = rawContent.match(urlRegex) || [];
+    for (const url of matches) {
+      const clean = url.replace(/[.,;)]+$/, "").toLowerCase();
+      allowedUrls.add(clean);
+      try {
+        const parsed = new URL(clean);
+        allowedUrls.add(parsed.hostname.toLowerCase());
+        allowedUrls.add(parsed.origin.toLowerCase());
+      } catch {}
     }
   }
 
