@@ -1,3 +1,6 @@
+import http from "node:http";
+import https from "node:https";
+import { URL } from "node:url";
 import type { ChatChunk, ChatMessage, ChatRequest, FunctionToolCall, LLMProvider, ModelInfo } from "./types";
 
 export class OllamaProvider implements LLMProvider {
@@ -127,121 +130,162 @@ export class OllamaProvider implements LLMProvider {
     }
 
     const optionsObj: Record<string, unknown> = {
-      num_ctx: req.context_length || 8192,
+      num_ctx: req.context_length || 4096,
+      num_predict: 600,
     };
     if (typeof req.temperature === "number") {
       optionsObj.temperature = req.temperature;
     }
     body.options = optionsObj;
 
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal,
-    });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => response.statusText);
-      throw new Error(`Ollama error (${response.status}): ${errText}`);
-    }
-
-    if (!response.body) {
-      throw new Error("No response body received from Ollama");
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    const startTime = Date.now();
+    let ttftMs = 0;
+    let promptTokens = 0;
+    let completionTokens = 0;
     let accumulatedText = "";
     const accumulatedToolCalls: FunctionToolCall[] = [];
     let buffer = "";
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+    await new Promise<void>((resolve, reject) => {
+      const targetUrl = new URL(`${this.baseUrl}/api/chat`);
+      const transport = targetUrl.protocol === "https:" ? https : http;
+      const bodyStr = JSON.stringify(body);
 
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+      const request = transport.request(
+        targetUrl,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(bodyStr),
+          },
+        },
+        (res) => {
+          if (res.statusCode && res.statusCode >= 400) {
+            let errText = "";
+            res.on("data", (c) => (errText += c));
+            res.on("end", () => reject(new Error(`Ollama error (${res.statusCode}): ${errText}`)));
+            return;
+          }
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
+          res.setEncoding("utf8");
+          res.on("data", (chunkData: string) => {
+            buffer += chunkData;
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
 
-          try {
-            const parsed = JSON.parse(trimmed) as {
-              message?: {
-                content?: string;
-                tool_calls?: Array<{
-                  function?: {
-                    name?: string;
-                    arguments?: Record<string, unknown> | string;
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+
+              try {
+                const parsed = JSON.parse(trimmed) as {
+                  message?: {
+                    content?: string;
+                    tool_calls?: Array<{
+                      function?: {
+                        name?: string;
+                        arguments?: Record<string, unknown> | string;
+                      };
+                    }>;
                   };
-                }>;
-              };
-              done?: boolean;
-              done_reason?: string;
-            };
+                  done?: boolean;
+                  done_reason?: string;
+                  prompt_eval_count?: number;
+                  eval_count?: number;
+                };
 
-            if (parsed.message?.content) {
-              accumulatedText += parsed.message.content;
-              onChunk({ delta: { content: parsed.message.content } });
-            }
-
-            if (parsed.message?.tool_calls) {
-              for (const tc of parsed.message.tool_calls) {
-                if (tc.function?.name) {
-                  const callId = `call_${Math.random().toString(36).substring(2, 9)}`;
-                  const argsStr =
-                    typeof tc.function.arguments === "string"
-                      ? tc.function.arguments
-                      : JSON.stringify(tc.function.arguments || {});
-
-                  const toolCall: FunctionToolCall = {
-                    id: callId,
-                    type: "function",
-                    function: {
-                      name: tc.function.name,
-                      arguments: argsStr,
-                    },
-                  };
-
-                  accumulatedToolCalls.push(toolCall);
-                  onChunk({
-                    delta: {
-                      tool_calls: [
-                        {
-                          id: callId,
-                          type: "function",
-                          function: {
-                            name: tc.function.name,
-                            arguments: argsStr,
-                          },
-                        },
-                      ],
-                    },
-                  });
+                if (parsed.message?.content || (parsed.message?.tool_calls && parsed.message.tool_calls.length > 0)) {
+                  if (ttftMs === 0) {
+                    ttftMs = Date.now() - startTime;
+                  }
                 }
+
+                if (parsed.message?.content) {
+                  accumulatedText += parsed.message.content;
+                  onChunk({ delta: { content: parsed.message.content } });
+                }
+
+                if (parsed.message?.tool_calls) {
+                  for (const tc of parsed.message.tool_calls) {
+                    if (tc.function?.name) {
+                      const callId = `call_${Math.random().toString(36).substring(2, 9)}`;
+                      const argsStr =
+                        typeof tc.function.arguments === "string"
+                          ? tc.function.arguments
+                          : JSON.stringify(tc.function.arguments || {});
+
+                      const toolCall: FunctionToolCall = {
+                        id: callId,
+                        type: "function",
+                        function: {
+                          name: tc.function.name,
+                          arguments: argsStr,
+                        },
+                      };
+
+                      accumulatedToolCalls.push(toolCall);
+                      onChunk({
+                        delta: {
+                          tool_calls: [
+                            {
+                              id: callId,
+                              type: "function",
+                              function: {
+                                name: tc.function.name,
+                                arguments: argsStr,
+                              },
+                            },
+                          ],
+                        },
+                      });
+                    }
+                  }
+                }
+
+                if (typeof parsed.prompt_eval_count === "number") promptTokens = parsed.prompt_eval_count;
+                if (typeof parsed.eval_count === "number") completionTokens = parsed.eval_count;
+
+                if (parsed.done) {
+                  onChunk({ finishReason: parsed.done_reason || "stop" });
+                }
+              } catch {
+                // Ignore incomplete line parse errors
               }
             }
+          });
 
-            if (parsed.done) {
-              onChunk({ finishReason: parsed.done_reason || "stop" });
-            }
-          } catch {
-            // Ignore incomplete line parse errors
-          }
+          res.on("end", () => resolve());
+          res.on("error", (err) => reject(err));
         }
+      );
+
+      request.on("error", (err) => reject(err));
+
+      if (signal) {
+        signal.addEventListener("abort", () => {
+          request.destroy();
+          reject(signal.reason || new Error("Aborted"));
+        });
       }
-    } finally {
-      reader.releaseLock();
-    }
+
+      request.write(bodyStr);
+      request.end();
+    });
+
+    const totalTimeMs = Date.now() - startTime;
+    if (ttftMs === 0) ttftMs = totalTimeMs;
 
     return {
       role: "assistant",
       content: accumulatedText,
       ...(accumulatedToolCalls.length > 0 ? { tool_calls: accumulatedToolCalls } : {}),
+      metrics: {
+        ttftMs,
+        totalTimeMs,
+        promptTokens,
+        completionTokens,
+      },
     };
   }
 }

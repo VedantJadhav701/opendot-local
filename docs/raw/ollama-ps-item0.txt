@@ -1,0 +1,2 @@
+NAME                      ID              SIZE      PROCESSOR          CONTEXT    UNTIL              
+qwen3:4b-instruct-2507    a9c2f5d5368b    3.5 GB    33%/67% CPU/GPU    4096       4 minutes from now    
