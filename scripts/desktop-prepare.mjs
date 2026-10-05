@@ -12,20 +12,56 @@ fs.cpSync(path.join(root, "public"), path.join(out, "public"), { recursive: true
 fs.cpSync(path.join(root, ".next/static"), path.join(out, ".next/static"), { recursive: true });
 
 const require = createRequire(path.join(root, "package.json"));
+
+function getPackageDir(pkgName) {
+  const directPath = path.join(root, "node_modules", pkgName);
+  if (fs.existsSync(directPath)) return fs.realpathSync(directPath);
+
+  const pnpmDir = path.join(root, "node_modules/.pnpm");
+  if (fs.existsSync(pnpmDir)) {
+    const escaped = pkgName.replace("/", "+");
+    for (const d of fs.readdirSync(pnpmDir)) {
+      if (d.startsWith(escaped + "@")) {
+        const candidate = path.join(pnpmDir, d, "node_modules", pkgName);
+        if (fs.existsSync(candidate)) return fs.realpathSync(candidate);
+      }
+    }
+  }
+
+  try {
+    const resolved = require.resolve(pkgName);
+    let curr = path.dirname(resolved);
+    while (curr && curr !== path.dirname(curr)) {
+      if (fs.existsSync(path.join(curr, "package.json"))) return fs.realpathSync(curr);
+      curr = path.dirname(curr);
+    }
+  } catch {}
+  return null;
+}
+
 const EXTERNALS = ["playwright", "playwright-core", "pdf-parse", "pdfjs-dist", "@swc/helpers", "@next/env"];
 const nextNodeModules = path.join(out, ".next/node_modules");
 
 for (const pkg of EXTERNALS) {
   try {
-    const pkgJson = require.resolve(`${pkg}/package.json`);
-    const realDir = fs.realpathSync(path.dirname(pkgJson));
+    const realDir = getPackageDir(pkg);
+    if (!realDir) {
+      console.warn(`Could not resolve directory for ${pkg}`);
+      continue;
+    }
     
     const destRoot = path.join(out, "node_modules", pkg);
-    fs.cpSync(realDir, destRoot, { recursive: true, dereference: true });
+    const destRootReal = fs.existsSync(destRoot) ? fs.realpathSync(destRoot) : destRoot;
+    if (realDir !== destRootReal) {
+      fs.cpSync(realDir, destRoot, { recursive: true, dereference: true });
+    }
 
     if (fs.existsSync(nextNodeModules)) {
       const destNext = path.join(nextNodeModules, pkg);
-      fs.cpSync(realDir, destNext, { recursive: true, dereference: true });
+      const destNextReal = fs.existsSync(destNext) ? fs.realpathSync(destNext) : destNext;
+      if (realDir !== destNextReal) {
+        fs.cpSync(realDir, destNext, { recursive: true, dereference: true });
+      }
     }
     console.log(`copied ${pkg} to standalone node_modules & .next/node_modules`);
   } catch (err) {
@@ -33,7 +69,6 @@ for (const pkg of EXTERNALS) {
   }
 }
 
-const require = createRequire(path.join(root, "package.json"));
 const nextDir = fs.realpathSync(path.dirname(require.resolve("next/package.json")));
 fs.cpSync(path.join(nextDir, "dist/compiled/next-server"), path.join(out, path.relative(root, nextDir), "dist/compiled/next-server"), {
   recursive: true,
