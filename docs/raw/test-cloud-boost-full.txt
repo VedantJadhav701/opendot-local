@@ -1,0 +1,12 @@
+=== Testing Cloud Boost: Rate Limiter, SSE Provider, & Network Body Inspection ===
+--- 1. Rate Limiter Tests ---
+PASS: Per-turn call budget enforced correctly.
+[cloud-rate-limiter] 429 Rate limited. Backoff retry after 1000ms
+PASS: 429 Retry-After header handled backoff (1001ms elapsed).
+--- 2. Mock SSE Server & HTTP Request Body Inspection ---
+PASS: Provider listModels returned verified model ID: moonshotai/kimi-k3
+PASS: SSE ChatStream completed successfully: Hello from mock cloud!
+--- 3. HTTP Request Body Redaction Inspection ---
+Inspected HTTP Request Content Body: "Read file from [REDACTED_LOCAL_PATH] with password [REDACTED_PASSWORD]"
+PASS: Verified 100% clean redaction in HTTP request body. No passwords or local absolute paths leaked.
+All Cloud Boost Rate Limiter, SSE Provider, & Network Inspection Tests PASSED!
