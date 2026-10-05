@@ -47,8 +47,35 @@ export function systemPrompt(dot: Dot, trigger: Trigger): string {
 
   const todayStr = new Date().toISOString().split("T")[0];
 
+  const rulesBlock = rules.length
+    ? `\n# User Rules\n` + rules.map((r) => `- When you want to ${r.action}: ${decisionText[r.decision]}.`).join("\n") + `\n`
+    : "";
+
+  const siteBlock = sites.length
+    ? `Saved logins exist for: ${sites.join(", ")}. On the site's sign-in page, call sign_in.`
+    : "No saved logins yet.";
+
+  const memoryBlock = memories.length
+    ? memories.map((m) => `- [${m.id}] ${m.text}`).join("\n")
+    : "(empty)";
+
+  const skillBlock = skills.length
+    ? skills.map((k) => `- ${k.name}: ${k.description}`).join("\n")
+    : "(none yet)";
+
+  const routineBlock = routines.length
+    ? routines.map((r) => `- [${r.id}] ${r.name} — "${r.schedule}": ${r.instruction}`).join("\n")
+    : "(none)";
+
+  const otherDotsBlock = others.length
+    ? others.map((d) => `- ${d.name}${d.purpose ? `: ${d.purpose}` : ""}`).join("\n")
+    : "(you're the only dot)";
+
+  const purposeBlock = dot.purpose ? `\nYour job: ${dot.purpose}\n` : "";
+  const instructionsBlock = dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : "";
+
   return `You are ${dot.name}, a "dot" — a personal AI agent that works on its own on behalf of your user.
-${dot.purpose ? `\nYour job: ${dot.purpose}\n` : ""}${dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : ""}
+${purposeBlock}${instructionsBlock}
 # Your computer & tools
 You have your own computer: ${box}. Shell: ${osShell}.
 Tool schemas are provided separately for this request. Use only exposed tools.
@@ -75,25 +102,25 @@ Tool schemas are provided separately for this request. Use only exposed tools.
   * Rank candidates using: Price (<= Budget) + Rating + Review Count + Features + Source Reliability.
 - If a required tool (e.g. web search) is unavailable or fails, explicitly state tool unavailability instead of asking the user for missing product details.
 - For shopping/search tasks: list at least 3 candidate products taken only from tool results. For each product include: Name, Price, Rating & Rating Count (or explicitly state if missing), and Link. Mark sponsored items if visible ([Sponsored]). State what "best" criteria is based on.
-- Answer style: No emoji. No closing offers or polite follow-ups (such as "Let me know if...", "Feel free to...", "Hope this helps"). Keep answers short and direct.
+- Answer style: No emoji. No closing offers or polite follow-ups (such as "Let menu know if...", "Feel free to...", "Hope this helps"). Keep answers short and direct.
 - When asked to browse or explain a URL, read page content and provide a clear summary immediately.
 - When asked to play a video or song on YouTube: search or navigate directly using open_url or click on the video thumbnail to start playback in the browser. Never claim you cannot play media.
 - Finish with a concise result: lead with the answer, then key details and sources/links.
-${rules.length ? `\n# User Rules\n${rules.map((r) => `- When you want to ${r.action}: ${decisionText[r.decision]}.`).join("\n")}\n` : ""}
+${rulesBlock}
 # Passwords
-${sites.length ? `Saved logins exist for: ${sites.join(", ")}. On the site's sign-in page, call sign_in.` : "No saved logins yet."} Never ask the user to paste passwords in chat.
+${siteBlock} Never ask the user to paste passwords in chat.
 
 # Memory
-${memories.length ? memories.map((m) => `- [${m.id}] ${m.text}`).join("\n") : "(empty)"}
+${memoryBlock}
 
 # Skills
-${skills.length ? skills.map((k) => `- ${k.name}: ${k.description}`).join("\n") : "(none yet)"}
+${skillBlock}
 
 # Routines
-${routines.length ? routines.map((r) => `- [${r.id}] ${r.name} — "${r.schedule}": ${r.instruction}`).join("\n") : "(none)"}
+${routineBlock}
 
 # Other dots
-${others.length ? others.map((d) => `- ${d.name}${d.purpose ? `: ${d.purpose}` : ""}`).join("\n") : "(you're the only dot)"}
+${otherDotsBlock}
 
 # Now
 ${todayStr} (timezone ${tz}).`;
