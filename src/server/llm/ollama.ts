@@ -13,6 +13,74 @@ export function stripThinking(text: string): string {
   return clean;
 }
 
+export class ThinkStreamFilter {
+  private inThinkMode = false;
+  private buffer = "";
+
+  public process(chunk: string): string {
+    this.buffer += chunk;
+    let output = "";
+
+    while (this.buffer.length > 0) {
+      if (this.inThinkMode) {
+        const endIdx = this.buffer.toLowerCase().indexOf("</think>");
+        if (endIdx !== -1) {
+          this.inThinkMode = false;
+          this.buffer = this.buffer.slice(endIdx + 8);
+        } else {
+          const partialClose = this.getPartialMatch(this.buffer, "</think>");
+          if (partialClose > 0) {
+            this.buffer = this.buffer.slice(-partialClose);
+          } else {
+            this.buffer = "";
+          }
+          break;
+        }
+      } else {
+        const startIdx = this.buffer.toLowerCase().indexOf("<think>");
+        if (startIdx !== -1) {
+          output += this.buffer.slice(0, startIdx);
+          this.inThinkMode = true;
+          this.buffer = this.buffer.slice(startIdx + 7);
+        } else {
+          const partialOpen = this.getPartialMatch(this.buffer, "<think>");
+          if (partialOpen > 0) {
+            output += this.buffer.slice(0, this.buffer.length - partialOpen);
+            this.buffer = this.buffer.slice(-partialOpen);
+            break;
+          } else {
+            output += this.buffer;
+            this.buffer = "";
+          }
+        }
+      }
+    }
+
+    return output;
+  }
+
+  public flush(): string {
+    if (this.inThinkMode) {
+      this.buffer = "";
+      return "";
+    }
+    const rem = this.buffer;
+    this.buffer = "";
+    return rem;
+  }
+
+  private getPartialMatch(str: string, target: string): number {
+    const lowerStr = str.toLowerCase();
+    const lowerTarget = target.toLowerCase();
+    for (let len = Math.min(str.length, target.length - 1); len > 0; len--) {
+      if (lowerStr.endsWith(lowerTarget.slice(0, len))) {
+        return len;
+      }
+    }
+    return 0;
+  }
+}
+
 type QueueTask<T> = {
   fn: (queueWaitMs: number) => Promise<T>;
   resolve: (val: T) => void;
@@ -186,6 +254,7 @@ export class OllamaProvider implements LLMProvider {
       let accumulatedText = "";
       const accumulatedToolCalls: FunctionToolCall[] = [];
       let buffer = "";
+      const thinkFilter = new ThinkStreamFilter();
 
       await new Promise<void>((resolve, reject) => {
         const targetUrl = new URL(`${this.baseUrl}/api/chat`);
@@ -243,8 +312,11 @@ export class OllamaProvider implements LLMProvider {
                   }
 
                   if (parsed.message?.content) {
-                    accumulatedText += parsed.message.content;
-                    onChunk({ delta: { content: parsed.message.content } });
+                    const filteredContent = thinkFilter.process(parsed.message.content);
+                    if (filteredContent) {
+                      accumulatedText += filteredContent;
+                      onChunk({ delta: { content: filteredContent } });
+                    }
                   }
 
                   if (parsed.message?.tool_calls) {
@@ -288,6 +360,11 @@ export class OllamaProvider implements LLMProvider {
                   if (typeof parsed.eval_count === "number") completionTokens = parsed.eval_count;
 
                   if (parsed.done) {
+                    const flushed = thinkFilter.flush();
+                    if (flushed) {
+                      accumulatedText += flushed;
+                      onChunk({ delta: { content: flushed } });
+                    }
                     onChunk({ finishReason: parsed.done_reason || "stop" });
                   }
                 } catch {

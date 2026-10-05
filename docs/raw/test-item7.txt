@@ -1,0 +1,6 @@
+=== Testing Item 7: ThinkStreamFilter & Split Chunks ===
+Test 1 (Single chunk): "Answer:  42"
+Test 2 (Split <think> open tag): "Header text  Body text"
+Test 3 (Split </think> close tag): "Start Final answer"
+Test 4 (Non-think XML tags): "<div>Hello <b>world</b></div>"
+All ThinkStreamFilter Tests PASSED!
