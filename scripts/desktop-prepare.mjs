@@ -32,6 +32,10 @@ const swcHelpersDir = fs.realpathSync(path.dirname(require.resolve("@swc/helpers
 fs.cpSync(swcHelpersDir, path.join(out, path.relative(root, swcHelpersDir)), { recursive: true });
 console.log("copied @swc/helpers");
 
+const nextEnvDir = fs.realpathSync(path.dirname(require.resolve("@next/env/package.json")));
+fs.cpSync(nextEnvDir, path.join(out, path.relative(root, nextEnvDir)), { recursive: true });
+console.log("copied @next/env");
+
 // Playwright mentions electron, so tracing drags it in; the app already runs inside Electron.
 const pnpmDir = path.join(out, "node_modules/.pnpm");
 for (const d of fs.existsSync(pnpmDir) ? fs.readdirSync(pnpmDir) : []) if (/^electron(-builder)?@/.test(d)) fs.rmSync(path.join(pnpmDir, d), { recursive: true, force: true });
