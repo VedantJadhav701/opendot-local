@@ -30,8 +30,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/composio-community/open-dot.git
-cd open-dot
+git clone https://github.com/VedantJadhav701/open-dot-local.git
+cd open-dot-local
 
 # Install dependencies
 pnpm install
