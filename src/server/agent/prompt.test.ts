@@ -28,11 +28,11 @@ function runItem8And9Tests() {
   }
   console.log("PASS: Hardened directives present.");
 
-  // 2. Dynamic Tool List check
-  if (!prompt.includes("custom_tool_1: Custom tool 1 description") || !prompt.includes("custom_tool_2: Custom tool 2 description")) {
-    throw new Error("FAIL: Active tool list was not dynamically injected!");
+  // 2. Separate Tool Schema Notice check
+  if (!prompt.includes("Tool schemas are provided separately for this request. Use only exposed tools.")) {
+    throw new Error("FAIL: Tool schema separate notice is missing!");
   }
-  console.log("PASS: Dynamic tool list correctly rendered.");
+  console.log("PASS: Separate tool schema notice correctly present.");
 
   // 3. Rounded Date check (YYYY-MM-DD, no seconds precision)
   const todayStr = new Date().toISOString().split("T")[0];

@@ -749,4 +749,147 @@ export function toolsForDot(dot: Dot): ToolDef[] {
   ];
 }
 
+const TOOL_GROUPS = {
+  general: [
+    "web_search",
+    "open_url",
+    "read_page",
+    "inspect_page_links",
+    "read_file",
+    "search_documents",
+    "read_document",
+    "find_in_documents",
+    "ask_user",
+    "request_approval",
+    "remember",
+    "use_skill",
+  ],
+
+  web: [
+    "web_search",
+    "open_url",
+    "read_page",
+    "inspect_page_links",
+    "find_on_page",
+    "summarize_site",
+    "compare_sources",
+  ],
+
+  shopping: [
+    "product_search",
+    "product_details",
+    "price_compare",
+    "review_search",
+    "web_search",
+    "open_url",
+    "read_page",
+    "inspect_page_links",
+    "compare_sources",
+  ],
+
+  browser: [
+    "open_browser",
+    "open_current_browser",
+    "open_url",
+    "read_page",
+    "inspect_page_links",
+    "find_on_page",
+    "click",
+    "type_text",
+    "sign_in",
+  ],
+
+  files: [
+    "read_file",
+    "write_file",
+    "download_file",
+    "share_file",
+    "search_documents",
+    "read_document",
+    "find_in_documents",
+  ],
+
+  coding: [
+    "run_command",
+    "read_file",
+    "write_file",
+    "download_file",
+    "search_documents",
+    "read_document",
+    "find_in_documents",
+  ],
+
+  memory: [
+    "remember",
+    "forget",
+    "save_skill",
+    "use_skill",
+  ],
+
+  automation: [
+    "create_routine",
+    "delete_routine",
+    "send_update",
+  ],
+
+  communication: [
+    "send_update",
+    "message_dot",
+    "ask_user",
+    "request_approval",
+  ],
+} as const;
+
+export function toolsForRequest(dot: Dot, request: string): ToolDef[] {
+  const text = request.toLowerCase();
+
+  const names = new Set<string>([
+    ...TOOL_GROUPS.general,
+    "ask_user",
+    "request_approval",
+  ]);
+
+  const add = (group: keyof typeof TOOL_GROUPS) => {
+    for (const name of TOOL_GROUPS[group]) names.add(name);
+  };
+
+  const isShopping =
+    /\b(headphone|headphones|earbuds|earphones|laptop|phone|smartphone|monitor|keyboard|mouse|camera|product|buy|price|under\s*₹?\s*\d+|under\s*\d+\s*(rs|inr|rupees))\b/i.test(text);
+
+  const isWeb =
+    /\b(browse|search|look up|lookup|research|website|web|url|explain|find|compare|source|article|documentation)\b/i.test(text);
+
+  const isBrowser =
+    /\b(click|type|open browser|chrome|brave|login|sign in|button|page|website)\b/i.test(text);
+
+  const isFiles =
+    /\b(file|folder|document|pdf|xlsx|csv|docx|read file|write file|download|upload)\b/i.test(text);
+
+  const isCoding =
+    /\b(code|coding|program|script|python|javascript|typescript|npm|node|git|github|terminal|command|compile|build|debug|error)\b/i.test(text);
+
+  const isMemory =
+    /\b(remember|forget|memory|save this|don't forget)\b/i.test(text);
+
+  const isAutomation =
+    /\b(routine|schedule|every day|every morning|cron|automate|recurring)\b/i.test(text);
+
+  const isCommunication =
+    /\b(send|message|notify|tell me|another dot|delegate)\b/i.test(text);
+
+  if (isShopping) add("shopping");
+  else if (isWeb) add("web");
+
+  if (isBrowser) add("browser");
+  if (isFiles) add("files");
+  if (isCoding) add("coding");
+  if (isMemory) add("memory");
+  if (isAutomation) add("automation");
+  if (isCommunication) add("communication");
+
+  const available = toolsForDot(dot);
+
+  return available.filter((tool) => names.has(tool.name));
+}
+
 export const COMPUTER_ENABLED = (process.env.DOTS_COMPUTER_TOOL ?? "computer") !== "off";

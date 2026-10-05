@@ -1,7 +1,6 @@
 import "server-only";
 import * as repo from "../repo";
 import * as computer from "../computer";
-import { toolsForDot, type ToolDef } from "./tools";
 import type { Dot } from "@/lib/types";
 
 export type Trigger =
@@ -13,11 +12,11 @@ export type Trigger =
 
 const decisionText = { allow: "do it without asking", ask: "ask first (request_approval)", never: "never do it" } as const;
 
-export function systemPrompt(dot: Dot, trigger: Trigger, activeTools?: ToolDef[]): string {
+export function systemPrompt(dot: Dot, trigger: Trigger): string {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const rules = repo.rulesFor(dot.id);
   const allMemories = repo.listMemories(dot.id);
-  const maxMemoryTokens = 800;
+  const maxMemoryTokens = 400;
   let memTokens = 0;
   const memories = [];
   for (const m of allMemories.slice().reverse()) {
@@ -28,7 +27,7 @@ export function systemPrompt(dot: Dot, trigger: Trigger, activeTools?: ToolDef[]
   }
 
   const allSkills = repo.listSkills(dot.id);
-  const maxSkillTokens = 800;
+  const maxSkillTokens = 400;
   let skillTokens = 0;
   const skills = [];
   for (const k of allSkills.slice().reverse()) {
@@ -46,18 +45,13 @@ export function systemPrompt(dot: Dot, trigger: Trigger, activeTools?: ToolDef[]
   const mode = computer.modeFor(dot.id);
   const osShell = mode === "docker" ? "bash" : (process.platform === "win32" ? "PowerShell" : process.platform === "darwin" ? "zsh" : "bash");
 
-  const toolsList = activeTools || toolsForDot(dot);
-  const formattedTools = toolsList.map((t) => `- ${t.name}: ${t.description}`).join("\n");
-
   const todayStr = new Date().toISOString().split("T")[0];
 
   return `You are ${dot.name}, a "dot" — a personal AI agent that works on its own on behalf of your user.
 ${dot.purpose ? `\nYour job: ${dot.purpose}\n` : ""}${dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : ""}
 # Your computer & tools
 You have your own computer: ${box}. Shell: ${osShell}.
-
-Exact tools available to you:
-${formattedTools}
+Tool schemas are provided separately for this request. Use only exposed tools.
 
 # Working style
 - Work autonomously until the task is done. Be concise, fast, and direct.

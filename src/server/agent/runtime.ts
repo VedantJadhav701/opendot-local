@@ -2,7 +2,7 @@ import "server-only";
 import { activeModel, getProvider, getResolvedSync } from "../llm";
 import type { ChatMessage, FunctionToolCall, ToolDefinition } from "../llm";
 import { systemPrompt, type Trigger } from "./prompt";
-import { findTool, setConsult, toolsForDot, type ToolCtx } from "./tools";
+import { findTool, setConsult, toolsForRequest, type ToolCtx } from "./tools";
 import { review, resetTurnTaint, setTurnTainted } from "./review";
 import * as repo from "../repo";
 import * as computer from "../computer";
@@ -266,8 +266,7 @@ async function preprocessUrls(text: string, dotId: string): Promise<string> {
         });
         saveChunks(chunks);
 
-        const sampleText = pdfRes.fullText.slice(0, 5000);
-        return `${text}\n\n[Pre-fetched URL Content (${url}) - Extracted PDF ${pdfRes.pageCount} pages, ${chunks.length} chunks stored in chunk_store]:\n${sampleText}`;
+        return `${text}\n\n[URL indexed locally: ${url}. Extracted PDF ${pdfRes.pageCount} pages into ${chunks.length} chunks. Use document search tools when needed.]`;
       } else {
         const html = buf.toString("utf-8");
         const cleanText = html
@@ -279,16 +278,12 @@ async function preprocessUrls(text: string, dotId: string): Promise<string> {
 
         const { chunkText } = await import("../context/chunker");
         const { saveChunks } = await import("../context/db");
-        const { filterChunks } = await import("../context/filter");
 
         const taskId = `url_preroute_${Date.now()}`;
         const chunks = chunkText({ text: cleanText, source: url, taskId, dotId });
         saveChunks(chunks);
 
-        const filterRes = filterChunks(text, chunks, { maxEvidenceTokens: 2500 });
-        const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
-        const sampleText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
-        return `${text}\n\n[Pre-fetched URL Content (${url}) - Evidence Budget ~${filterRes.totalTokens}/2500 tokens (${selected.length}/${chunks.length} chunks stored in chunk_store)]:\n${sampleText}`;
+        return `${text}\n\n[URL indexed locally: ${url}. ${chunks.length} chunks stored in chunk_store. Use open_url/read_page for current page content.]`;
       }
     }
   } catch (err) {
@@ -391,23 +386,32 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   const modelName = await activeModel(dot.model || routed?.selected);
   const provider = getProvider(modelName);
 
-  const toolDefs: ToolDefinition[] = omitTools
+  const selectedTools = omitTools
     ? []
-    : toolsForDot(dot).map((t) => ({
-        type: "function",
-        function: {
-          name: t.name,
-          description: t.description,
-          parameters: t.parameters as ToolDefinition["function"]["parameters"],
-        },
-      }));
+    : toolsForRequest(dot, latestUserText);
+
+  const toolDefs: ToolDefinition[] = selectedTools.map((t) => ({
+    type: "function",
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters as ToolDefinition["function"]["parameters"],
+    },
+  }));
 
   const systemMsg: ChatMessage = {
     role: "system",
     content: systemPrompt(dot, trigger),
   };
 
-  const defaultContextLength = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
+  const configuredContextLength = Number(
+    process.env.DOTS_CONTEXT_LENGTH || 8192
+  );
+
+  const defaultContextLength = Math.min(
+    Math.max(4096, configuredContextLength),
+    8192
+  );
   const fullMessages = pruneMessagesForContext([systemMsg, ...messages], toolDefs, defaultContextLength);
 
   repo.setActivity(dot.id, "Thinking");
@@ -434,7 +438,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
         tools: toolDefs.length ? toolDefs : undefined,
         temperature: 0.2,
         context_length: contextLength,
-        num_predict: numPredict,
+        num_predict: numPredict ?? Number(process.env.DOTS_NUM_PREDICT || 384),
       },
       onChunk,
       signal
@@ -447,7 +451,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     if (!isTimeoutError(err) || signal.aborted) throw err;
     draftMessageId = null;
     accumulatedText = "";
-    responseMsg = await streamOnce(Math.min(defaultContextLength, 8192), 320);
+    responseMsg = await streamOnce(4096, 256);
   }
 
   if (draftMessageId) {
@@ -578,7 +582,11 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
   }
 }
 
-export function rebuildContextMessages(dotId: string, exclude: string, maxTokens = 3000): ChatMessage[] {
+export function rebuildContextMessages(
+  dotId: string,
+  exclude: string,
+  maxTokens = 1800
+): ChatMessage[] {
   const rawMsgs = repo.conversationMessages(repo.currentConversation(dotId), 50);
   const eligible = rawMsgs.filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude);
 

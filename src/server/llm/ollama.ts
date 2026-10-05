@@ -93,6 +93,10 @@ export type QueueTask<T> = {
 const gQueue = globalThis as unknown as { __llmQueue?: QueueTask<any>[]; __isProcessingLLMQueue?: boolean };
 export const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
 
+const DEFAULT_CONTEXT_LENGTH = 8192;
+const MAX_CONTEXT_LENGTH = 8192;
+const DEFAULT_NUM_PREDICT = 384;
+
 export function enqueueLLMRequest<T>(
   fn: (queueWaitMs: number) => Promise<T>,
   signal?: AbortSignal,
@@ -324,10 +328,18 @@ export class OllamaProvider implements LLMProvider {
         }));
       }
 
-      let targetNumCtx = req.context_length || Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
+      const requestedContext =
+        req.context_length ||
+        Number(process.env.DOTS_CONTEXT_LENGTH || DEFAULT_CONTEXT_LENGTH);
+
+      const targetNumCtx = Math.min(
+        Math.max(2048, requestedContext),
+        MAX_CONTEXT_LENGTH
+      );
+
       const optionsObj: Record<string, unknown> = {
         num_ctx: targetNumCtx,
-        num_predict: req.num_predict ?? Number(process.env.DOTS_NUM_PREDICT || 600),
+        num_predict: req.num_predict ?? Number(process.env.DOTS_NUM_PREDICT || DEFAULT_NUM_PREDICT),
       };
       if (typeof req.temperature === "number") {
         optionsObj.temperature = req.temperature;
@@ -365,11 +377,14 @@ export class OllamaProvider implements LLMProvider {
                 res.on("data", (c) => (errText += c));
                 res.on("end", () => {
                   if (
-                    ctxSize < 32768 &&
-                    (errText.includes("exceed_context_size_error") || errText.includes("exceeds the available context size"))
+                    errText.includes("exceed_context_size_error") ||
+                    errText.includes("exceeds the available context size")
                   ) {
-                    console.warn(`[ollama] Context size ${ctxSize} exceeded. Retrying with num_ctx=32768...`);
-                    executeRequest(32768).then(resolve, reject);
+                    reject(
+                      new Error(
+                        `Ollama context limit exceeded at num_ctx=${ctxSize}. Reduce prompt/context size instead of increasing context.`
+                      )
+                    );
                     return;
                   }
                   reject(new Error(`Ollama error (${res.statusCode}): ${errText}`));
