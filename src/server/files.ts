@@ -21,9 +21,13 @@ export function guessMime(name: string): string {
     {
       ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
       ".pdf": "application/pdf", ".txt": "text/plain", ".md": "text/markdown", ".csv": "text/csv", ".json": "application/json",
-      ".html": "text/html", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".zip": "application/zip",
-      ".py": "text/x-python", ".js": "text/javascript", ".ts": "text/plain",
+      ".html": "text/html", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xls": "application/vnd.ms-excel",
+      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".doc": "application/msword",
+      ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".ppt": "application/vnd.ms-powerpoint",
+      ".zip": "application/zip", ".gz": "application/gzip", ".tar": "application/x-tar",
+      ".py": "text/x-python", ".js": "text/javascript", ".ts": "text/typescript", ".tsx": "text/typescript", ".jsx": "text/javascript",
+      ".jsonl": "application/x-jsonlines", ".yaml": "text/yaml", ".yml": "text/yaml", ".sh": "text/x-shellscript", ".bat": "text/plain",
+      ".ps1": "text/plain", ".sql": "text/x-sql", ".c": "text/x-c", ".cpp": "text/x-c++", ".rs": "text/x-rust", ".go": "text/x-go",
     } as Record<string, string>
   )[ext] ?? "application/octet-stream";
 }

@@ -114,17 +114,34 @@ async function executeWebSearch(query: string): Promise<string> {
   if (!q) return "Search query cannot be empty.";
 
   try {
-    let results = await searchDDGHtml(q);
-    if (!results.length) {
-      results = await searchDDGLite(q);
+    let rawResults = await searchDDGHtml(q);
+    if (!rawResults.length) {
+      rawResults = await searchDDGLite(q);
     }
-    if (!results.length && process.env.SEARXNG_URL) {
-      results = await searchSearXNG(q, process.env.SEARXNG_URL);
+    if (!rawResults.length && process.env.SEARXNG_URL) {
+      rawResults = await searchSearXNG(q, process.env.SEARXNG_URL);
     }
-    if (!results.length) {
+    if (!rawResults.length) {
       return `Search unavailable: No results returned for "${q}". Try using open_url to browse directly.`;
     }
-    return JSON.stringify({ query: q, source: "web_search", results }, null, 2);
+
+    const structuredResults = rawResults.map((r, idx) => {
+      let domain = "";
+      try {
+        domain = new URL(r.url).hostname;
+      } catch {
+        domain = r.url;
+      }
+      return {
+        title: r.title,
+        url: r.url,
+        domain,
+        snippet: r.snippet,
+        rank: idx + 1,
+      };
+    });
+
+    return JSON.stringify({ query: q, source: "web_search", total: structuredResults.length, results: structuredResults }, null, 2);
   } catch (err: any) {
     return `Search unavailable: ${err.message}. Try using open_url to browse directly.`;
   }
@@ -144,6 +161,72 @@ export const TOOLS: ToolDef[] = [
     description: "Alias for web_search. Use when the user says search, browse, look up, or find public information.",
     parameters: obj({ query: str("The search query to look up on the web") }),
     execute: async (a) => executeWebSearch(s(a.query)),
+  },
+  {
+    name: "open_page",
+    label: "Opening web page",
+    description: "Open a specific URL in the browser context.",
+    parameters: obj({ url: str("URL to navigate to") }),
+    execute: (a, ctx) => computer.openUrl(ctx.dot.id, s(a.url)),
+  },
+  {
+    name: "extract_page",
+    label: "Extracting page content",
+    description: "Extract text contents and key evidence sections from the current open browser page.",
+    parameters: obj({}),
+    execute: (_a, ctx) => computer.readPage(ctx.dot.id),
+  },
+  {
+    name: "find_on_page",
+    label: "Finding text on page",
+    description: "Search the current browser page for a specific string or topic.",
+    parameters: obj({ query: str("Text or topic to find on the current page") }),
+    execute: (a, ctx) => computer.readPage(ctx.dot.id, s(a.query)),
+  },
+  {
+    name: "compare_sources",
+    label: "Comparing sources",
+    description: "Compare facts, prices, or technical specifications across multiple retrieved web sources or document chunks.",
+    parameters: obj({ topic: str("Topic or product specs to compare") }),
+    execute: async (a, ctx) => {
+      const { getDotChunks } = await import("../context/db");
+      const { filterChunks } = await import("../context/filter");
+      const chunks = getDotChunks(ctx.dot.id, 100);
+      if (!chunks.length) return "No stored source chunks found for comparison. Search web or read pages first.";
+      const res = filterChunks(s(a.topic), chunks, { maxEvidenceTokens: 2500 });
+      return JSON.stringify({ topic: s(a.topic), sourcesCompared: res.selectedChunks.length, evidence: res.selectedChunks.map((c) => ({ source: c.source, text: c.text })) }, null, 2);
+    },
+  },
+  {
+    name: "product_search",
+    label: "Searching products",
+    description: "Search for e-commerce products, prices, ratings, and specifications under target constraints.",
+    parameters: obj({ category: str("Product category e.g. headphones"), maxPrice: str("Optional maximum price e.g. 2000") }),
+    execute: async (a) => {
+      const query = `best ${s(a.category)} under ${s(a.maxPrice || "2000")} rs`;
+      return executeWebSearch(query);
+    },
+  },
+  {
+    name: "product_details",
+    label: "Getting product details",
+    description: "Extract detailed specifications, features, battery life, mic quality, and user feedback for a product.",
+    parameters: obj({ productName: str("Product name or model") }),
+    execute: async (a) => executeWebSearch(`${s(a.productName)} specs review price`),
+  },
+  {
+    name: "price_compare",
+    label: "Comparing prices",
+    description: "Compare prices and availability for a product across Indian e-commerce sites (Amazon, Flipkart, Croma, Vijay Sales).",
+    parameters: obj({ item: str("Item or product name") }),
+    execute: async (a) => executeWebSearch(`${s(a.item)} price India buy online`),
+  },
+  {
+    name: "review_search",
+    label: "Searching reviews",
+    description: "Search for user review sentiment, pros/cons, mic test, and durability feedback for a product.",
+    parameters: obj({ product: str("Product model name") }),
+    execute: async (a) => executeWebSearch(`${s(a.product)} user review pros cons mic test`),
   },
   {
     name: "download_file",

@@ -41,6 +41,12 @@ CREATE TABLE IF NOT EXISTS conversations (
 CREATE INDEX IF NOT EXISTS conversations_dot ON conversations(dot_id, updated_at);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS passwords (id TEXT PRIMARY KEY, site TEXT NOT NULL, username TEXT NOT NULL, secret TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS task_queue (
+  id TEXT PRIMARY KEY, dot_id TEXT NOT NULL, conversation_id TEXT, status TEXT NOT NULL DEFAULT 'queued',
+  priority INTEGER NOT NULL DEFAULT 0, request TEXT NOT NULL, plan TEXT, current_step INTEGER NOT NULL DEFAULT 0,
+  selected_model TEXT, error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, completed_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_task_queue_status ON task_queue(status, priority DESC, created_at ASC);
 `;
 
 const g = globalThis as unknown as { __dotsDb?: DatabaseSync };
