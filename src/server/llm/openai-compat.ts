@@ -18,7 +18,7 @@ export class OpenAICompatProvider implements LLMProvider {
 
   constructor(config: OpenAICompatConfig = {}) {
     this.config = {
-      baseUrl: config.baseUrl || "https://integrate.api.nvidia.com/v1",
+      baseUrl: config.baseUrl || "https://api.openai.com/v1",
       apiKey: config.apiKey,
       model: config.model,
       temperature: config.temperature ?? 0.2,
@@ -32,11 +32,11 @@ export class OpenAICompatProvider implements LLMProvider {
     if (typeof this.config.apiKey === "function") {
       return this.config.apiKey();
     }
-    return this.config.apiKey || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY || null;
+    return this.config.apiKey || process.env.OPENAI_API_KEY || null;
   }
 
   private getBaseUrl(): string {
-    let url = this.config.baseUrl || "https://integrate.api.nvidia.com/v1";
+    let url = this.config.baseUrl || "https://api.openai.com/v1";
     return url.replace(/\/$/, "");
   }
 

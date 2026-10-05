@@ -14,7 +14,7 @@ export function getProvider(model?: string): LLMProvider {
   if (cloudModel.includes("llama-3.1-70b")) {
     cloudModel = "moonshotai/kimi-k3";
   }
-  const cloudUrl = getSetting("cloud_boost_url") || "https://integrate.api.nvidia.com/v1";
+  const cloudUrl = getSetting("cloud_boost_url") || "https://api.openai.com/v1";
 
   const isCloudTarget =
     model &&

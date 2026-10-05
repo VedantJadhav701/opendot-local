@@ -279,8 +279,8 @@ function AppsList() {
 
 function CloudBoostCard() {
   const [apiKey, setApiKey] = useState("");
-  const [baseUrl, setBaseUrl] = useState("https://integrate.api.nvidia.com/v1");
-  const [modelId, setModelId] = useState("moonshotai/kimi-k3");
+  const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
+  const [modelId, setModelId] = useState("gpt-4o-mini");
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -300,7 +300,7 @@ function CloudBoostCard() {
         <div>
           <div className="text-[14px] font-medium">Cloud Boost (Optional)</div>
           <div className="text-body-sm text-foreground/55">
-            Connect an optional OpenAI-compatible API endpoint (NVIDIA API Catalog / OpenAI) for cloud escalation. Key is encrypted in native OS Vault (DPAPI/Keychain). Off by default per dot.
+            Connect an optional OpenAI-compatible API endpoint for cloud escalation. Key is encrypted in native OS Vault (DPAPI/Keychain). Off by default per dot.
           </div>
         </div>
       </div>
@@ -313,7 +313,7 @@ function CloudBoostCard() {
               className="w-full rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://integrate.api.nvidia.com/v1"
+              placeholder="https://api.openai.com/v1"
             />
           </div>
           <div>
@@ -323,7 +323,7 @@ function CloudBoostCard() {
               className="w-full rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              placeholder="moonshotai/kimi-k3"
+              placeholder="gpt-4o-mini"
             />
           </div>
         </div>
@@ -335,7 +335,7 @@ function CloudBoostCard() {
               className="flex-1 rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="nvapi-... or sk-..."
+              placeholder="sk-..."
             />
             <button
               onClick={handleSaveKey}

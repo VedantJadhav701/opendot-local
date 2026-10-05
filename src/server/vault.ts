@@ -31,7 +31,7 @@ export function saveCloudBoostKey(key: string): void {
 export function getCloudBoostKey(): string | null {
   const { getSetting } = require("./db");
   const sealed = getSetting("cloud_boost_key");
-  if (!sealed) return process.env.NVIDIA_API_KEY || null;
+  if (!sealed) return null;
   try {
     return unseal(sealed);
   } catch {
