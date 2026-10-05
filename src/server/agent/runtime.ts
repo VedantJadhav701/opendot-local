@@ -335,7 +335,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnTotalTimeMs += m.totalTimeMs;
       turnPromptTokens += m.promptTokens;
       turnCompletionTokens += m.completionTokens;
-      const numCtx = 8192;
+      const numCtx = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
       const pct = Math.round((m.promptTokens / numCtx) * 100);
       console.log(
         `[dots] Turn Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Prompt Tokens: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Total: ${m.totalTimeMs}ms | Completion Tokens: ${m.completionTokens}`
@@ -390,7 +390,8 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     content: systemPrompt(dot, trigger),
   };
 
-  const fullMessages = [systemMsg, ...messages];
+  const defaultContextLength = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
+  const fullMessages = pruneMessagesForContext([systemMsg, ...messages], toolDefs, defaultContextLength);
 
   repo.setActivity(dot.id, "Thinking");
 
@@ -403,7 +404,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
       messages: fullMessages,
       tools: toolDefs.length ? toolDefs : undefined,
       temperature: 0.2,
-      context_length: 8192,
+      context_length: defaultContextLength,
     },
     (chunk) => {
       if (chunk.delta?.content) {
@@ -674,3 +675,45 @@ function safeParse(raw: string): Record<string, unknown> {
 }
 
 const capitalize = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+function estimateMessageTokens(msg: ChatMessage): number {
+  let len = (msg.content || "").length;
+  if (msg.tool_calls) {
+    len += JSON.stringify(msg.tool_calls).length;
+  }
+  return Math.ceil(len / 3.5) + 10;
+}
+
+function estimateToolsTokens(tools?: ToolDefinition[]): number {
+  if (!tools || !tools.length) return 0;
+  return Math.ceil(JSON.stringify(tools).length / 3.5);
+}
+
+export function pruneMessagesForContext(
+  messages: ChatMessage[],
+  tools?: ToolDefinition[],
+  maxContext: number = 16384
+): ChatMessage[] {
+  if (messages.length <= 2) return messages;
+
+  const toolTokens = estimateToolsTokens(tools);
+  const targetTokenLimit = Math.max(2048, maxContext - 1500 - toolTokens);
+
+  const systemMsg = messages[0];
+  const systemTokens = estimateMessageTokens(systemMsg);
+
+  let currentTokens = systemTokens;
+  const pruned: ChatMessage[] = [];
+
+  for (let i = messages.length - 1; i >= 1; i--) {
+    const msgTokens = estimateMessageTokens(messages[i]);
+    if (currentTokens + msgTokens > targetTokenLimit && pruned.length >= 2) {
+      break;
+    }
+    currentTokens += msgTokens;
+    pruned.unshift(messages[i]);
+  }
+
+  return [systemMsg, ...pruned];
+}
+

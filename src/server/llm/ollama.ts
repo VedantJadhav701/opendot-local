@@ -296,8 +296,9 @@ export class OllamaProvider implements LLMProvider {
         }));
       }
 
+      let targetNumCtx = req.context_length || Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
       const optionsObj: Record<string, unknown> = {
-        num_ctx: req.context_length || 8192,
+        num_ctx: targetNumCtx,
         num_predict: Number(process.env.DOTS_NUM_PREDICT || 600),
       };
       if (typeof req.temperature === "number") {
@@ -314,27 +315,39 @@ export class OllamaProvider implements LLMProvider {
       let buffer = "";
       const thinkFilter = new ThinkStreamFilter();
 
-      await new Promise<void>((resolve, reject) => {
-        const targetUrl = new URL(`${this.baseUrl}/api/chat`);
-        const transport = targetUrl.protocol === "https:" ? https : http;
-        const bodyStr = JSON.stringify(body);
+      const executeRequest = (ctxSize: number): Promise<void> => {
+        (body.options as Record<string, unknown>).num_ctx = ctxSize;
+        return new Promise<void>((resolve, reject) => {
+          const targetUrl = new URL(`${this.baseUrl}/api/chat`);
+          const transport = targetUrl.protocol === "https:" ? https : http;
+          const bodyStr = JSON.stringify(body);
 
-        const request = transport.request(
-          targetUrl,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(bodyStr),
+          const request = transport.request(
+            targetUrl,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(bodyStr),
+              },
             },
-          },
-          (res) => {
-            if (res.statusCode && res.statusCode >= 400) {
-              let errText = "";
-              res.on("data", (c) => (errText += c));
-              res.on("end", () => reject(new Error(`Ollama error (${res.statusCode}): ${errText}`)));
-              return;
-            }
+            (res) => {
+              if (res.statusCode && res.statusCode >= 400) {
+                let errText = "";
+                res.on("data", (c) => (errText += c));
+                res.on("end", () => {
+                  if (
+                    ctxSize < 32768 &&
+                    (errText.includes("exceed_context_size_error") || errText.includes("exceeds the available context size"))
+                  ) {
+                    console.warn(`[ollama] Context size ${ctxSize} exceeded. Retrying with num_ctx=32768...`);
+                    executeRequest(32768).then(resolve, reject);
+                    return;
+                  }
+                  reject(new Error(`Ollama error (${res.statusCode}): ${errText}`));
+                });
+                return;
+              }
 
             res.setEncoding("utf8");
             res.on("data", (chunkData: string) => {
@@ -448,6 +461,9 @@ export class OllamaProvider implements LLMProvider {
         request.write(bodyStr);
         request.end();
       });
+    };
+
+    await executeRequest(targetNumCtx);
 
       const totalTimeMs = Date.now() - startTime;
       if (ttftMs === 0) ttftMs = totalTimeMs;
