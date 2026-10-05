@@ -445,10 +445,6 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     responseMsg = await streamOnce(defaultContextLength);
   } catch (err) {
     if (!isTimeoutError(err) || signal.aborted) throw err;
-    repo.addMessage({ dotId: dot.id, role: "activity", text: "Model was slow. Retrying with shorter context." });
-    if (draftMessageId) {
-      repo.updateMessage(draftMessageId, { text: "Model was slow. Retrying with shorter context." });
-    }
     draftMessageId = null;
     accumulatedText = "";
     responseMsg = await streamOnce(Math.min(defaultContextLength, 8192), 320);
