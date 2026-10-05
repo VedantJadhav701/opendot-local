@@ -1,0 +1,5 @@
+=== Testing Item 12: Web Page Text Chunker, Chunk Store, BM25, & Evidence Budget ===
+Generated 17 chunks from 15036 characters.
+Saved and retrieved 17 chunks from SQLite chunk_store.
+BM25 Selected 7/17 chunks (2031 evidence tokens).
+All Item 12 Web Page Chunker & Evidence Budget Tests PASSED!

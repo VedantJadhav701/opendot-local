@@ -274,8 +274,19 @@ async function preprocessUrls(text: string, dotId: string): Promise<string> {
           .replace(/<[^>]+>/g, "\n")
           .replace(/\n\s*\n/g, "\n")
           .trim();
-        const sampleText = cleanText.slice(0, 5000);
-        return `${text}\n\n[Pre-fetched URL Content (${url})]:\n${sampleText}`;
+
+        const { chunkText } = await import("../context/chunker");
+        const { saveChunks } = await import("../context/db");
+        const { filterChunks } = await import("../context/filter");
+
+        const taskId = `url_preroute_${Date.now()}`;
+        const chunks = chunkText({ text: cleanText, source: url, taskId, dotId });
+        saveChunks(chunks);
+
+        const filterRes = filterChunks(text, chunks, { maxEvidenceTokens: 2500 });
+        const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
+        const sampleText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
+        return `${text}\n\n[Pre-fetched URL Content (${url}) - Evidence Budget ~${filterRes.totalTokens}/2500 tokens (${selected.length}/${chunks.length} chunks stored in chunk_store)]:\n${sampleText}`;
       }
     }
   } catch (err) {

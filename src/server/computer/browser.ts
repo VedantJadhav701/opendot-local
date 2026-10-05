@@ -211,17 +211,49 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
   await screenshot(dotId);
 
   const text = await p.evaluate(() => document.body?.innerText ?? "");
-  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 2_500);
-  dotVisited.set(target, clipped);
+  const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
+  const title = await p.title();
 
-  return `Opened ${p.url()} — "${await p.title()}". Page Content:\n${clipped}\n\nYou have read the page. Provide your final response now.`;
+  const { chunkText } = await import("../context/chunker");
+  const { saveChunks } = await import("../context/db");
+  const { filterChunks } = await import("../context/filter");
+
+  const taskId = `web_${Date.now()}`;
+  const chunks = chunkText({ text: cleanText, source: title || target, taskId, dotId });
+  if (chunks.length > 0) {
+    saveChunks(chunks);
+    const filterRes = filterChunks("", chunks, { maxEvidenceTokens: 2500 });
+    const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
+    const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
+    dotVisited.set(target, evidenceText);
+    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}\n\nYou have read the page. Provide your final response now.`;
+  }
+
+  dotVisited.set(target, cleanText);
+  return `Opened ${p.url()} — "${title}". Page Content:\n${cleanText}\n\nYou have read the page. Provide your final response now.`;
 }
 
-export async function readPage(dotId: string): Promise<string> {
+export async function readPage(dotId: string, userQuery = ""): Promise<string> {
   const p = await page(dotId);
   const text = await p.evaluate(() => document.body?.innerText ?? "");
-  const clipped = text.replace(/\n{3,}/g, "\n\n").slice(0, 2_500);
-  return `URL: ${p.url()}\nTitle: ${await p.title()}\n\n${clipped}`;
+  const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
+  const title = await p.title();
+
+  const { chunkText } = await import("../context/chunker");
+  const { saveChunks } = await import("../context/db");
+  const { filterChunks } = await import("../context/filter");
+
+  const taskId = `readpage_${Date.now()}`;
+  const chunks = chunkText({ text: cleanText, source: title || p.url(), taskId, dotId });
+  if (chunks.length > 0) {
+    saveChunks(chunks);
+    const filterRes = filterChunks(userQuery, chunks, { maxEvidenceTokens: 2500 });
+    const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
+    const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
+    return `URL: ${p.url()}\nTitle: ${title}\n[Evidence Budget ~${filterRes.totalTokens}/2500 tokens (${selected.length}/${chunks.length} chunks)]:\n\n${evidenceText}`;
+  }
+
+  return `URL: ${p.url()}\nTitle: ${title}\n\n${cleanText}`;
 }
 
 const KEY_MAP: Record<string, string> = {
