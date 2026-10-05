@@ -3,19 +3,30 @@ import { activeModel, activeReviewModel, getResolvedSync, isOllamaConnected, res
 import { getSetting } from "../db";
 import { getCloudBoostKey, hasCloudBoostKey, saveCloudBoostKey } from "../vault";
 
-export async function hasKey(): Promise<boolean> {
-  return (await isOllamaConnected()) || hasCloudBoostKey();
+let cachedHasKey = true;
+let cachedKeySource: "env" | "settings" | "ollama" | null = "ollama";
+
+export async function refreshClientState(): Promise<void> {
+  const ollamaOk = await isOllamaConnected().catch(() => false);
+  const cloudKey = hasCloudBoostKey();
+  cachedHasKey = ollamaOk || cloudKey;
+  cachedKeySource = cloudKey ? "settings" : ollamaOk ? "ollama" : null;
 }
 
-export async function keySource(): Promise<"env" | "settings" | "ollama" | null> {
-  if (hasCloudBoostKey()) return "settings";
-  if (await isOllamaConnected()) return "ollama";
-  return null;
+export function hasKey(): boolean {
+  void refreshClientState();
+  return cachedHasKey;
+}
+
+export function keySource(): "env" | "settings" | "ollama" | null {
+  void refreshClientState();
+  return cachedKeySource;
 }
 
 export async function saveApiKey(key: string): Promise<string | null> {
   if (!key.trim()) return null;
   saveCloudBoostKey(key.trim());
+  await refreshClientState();
   return "Saved";
 }
 

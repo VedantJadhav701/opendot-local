@@ -86,7 +86,7 @@ async function freeProfile(dir: string) {
 
   for (const f of [lockFile, cookieFile, socketFile]) {
     try {
-      if (fs.existsSync(f)) fs.rmSync(f, { force: true });
+      if (fs.existsSync(/*turbopackIgnore: true*/ f)) fs.rmSync(/*turbopackIgnore: true*/ f, { force: true });
     } catch {}
   }
 }

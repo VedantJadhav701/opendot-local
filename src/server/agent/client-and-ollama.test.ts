@@ -1,4 +1,4 @@
-import { hasKey, keySource, isReasoningModel, supportsComputerTool } from "./client";
+import { hasKey, keySource, isReasoningModel, supportsComputerTool, refreshClientState } from "./client";
 
 async function runTests() {
   console.log("=== Testing Item 15 & 16: Ollama Tool Fields & Honest Client Stubs ===");
@@ -21,8 +21,9 @@ async function runTests() {
   console.log("PASS: supportsComputerTool checks model capabilities.");
 
   // Test 3: hasKey and keySource return real status
-  const keyStatus = await hasKey();
-  const source = await keySource();
+  await refreshClientState();
+  const keyStatus = hasKey();
+  const source = keySource();
   console.log(`Test 3: hasKey = ${keyStatus}, keySource = ${source}`);
   console.log("PASS: Honest client functions executed cleanly.");
 

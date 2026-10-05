@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start --port 3100",
     "lint": "eslint",
+    "test": "npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/security-hardening-task-a.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/answer-style.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/think-filter.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/prompt.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/context-budget.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/read-page-chunking.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/llm-queue.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/url-validator.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/client-and-ollama.test.ts",
+    "check": "npx tsc --noEmit && pnpm test && pnpm build",
     "desktop:dev": "OPEN_DOT_DEV_URL=http://localhost:3100 electron electron",
     "desktop:prepare": "next build && node scripts/desktop-prepare.mjs",
     "desktop": "electron electron",
