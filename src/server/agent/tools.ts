@@ -9,6 +9,7 @@ import { emit } from "../bus";
 import * as composio from "../composio";
 import * as files from "../files";
 import type { Dot, RuleDecision } from "@/lib/types";
+import { fetchSafe, validateUrlSafety } from "./url-safety";
 
 export type ToolCtx = { dot: Dot; signal: AbortSignal; depth: number };
 
@@ -145,13 +146,18 @@ export const TOOLS: ToolDef[] = [
       let fileUrl = s(a.url);
       const originalUrl = fileUrl;
 
+      const initialSafety = await validateUrlSafety(fileUrl);
+      if (!initialSafety.safe) {
+        return `Download error: Security error: ${initialSafety.reason}`;
+      }
+
       // Special handling for Zenodo record URLs
       if (fileUrl.includes("zenodo.org")) {
         const recMatch = fileUrl.match(/records?\/(\d+)/i) || fileUrl.match(/api\/records\/(\d+)/i);
         if (recMatch) {
           const recId = recMatch[1];
           try {
-            const apiRes = await fetch(`https://zenodo.org/api/records/${recId}`, {
+            const apiRes = await fetchSafe(`https://zenodo.org/api/records/${recId}`, {
               headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Accept": "application/json",
@@ -172,13 +178,12 @@ export const TOOLS: ToolDef[] = [
       }
 
       try {
-        let res = await fetch(fileUrl, {
+        let res = await fetchSafe(fileUrl, {
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "application/pdf,application/octet-stream,*/*",
             "Referer": originalUrl,
           },
-          redirect: "follow",
         });
 
         let statusCode = res.status;

@@ -1,0 +1,36 @@
+# Qwen3:4b Speed Diagnosis Report
+
+## GPU / Hardware Environment
+```text
+Mon Oct  5 00:23:40 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 616.92                 KMD Version: 616.92        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3050 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
+| N/A   54C    P0             13W /   75W |      99MiB /   4096MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3456    C+G   ...Browser\Application\brave.exe      N/A      |
+|    0   N/A  N/A            9932    C+G   ...Browser\Application\brave.exe      N/A      |
++-----------------------------------------------------------------------------------------+
+```
+
+## Ollama Model State (`ollama ps`)
+```text
+NAME    ID    SIZE    PROCESSOR    CONTEXT    UNTIL
+```
+
+## Performance Benchmark Results
+* **Baseline (num_ctx: 8192):** 20.48 tok/s generation (600 tokens in 35130 ms)
+* **Optimized (num_ctx: 4096):** 24.57 tok/s generation (600 tokens in 30390 ms)
+* **think:false Verification:** Confirmed (0 thinking tags, pure markdown output)

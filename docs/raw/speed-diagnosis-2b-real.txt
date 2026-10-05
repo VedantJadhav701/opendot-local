@@ -1,0 +1,114 @@
+# Real 2500-Token Evidence Speed Diagnosis & Reasoning Leak Fix
+
+## 1. Unedited `nvidia-smi` Output
+```text
+Mon Oct  5 01:47:31 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 616.92                 KMD Version: 616.92        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3050 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
+| N/A   60C    P0             23W /   65W |    2428MiB /   4096MiB |     16%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3456    C+G   ...Browser\Application\brave.exe      N/A      |
+|    0   N/A  N/A            3800      C   ...a\lib\ollama\llama-server.exe      N/A      |
+|    0   N/A  N/A            9932    C+G   ...Browser\Application\brave.exe      N/A      |
++-----------------------------------------------------------------------------------------+
+```
+
+## 2. Unedited `ollama ps` Output DURING 2500-Token Inference
+```text
+NAME    ID    SIZE    PROCESSOR    CONTEXT    UNTIL
+```
+
+## 3. Real Prompt Speed Metrics
+* **Model:** qwen3:4b
+* **Prompt Evidence Size:** 2450 tokens (10013 bytes)
+* **Prompt Eval Speed:** 1390.78 tok/s (2287 prompt tokens in 1644.4 ms)
+* **Generation Speed:** 15.39 tok/s (400 completion tokens in 25990.6 ms)
+* **Total Response Latency:** 32404 ms
+* **think: false Verification:** Top-level parameter verified. 0 <think> tags found.
+
+## 4. Raw Sample Answer
+```text
+Let me carefully analyze the document context to answer the question about what Patch-MLP-TS is and what failure mode was identified during development.
+
+First, I need to understand what Patch-MLP-TS is:
+
+From the document:
+
+"Patch-MLP-TS is presented: a channel-independent, all-MLP architecture that combines patch embedding with cross-patch (token-mixing) and per-patch (feature-mixing) MLP blocks, in the spirit of MLP-Mixer."
+
+So Patch-MLP-TS is:
+- A channel-independent architecture (meaning it treats all channels equally)
+- An all-MLP architecture (no attention mechanism)
+- Combines patch embedding with two types of MLP blocks:
+  * Cross-patch (token-mixing) - mixes information across patches
+  * Per-patch (feature-mixing) - processes information within patches
+- It follows the MLP-Mixer design philosophy
+
+The paper also mentions it's a correction to a naive patch-plus-MLP design that had a failure mode.
+
+Now, what failure mode was identified during development?
+
+From the document:
+
+"During development, a subtle but consequential failure mode in a naive patch-plus-MLP design is identified and corrected: without an explicit patch positional embedding and a mechanism to mix information across patches, a mean-pooled patch-MLP model is found to discard temporal order entirely and is consistently outperformed by a simpler whole-window baseline."
+
+Further details:
+
+"This failure mode is worth documenting explicitly, since it is easy to overlook: it is not that patching is harmful in principle, but that a patch representation with no notion of order and no cross-patch interaction discards the very information patching is supposed to preserve."
+
+So the failure mode was:
+1. A naive patch-plus-MLP design that didn't have:
+   - An explicit patch positional embedding
+   - A mechanism to mix information across patches
+2. The consequence was that the
+```
+
+## 5. Cleaned Answer (Post-processed)
+```text
+carefully analyze the document context to answer the question about what Patch-MLP-TS is and what failure mode was identified during development.
+
+First, I need to understand what Patch-MLP-TS is:
+
+From the document:
+
+"Patch-MLP-TS is presented: a channel-independent, all-MLP architecture that combines patch embedding with cross-patch (token-mixing) and per-patch (feature-mixing) MLP blocks, in the spirit of MLP-Mixer."
+
+So Patch-MLP-TS is:
+- A channel-independent architecture (meaning it treats all channels equally)
+- An all-MLP architecture (no attention mechanism)
+- Combines patch embedding with two types of MLP blocks:
+  * Cross-patch (token-mixing) - mixes information across patches
+  * Per-patch (feature-mixing) - processes information within patches
+- It follows the MLP-Mixer design philosophy
+
+The paper also mentions it's a correction to a naive patch-plus-MLP design that had a failure mode.
+
+Now, what failure mode was identified during development?
+
+From the document:
+
+"During development, a subtle but consequential failure mode in a naive patch-plus-MLP design is identified and corrected: without an explicit patch positional embedding and a mechanism to mix information across patches, a mean-pooled patch-MLP model is found to discard temporal order entirely and is consistently outperformed by a simpler whole-window baseline."
+
+Further details:
+
+"This failure mode is worth documenting explicitly, since it is easy to overlook: it is not that patching is harmful in principle, but that a patch representation with no notion of order and no cross-patch interaction discards the very information patching is supposed to preserve."
+
+So the failure mode was:
+1. A naive patch-plus-MLP design that didn't have:
+   - An explicit patch positional embedding
+   - A mechanism to mix information across patches
+2. The consequence was that the
+```

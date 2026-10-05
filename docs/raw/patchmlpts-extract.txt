@@ -1,0 +1,613 @@
+[Page 1]
+Patch-MLP-TS: A Channel-Independent,
+Attention-Free Architecture
+for Long-Term Time Series Forecasting
+Vedant Jadhav
+Department of Artificial Intelligence and Machine Learning
+Pimpri Chinchwad University
+Pune, India
+Email: vedantjadhav1414@gmail.com
+Abstract—Transformer-based forecasters equipped with patch-
+ing, such as PatchTST, have become strong baselines for long-
+term time series forecasting, but their attention mechanism adds
+computational cost that is not always matched by a proportional
+accuracy gain over much simpler linear models. The patch-
+based forecasting paradigm is revisited without attention, and
+Patch-MLP-TS is presented: a channel-independent, all-MLP
+architecture that combines patch embedding with cross-patch
+(token-mixing) and per-patch (feature-mixing) MLP blocks, in
+the spirit of MLP-Mixer. During development, a subtle but
+consequential failure mode in a naive patch-plus-MLP design
+is identified and corrected: without an explicit patch positional
+embedding and a mechanism to mix information across patches,
+a mean-pooled patch-MLP model is found to discard temporal
+order entirely and is consistently outperformed by a simpler
+whole-window baseline. After this correction, the resulting model
+(v2) is found to be competitive in mean MSE with PatchTST and
+DLinear on average across four ETT benchmarks (3-seed mean
+MSE: 0.348 vs. 0.350 for PatchTST and 0.348 for DLinear); its
+clearest advantage is shown at the longest forecasting horizon
+on two of four datasets, and competitiveness with PatchTST
+is demonstrated on the large-channel Electricity dataset (321
+variates), with training achieved 1.5–1.8× faster and inference
+latency reduced by up to 1.3× in the measured settings. Results
+are reported with multi-seed variance, a set of ablations isolating
+the contribution of channel-independence and patching, and an
+efficiency analysis, and the settings where the method does not
+win are explicitly reported, so that an accurate picture is given
+of when a simple, attention-free patch-MLP design is and is not
+preferable to attention-based or purely linear alternatives.
+Index Terms—time series forecasting, multi-layer perceptron,
+patching, channel independence, efficient architectures, Trans-
+former alternatives
+I. INTRODUCTION
+Long-term time series forecasting (LTSF) underlies appli-
+cations from energy load planning to traffic and financial
+forecasting. Transformer-based architectures [1]–[3] were long
+assumed to be the strongest approach to LTSF due to their
+capacity to model long-range dependencies, but a family of
+embarrassingly simple linear models (LTSF-Linear, including
+DLinear and NLinear) was shown by Zeng et al. [4] to
+outperform these Transformers on most standard benchmarks,
+questioning whether attention is necessary for this task at all.
+Subsequent work reconciled these findings by revisiting how
+Transformers are applied to time series rather than abandoning
+them. In PatchTST [5], each univariate channel is segmented
+into patches and channel-independent attention is applied over
+patch tokens, closing much of the gap to (and in several
+cases surpassing) linear baselines. Around the same time, it
+was demonstrated by MLP-Mixer-style architectures such as
+TSMixer [6] that alternating time-mixing and feature-mixing
+MLP layers, with no attention at all, can match Transformer-
+level accuracy at substantially lower cost.
+This raises a natural question: can the patching idea that
+helps PatchTST be combined with a purely MLP backbone,
+discarding attention entirely, without losing the accuracy
+patching provides? A naive answer – in which each channel
+is patch-embedded independently, a stack of per-patch MLP
+blocks is applied, and the result is pooled – is found to fail
+badly. It is shown that such a design, without a positional sig-
+nal for patches and without any mechanism to mix information
+across patches, is consistently and substantially outperformed
+by an unpatched baseline with the same MLP capacity. This
+failure mode is worth documenting explicitly, since it is easy
+to overlook: it is not that patching is harmful in principle, but
+that a patch representation with no notion of order and no
+cross-patch interaction discards the very information patching
+is supposed to preserve.
+This is corrected with two additions – a learnable patch po-
+sitional embedding and a token-mixing MLP layer that mixes
+across patches, following the MLP-Mixer design [7] – and the
+corrected model is referred to as Patch-MLP-TS (v2) through-
+out this paper. It is evaluated against linear baselines (Linear,
+NLinear, DLinear) and PatchTST across four ETT datasets and
+the large-channel Electricity dataset, with three random seeds
+used on ETT and two on Electricity, and ablations are reported
+isolating the effect of channel-independence, patching, and
+patch length, alongside a measured (not theoretical) efficiency
+comparison against PatchTST.
+The contributions of this work are as follows:
+• A failure mode in naive patch-plus-MLP forecasting
+architectures – loss of patch identity and order at the
+pooling stage – is identified and documented, and it is
+
+[Page 2]
+shown that fixing it with positional embedding and cross-
+patch mixing closes a previously large accuracy gap.
+• A multi-seed benchmark against linear and attention-
+based baselines is provided on four ETT datasets and
+Electricity, with mean and standard deviation reported
+rather than single-run numbers.
+• Ablations are provided that isolate channel-independence
+(large, consistent effect) and patching (smaller, horizon-
+dependent effect), along with a patch-length sensitivity
+study.
+• Measured training and inference time are reported against
+PatchTST, with a consistent training-time advantage
+shown and a lower inference latency demonstrated on
+the large-channel Electricity dataset, without reliance on
+a parameter-count reduction.
+Emphasis is placed on accuracy claims that are supported
+by the data reported here rather than on a narrative of universal
+superiority: the model is found to be competitive on average
+and to win clearly in specific, identifiable settings, and the
+settings where it does not win are also reported.
+II. RELATED WORK
+Linear and MLP-based forecasters. It was shown in
+LTSF-Linear [4] that a single linear layer per channel, option-
+ally combined with trend/seasonal decomposition (DLinear)
+or last-value normalization (NLinear), matches or beats con-
+siderably more complex Transformer forecasters on standard
+LTSF benchmarks. This direction is extended by TSMixer
+[6] with an all-MLP architecture that alternates time-mixing
+and feature-mixing operations, in the style of MLP-Mixer [7],
+and accuracy competitive with state-of-the-art Transformers is
+reported.
+Patch-based Transformers. In PatchTST [5], each channel
+is segmented into overlapping patches, each patch is embedded
+as a token, and a channel-independent Transformer encoder
+is applied over the resulting patch sequence. The effective
+receptive field per token is enlarged by patching, and the
+quadratic cost of attention is reduced relative to point-wise
+tokenization; channel-independence was shown to be impor-
+tant for stable performance. A related but distinct approach is
+taken by iTransformer [8], in which whole variates rather than
+patches are tokenized and attention is applied across variates
+instead of across time.
+Position of this work. The patch tokenization of PatchTST
+is combined with the attention-free, all-MLP mixing philos-
+ophy of TSMixer, and what goes wrong when the two are
+combined naively is specifically studied – a design point that,
+to the authors’ knowledge, has not been explicitly documented
+in prior work on patch-based forecasters.
+III. METHOD
+A. Problem Setup
+Given a multivariate lookback window X ∈ RL×C with L
+time steps and C channels, the forecasting task is to predict the
+next H steps Y ∈ RH×C . Channel-independence is adopted
+throughout: each of the C channels is processed independently
+by a shared-weight model, and the per-channel outputs are
+concatenated to form the final prediction.
+B. Patch-MLP-TS Architecture
+For a single channel x ∈ RL, the lookback window is split
+into N = ⌊L/P ⌋ non-overlapping patches of length P , giving
+xp ∈ RN ×P . Each patch is linearly embedded to dimension
+d:
+e = xpWpatch + bpatch, e ∈ RN ×d. (1)
+A learnable positional embedding Epos ∈ RN ×d is added: e ←
+e + Epos.
+The embedded patches are passed through K mixer blocks.
+In each block k, the following is applied, in sequence:
+t = LayerNorm(e) (2)
+t = MLPtoken(t⊤)⊤ (mix across the N patches) (3)
+e ← e + t (4)
+e ← e + MLPfeat(LayerNorm(e)) (mix across features)
+(5)
+where MLPtoken : RN → RN operates on the patch dimension
+(with e transposed so that patches, not features, form the
+last axis) and MLPfeat : Rd → Rd is a standard two-layer
+feed-forward block with GELU activation, matching the time-
+mixing / feature-mixing structure of MLP-Mixer [7].
+After K blocks, a final LayerNorm is applied and all
+N patch embeddings are flattened (not mean-pooled) and
+projected to the forecast horizon:
+ˆy = Flatten(e) Whead + bhead, ˆy ∈ RH . (6)
+C. The v1 Failure Mode
+In an earlier version of this architecture (v1), both the
+positional embedding Epos and the token-mixing MLP were
+omitted, with only feature-mixing blocks applied to each patch
+independently and mean-pooling performed across patches
+before the head. This design has no mechanism by which an
+early patch can be distinguished from a late one, and whatever
+order-dependent information survives the independent per-
+patch processing is discarded by the mean-pool at the output.
+Empirically, v1 was found to be outperformed by a no-
+patching ablation (a single MLP over the whole lookback
+window) in every one of 8 tested (dataset, horizon) settings on
+ETTh1 and ETTh2, by margins as large as 2× in MSE. This
+is reversed once the positional embedding and token-mixing
+MLP are added (v2): the patched model is found to outperform
+the no-patching ablation in 5 of the same 8 settings (Section
+VI), and average accuracy across the full ETT benchmark
+is improved from clearly the worst of five compared models
+(mean rank 4.75/5) to competitive with the strongest baselines.
+This transition is reported explicitly because the failure mode
+– patch tokenization without any way to recover patch order or
+mix across patches – is a natural design that might be arrived
+at, and its consequences are judged severe enough to be worth
+documenting.
+
+[Page 3]
+IV. EXPERIMENTAL SETUP
+A. Datasets
+Evaluation is performed on the four standard ETT datasets
+(ETTh1, ETTh2: hourly, 7 channels; ETTm1, ETTm2: 15-
+minute, 7 channels) [1] and the Electricity dataset (hourly, 321
+channels, UCI ElectricityLoadDiagrams20112014). Data is
+split chronologically 70%/10%/20% into train/validation/test,
+with per-channel z-score normalization computed on the train-
+ing split only.
+B. Baselines
+Comparisons are made against Linear and NLinear (single
+linear layer, with and without last-value normalization) and
+DLinear (trend/seasonal decomposition with two linear heads)
+[4], and PatchTST [5], using a from-scratch reimplementation
+with patch length 16, stride 8, model dimension 128, 8
+attention heads, and 2 encoder layers. A lightweight TSMixer
+[6] reproduction (hidden dimension 64, 2 mixer blocks) is ad-
+ditionally reported as a single-seed, directional reference point;
+this reproduction is not tuned to match published TSMixer
+numbers and should not be read as a rigorous comparison.
+C. Training Details
+All models use lookback length L = 96 and are evaluated at
+horizons H ∈ {96, 192, 336, 720} (ETT) and H ∈ {96, 720}
+(Electricity, chosen to limit compute given the 321-channel
+width). For Patch-MLP-TS, P = 12, d = 128, K = 3 mixer
+blocks, and dropout 0.1 are used. All models are trained with
+AdamW, learning rate 10−3, weight decay 10−4, batch size
+64 (ETT) or 16–128 (Electricity, depending on model memory
+footprint), for up to 20 epochs with early stopping (patience
+5) on validation MSE, using mixed-precision training. Test-set
+MSE and MAE are reported.
+D. Seeds
+ETT results are averaged over 3 seeds (42, 43, 44); Electric-
+ity results are averaged over 2 seeds (42, 43) due to compute
+constraints from its larger channel count. Mean ± standard
+deviation is reported throughout, and the 2-seed Electricity
+results are not presented as equivalent in rigor to the 3-seed
+ETT results.
+V. MAIN RESULTS
+Test MSE (mean ± std) for all five models across four ETT
+datasets and Electricity, at short (96) and long (720) horizons,
+is reported in Table I. The full horizon sweep with error bars
+is shown in Figure 1.
+Across the 10 (dataset, horizon) settings in Table I, the
+lowest mean MSE is attained by PatchTST in 6, by DLinear in
+2, and by Patch-MLP-TS in 2. Averaged over the eight 3-seed
+ETT rows, mean MSE is 0.3479 for DLinear, 0.3480 for Patch-
+MLP-TS, and 0.3500 for PatchTST. Thus, an average MSE
+nearly identical to DLinear is achieved by Patch-MLP-TS, and
+competitiveness with PatchTST and plain Linear (0.3514) is
+maintained on the ETT benchmarks.
+The clearest, most seed-stable advantage for Patch-MLP-TS
+is shown at long horizons on two of the four ETT datasets:
+ETTh2 at H = 720 (0.2536 vs. 0.2633 for PatchTST and
+0.2664 for DLinear) and ETTm1 at H = 720 (0.5346 vs.
+0.5518 for PatchTST and 0.5495 for DLinear). Conversely,
+ETTm1 at H = 96 is found to be the weakest setting for
+both patch-based models, and is notably the least stable: a
+std of 0.0146 is observed for Patch-MLP-TS and 0.0263 for
+PatchTST at this setting, an order of magnitude larger than
+DLinear’s 0.0006, while the simple linear baselines are won
+outright by. ETTh2 at H = 96 and both Electricity horizons
+are also won by PatchTST or DLinear. No diagnosis for the
+ETTm1 H = 96 instability is offered here; it is flagged instead
+as a direction for future work rather than explained away.
+On Electricity specifically – the only dataset with a sub-
+stantially larger channel count (321 vs. 7 for ETT) – near-
+parity with PatchTST is achieved by Patch-MLP-TS at both
+horizons (0.1766 vs. 0.1715 at H = 96; 0.2371 vs. 0.2315
+at H = 720), while, as shown in Section VII, training and
+inference are performed substantially faster. This is regarded
+as the most practically relevant result in the paper: near-parity
+accuracy with an attention-based model is achieved on a wide-
+channel dataset, at lower wall-clock cost.
+A comparison is additionally made against a lightweight,
+untuned TSMixer reproduction at H ∈ {96, 720} across all
+five datasets; it is outperformed by Patch-MLP-TS in all 10
+settings tested. Given that this TSMixer implementation is
+not tuned to match published numbers, this comparison is
+presented as a directional data point rather than as a rigorous
+comparison against the TSMixer architecture as originally
+proposed.
+VI. ABLATION STUDIES
+A. Channel-Independence vs. Channel-Mixing
+The default channel-independent Patch-MLP-TS is com-
+pared against a variant in which all channels are mixed into
+each patch token instead of being processed independently
+(Table II, single seed).
+A wide, consistent margin is won by channel-independence
+in every setting tested – this is regarded as the single cleanest
+and most confident finding in this ablation study, and it
+matches the conclusion drawn for PatchTST [5]: independent
+processing of the channels of a multivariate series with shared
+weights is found to be more effective than mixing them at the
+patch-embedding stage, at least for the datasets studied here.
+B. Patching vs. No-Patching
+The full patched model is compared against a variant using
+the same mixer backbone but with no patch split (the entire
+96-step lookback embedded as a single token), using the same
+positional-embedding-free MLP stack (Table III, single seed).
+5 of 8 settings are won by patching, and 3 are lost. The three
+losses occur at H = 336 on ETTh1 and at H ∈ {336, 720} on
+ETTh2, indicating that the benefit of patching is dataset- and
+horizon-dependent rather than universal in this architecture.
+Both ablations are shown together in Figure 2.
+
+[Page 4]
+TABLE I
+TEST MSE (MEAN ± STD ACROSS SEEDS). BOLD INDICATES THE LOWEST MEAN MSE PER ROW. ETT: 3 SEEDS. ELECTRICITY: 2 SEEDS (MARKED WITH
+†).
+Dataset H Linear NLinear DLinear PatchTST Patch-MLP-TS (ours)
+ETTh1 96 0.4436±0.0012 0.4506±0.0010 0.4403±0.0015 0.4152±0.0038 0.4195±0.0069
+ETTh1 720 0.6617±0.0059 0.7107±0.0005 0.6520±0.0036 0.6464±0.0060 0.6500±0.0049
+ETTh2 96 0.1726±0.0012 0.1750±0.0005 0.1688±0.0003 0.1760±0.0067 0.1742±0.0032
+ETTh2 720 0.2712±0.0029 0.2992±0.0006 0.2664±0.0023 0.2633±0.0130 0.2536±0.0066
+ETTm1 96 0.3571±0.0007 0.3625±0.0021 0.3558±0.0006 0.4048±0.0263 0.4065±0.0146
+ETTm1 720 0.5511±0.0021 0.5836±0.0014 0.5495±0.0016 0.5518±0.0122 0.5346±0.0067
+ETTm2 96 0.1216±0.0007 0.1214±0.0003 0.1206±0.0003 0.1146±0.0002 0.1171±0.0013
+ETTm2 720 0.2320±0.0039 0.2382±0.0003 0.2293±0.0035 0.2276±0.0049 0.2287±0.0046
+Electricity† 96 0.1959±0.0000 0.1991±0.0002 0.1958±0.0001 0.1715±0.0007 0.1766±0.0041
+Electricity† 720 0.2424±0.0003 0.2538±0.0000 0.2417±0.0003 0.2315±0.0001 0.2371±0.0029
+100 200 300 400 500 600 700 
+Horizon
+0.40
+0.45
+0.50
+0.55
+0.60
+0.65
+0.70
+MSE
+ETTh1
+Linear 
+NLinear 
+DLinear 
+PatchTST 
+PatchMLPTS_v2
+100 200 300 400 500 600 700 
+Horizon
+0.18
+0.20
+0.22
+0.24
+0.26
+0.28
+0.30
+MSE
+ETTh2
+100 200 300 400 500 600 700 
+Horizon
+0.35
+0.40
+0.45
+0.50
+0.55
+MSE
+ETTm1
+100 200 300 400 500 600 700 
+Horizon
+0.12
+0.14
+0.16
+0.18
+0.20
+0.22
+0.24
+MSE
+ETTm2
+100 200 300 400 500 600 700 
+Horizon
+0.18
+0.20
+0.22
+0.24
+MSE
+Electricity
+Fig. 1. Test MSE vs. forecast horizon for all five models across four ETT datasets and Electricity. Error bars show standard deviation across seeds (3 for
+ETT, 2 for Electricity).
+TABLE II
+CHANNEL-INDEPENDENT VS. CHANNEL-MIXING VARIANTS (MSE,
+SINGLE SEED).
+Dataset H Channel-Independent Channel-Mixing
+ETTh1 96 0.4272 0.5566
+ETTh1 720 0.6548 0.9187
+ETTh2 96 0.1768 0.2600
+ETTh2 720 0.2520 0.4162
+TABLE III
+PATCHING VS. NO-PATCHING (MSE, SINGLE SEED). BOLD: BETTER OF
+THE PAIR.
+Dataset H Patched No-Patching
+ETTh1 96 0.4178 0.4246
+ETTh1 192 0.4689 0.4748
+ETTh1 336 0.5273 0.5154
+ETTh1 720 0.6498 0.6698
+ETTh2 96 0.1727 0.1730
+ETTh2 192 0.2089 0.2187
+ETTh2 336 0.2211 0.2164
+ETTh2 720 0.2849 0.2606
+C. Patch Length Sensitivity
+MSE at H = 96 for patch lengths P ∈ {8, 12, 16, 24} is
+reported in Table IV and Figure 3 (single seed; P = 12 is the
+default used elsewhere in this paper).
+All four patch lengths are found to land within approxi-
+mately 0.01 MSE of each other on both datasets, indicating
+96 336 720 
+Horizon
+0.0
+0.2
+0.4
+0.6
+0.8
+MSE
+ETTh1
+Full (patched) 
+No-Patching 
+Channel-Mixing
+96 192 336 720 
+Horizon
+0.00
+0.05
+0.10
+0.15
+0.20
+0.25
+0.30
+0.35
+0.40
+MSE
+ETTh2
+Full (patched) 
+No-Patching 
+Channel-Mixing
+Fig. 2. Ablation comparison: full (patched) model, no-patching variant, and
+channel-mixing variant. ETTh1 and ETTh2 are evaluated across the reported
+forecasting horizons.
+TABLE IV
+PATCH LENGTH SENSITIVITY AT H = 96 (MSE, SINGLE SEED).
+Dataset P = 8 P = 12 (default) P = 16 P = 24
+ETTh1 0.4153 0.4272 0.4155 0.4205
+ETTh2 0.1693 0.1768 0.1673 0.1718
+that this hyperparameter is not one to which the model is
+highly sensitive. However, the best patch length is found to
+be dataset-dependent: the lowest MSE on ETTh1 is given by
+P = 8, while the lowest MSE on ETTh2 at H = 96 is given
+by P = 16. The default P = 12 used throughout the main
+benchmark is therefore shown not to be optimal for either
+dataset in this single-seed sensitivity study. The full benchmark
+was not retuned and rerun with the best patch length for each
+dataset; this is reported as a limitation rather than treated as
+
+[Page 5]
+8 10 12 14 16 18 20 22 24
+Patch length
+0.20
+0.25
+0.30
+0.35
+0.40
+MSE (H=96)
+Patch length sensitivity
+ETTh1
+ETTh2
+Fig. 3. MSE at H = 96 as a function of patch length P on ETTh1 and
+ETTh2.
+an opportunity to retroactively select the best configuration.
+VII. EFFICIENCY ANALYSIS
+Parameter count, measured wall-clock training time per
+epoch, and measured inference latency for Patch-MLP-TS and
+PatchTST at H = 96 are reported in Table V and Figure 4,
+on a small-channel dataset (ETTh1, 7 channels) and a large-
+channel dataset (Electricity, 321 channels).
+TABLE V
+EFFICIENCY COMPARISON, PATCH-MLP-TS VS. PATCHTST AT H = 96.
+Dataset Model Params Epoch (s) Inference (ms/batch)
+ETTh1 Patch-MLP-TS 498,856 1.68 3.45
+ETTh1 PatchTST 416,224 2.58 3.11
+Electricity Patch-MLP-TS 498,856 92.15 25.64
+Electricity PatchTST 416,224 161.88 33.65
+ETTh1 Electricity 
+dataset
+0
+20
+40
+60
+80
+100
+120
+140
+160
+epoch_time_sec
+Train time per epoch (s)
+PatchMLPTS_v2 
+PatchTST
+ETTh1 Electricity 
+dataset
+0
+5
+10
+15
+20
+25
+30
+35
+inference_ms_per_batch
+Inference latency (ms/batch)
+PatchMLPTS_v2 
+PatchTST
+Fig. 4. Measured training time per epoch and inference latency, Patch-MLP-
+TS vs. PatchTST, on ETTh1 (7 channels) and Electricity (321 channels).
+A consistent advantage in parameter count is not found for
+Patch-MLP-TS: at H = 96 more parameters are used than by
+PatchTST (499K vs. 416K), because the flatten-based output
+head is scaled with N × d × H rather than with PatchTST’s
+N ×dmodel ×H, which has a smaller effective N ×d product at
+this horizon. At H = 720 this relationship is reversed (1.14M
+vs. 1.38M, roughly 17% fewer parameters for Patch-MLP-TS),
+because the two models’ patch counts and head dimensions are
+scaled differently with horizon. A blanket parameter-efficiency
+advantage is therefore not claimed.
+What is observed consistently is a wall-clock speed ad-
+vantage: training is performed 1.54× faster on ETTh1 and
+1.76× faster on Electricity per epoch by Patch-MLP-TS, and
+inference is performed 1.31× faster on Electricity (inference
+on ETTh1 is performed marginally faster by PatchTST, 3.11ms
+vs. 3.45ms). This speed advantage is maintained despite a
+comparable or larger parameter count being used by Patch-
+MLP-TS, and is attributed to the absence of the O(N 2)
+attention computation rather than to a smaller model. This
+is regarded as the more meaningful and more honestly sup-
+portable efficiency claim than a parameter-count argument.
+VIII. LIMITATIONS
+These limitations are reported directly rather than omitted:
+• 2 seeds, not 3, are used for the Electricity benchmark,
+due to compute constraints from its 321-channel width;
+its variance estimates are not presented as equivalent in
+rigor to the 3-seed ETT results.
+• The channel-mixing, no-patching, and patch-length abla-
+tions (Tables II–IV) are each single-seed; variance esti-
+mates are not available for these ablation numbers.
+• Marked instability at H = 96 is observed for both patch-
+based models on ETTm1 (standard deviation an order of
+magnitude larger than the linear baselines at the same
+setting); the cause has not been diagnosed and is flagged
+as future work.
+• The default patch length (P = 12) used throughout the
+main benchmark is not the best-performing value at H =
+96 on either ETTh1 or ETTh2 (Table IV); a full retuning
+pass was judged out of scope for this study.
+• The TSMixer baseline used here is a lightweight, untuned
+reproduction and should not be read as a faithful repro-
+duction of published TSMixer results.
+• The main benchmark is won by Patch-MLP-TS in 2 of
+10 (dataset, horizon) settings, and is lost in the remaining
+8 to either PatchTST or DLinear; general superiority is
+not claimed, only average competitiveness and specific,
+identifiable wins at long horizons on two datasets and on
+the large-channel Electricity dataset, in combination with
+lower wall-clock cost.
+IX. CONCLUSION
+Patch-MLP-TS is presented: a channel-independent,
+attention-free patch-based architecture for long-term time
+series forecasting. A failure mode encountered during its
+development is documented: a naive patch-embedding-plus-
+MLP design with no positional signal and no cross-patch
+mixing is consistently and substantially outperformed by a
+simpler unpatched baseline, because information about patch
+order is discarded by such a design. Once this is corrected
+with a positional embedding and an MLP-Mixer-style token-
+mixing layer, a model is obtained that is competitive in mean
+
+[Page 6]
+MSE with DLinear and PatchTST on average across four
+ETT benchmarks, that wins clearly at the longest horizon on
+two of those four datasets, and that remains competitive with
+PatchTST on the substantially wider 321-channel Electricity
+dataset. Faster training than PatchTST is also achieved by
+Patch-MLP-TS in both measured settings, and lower inference
+latency is achieved on Electricity, although faster inference
+on ETTh1 is achieved marginally by PatchTST instead. These
+efficiency gains are obtained without a consistent parameter-
+count advantage, supporting the absence of self-attention
+as the main computational distinction. Results are reported
+with multi-seed variance where compute allowed, the settings
+and ablations in which the method does not win are stated
+explicitly, and the horizon-dependence of patching’s benefit –
+rather than a single verdict of “patching helps” or “patching
+hurts” – is regarded as itself a useful finding for future work
+on patch-based, attention-free forecasting architectures.
+REFERENCES
+[1] H. Zhou, S. Zhang, J. Peng, S. Zhang, J. Li, H. Xiong, and W. Zhang,
+“Informer: Beyond efficient transformer for long sequence time-series
+forecasting,” in Proc. AAAI, 2021.
+[2] H. Wu, J. Xu, J. Wang, and M. Long, “Autoformer: Decomposition
+transformers with auto-correlation for long-term series forecasting,” in
+Proc. NeurIPS, 2021.
+[3] T. Zhou, Z. Ma, Q. Wen, X. Wang, L. Sun, and R. Jin, “FEDformer:
+Frequency enhanced decomposed transformer for long-term series fore-
+casting,” in Proc. ICML, 2022.
+[4] A. Zeng, M. Chen, L. Zhang, and Q. Xu, “Are transformers effective
+for time series forecasting?” in Proc. AAAI, 2023.
+[5] Y. Nie, N. H. Nguyen, P. Sinthong, and J. Kalagnanam, “A time series
+is worth 64 words: Long-term forecasting with transformers,” in Proc.
+ICLR, 2023.
+[6] S.-A. Chen, C.-L. Li, N. Yoder, S. O. Arik, and T. Pfister, “TSMixer: An
+all-MLP architecture for time series forecasting,” Trans. Mach. Learn.
+Res., 2023.
+[7] I. O. Tolstikhin, N. Houlsby, A. Kolesnikov, L. Beyer, X. Zhai, T.
+Unterthiner, J. Yung, A. Steiner, D. Keysers, J. Uszkoreit, M. Lucic,
+and A. Dosovitskiy, “MLP-Mixer: An all-MLP architecture for vision,”
+in Proc. NeurIPS, 2021.
+[8] Y. Liu, T. Hu, H. Zhang, H. Wu, S. Wang, L. Ma, and M. Long, “iTrans-
+former: Inverted transformers are effective for time series forecasting,”
+in Proc. ICLR, 2024.

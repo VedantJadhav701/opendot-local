@@ -1,5 +1,6 @@
 import "server-only";
-import { activeModel, activeReviewModel, isOllamaConnected, resolveModels, setDefaultModel } from "../llm";
+import { activeModel, activeReviewModel, getResolvedSync, isOllamaConnected, resolveModels, setDefaultModel } from "../llm";
+import { getSetting } from "../db";
 
 export function hasKey(): boolean {
   return true; // Local-first Ollama default
@@ -34,11 +35,11 @@ export async function reviewModelFor(): Promise<string> {
 }
 
 export function knownModels(): { main: string; review: string; available: string[]; defaultModel: string } {
+  const r = getResolvedSync();
+  const defaultSaved = getSetting("default_model");
   return {
-    main: "qwen3:4b",
-    review: "qwen3:0.6b",
-    available: ["qwen3:4b", "qwen3:0.6b", "qwen3:1.7b", "llama3.2:3b"],
-    defaultModel: "qwen3:4b",
+    ...r,
+    defaultModel: defaultSaved || r.main,
   };
 }
 

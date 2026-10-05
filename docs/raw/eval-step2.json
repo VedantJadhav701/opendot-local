@@ -1,0 +1,1113 @@
+{
+  "summary": {
+    "patchMLPTS": {
+      "questionCount": 20,
+      "avgBaselineRecall": "44.3",
+      "avgFilter10Recall": "34.9",
+      "avgFilter20Recall": "43.6",
+      "avgFilter30Recall": "52.4",
+      "avgFilterCapRecall": "47.8",
+      "avgFilterTimeMs": "1.4"
+    },
+    "clipPaper": {
+      "questionCount": 10,
+      "avgBaselineRecall": "16.5",
+      "avgFilter10Recall": "35.7",
+      "avgFilter20Recall": "49.2",
+      "avgFilter30Recall": "61.7",
+      "avgFilterCapRecall": "22.4",
+      "avgFilterTimeMs": "8.5"
+    },
+    "overall": {
+      "totalQuestions": 30,
+      "avgBaselineRecall": "35.0",
+      "avgFilter10Recall": "35.2",
+      "avgFilter20Recall": "45.5",
+      "avgFilter30Recall": "55.5",
+      "avgFilterCapRecall": "39.3",
+      "avgFilterTimeMs": "3.7"
+    }
+  },
+  "evalResults": [
+    {
+      "id": "patch_q01",
+      "doc": "PatchMLPTS.pdf",
+      "question": "Who is the author of Patch-MLP-TS and what is their affiliation?",
+      "goldChunkCount": 1,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 100
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1472,
+        "goldRecall": 100,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2294,
+        "goldRecall": 100,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2752,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2472,
+        "goldRecall": 100,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q02",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What baseline models are compared against Patch-MLP-TS?",
+      "goldChunkCount": 21,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 42.9
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1143,
+        "goldRecall": 14.3,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1895,
+        "goldRecall": 19,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2761,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2481,
+        "goldRecall": 28.6,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q03",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What failure mode occurs in naive patch-MLP construction without positional embedding?",
+      "goldChunkCount": 3,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 66.7
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1047,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1877,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2709,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2429,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q04",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What are the two MLP block types combined in Patch-MLP-TS?",
+      "goldChunkCount": 8,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 62.5
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1138,
+        "goldRecall": 37.5,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1997,
+        "goldRecall": 62.5,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2750,
+        "goldRecall": 62.5,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2470,
+        "goldRecall": 62.5,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q05",
+      "doc": "PatchMLPTS.pdf",
+      "question": "How much faster is Patch-MLP-TS trained compared to PatchTST on Electricity dataset?",
+      "goldChunkCount": 19,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 26.3
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1476,
+        "goldRecall": 21.1,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2215,
+        "goldRecall": 31.6,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2770,
+        "goldRecall": 36.8,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2468,
+        "goldRecall": 31.6,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q06",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What reduction in inference latency is reported for Patch-MLP-TS?",
+      "goldChunkCount": 4,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 50
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1425,
+        "goldRecall": 75,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2247,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 3059,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2470,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q07",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What is the 3-seed mean MSE across four ETT benchmarks for Patch-MLP-TS vs PatchTST and DLinear?",
+      "goldChunkCount": 12,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 41.7
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1414,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2022,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 2847,
+        "goldRecall": 41.7,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2258,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q08",
+      "doc": "PatchMLPTS.pdf",
+      "question": "Which dataset has 321 channel variates in the efficiency analysis?",
+      "goldChunkCount": 19,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 26.3
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1356,
+        "goldRecall": 21.1,
+        "filterTimeMs": 0
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2197,
+        "goldRecall": 31.6,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 3040,
+        "goldRecall": 42.1,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2441,
+        "goldRecall": 31.6,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q09",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What model family did Zeng et al. show outperforming Transformers on LTSF?",
+      "goldChunkCount": 13,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 38.5
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1383,
+        "goldRecall": 23.1,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2046,
+        "goldRecall": 23.1,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 2794,
+        "goldRecall": 38.5,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2399,
+        "goldRecall": 30.8,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q10",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What is the stride parameter S used for in patching time series?",
+      "goldChunkCount": 0,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 0
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1460,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2316,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2680,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 8,
+        "tokensFed": 2285,
+        "goldRecall": 0,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q11",
+      "doc": "PatchMLPTS.pdf",
+      "question": "Which paper introduced PatchTST for multivariate time series forecasting?",
+      "goldChunkCount": 21,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 42.9
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1136,
+        "goldRecall": 19,
+        "filterTimeMs": 6
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1710,
+        "goldRecall": 23.8,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2567,
+        "goldRecall": 38.1,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2463,
+        "goldRecall": 38.1,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q12",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What is the role of channel-independence in time series models?",
+      "goldChunkCount": 7,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 42.9
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1136,
+        "goldRecall": 28.6,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1714,
+        "goldRecall": 42.9,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2522,
+        "goldRecall": 71.4,
+        "filterTimeMs": 2
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2418,
+        "goldRecall": 71.4,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q13",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What architecture spirit is Patch-MLP-TS based on?",
+      "goldChunkCount": 14,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 42.9
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1060,
+        "goldRecall": 21.4,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1814,
+        "goldRecall": 28.6,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2314,
+        "goldRecall": 35.7,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 10,
+        "tokensFed": 2314,
+        "goldRecall": 35.7,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q14",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What benchmark datasets belong to the ETT family?",
+      "goldChunkCount": 15,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 0
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1371,
+        "goldRecall": 13.3,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2186,
+        "goldRecall": 26.7,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 2947,
+        "goldRecall": 46.7,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2381,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q15",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What happens when positional embeddings are omitted in v1?",
+      "goldChunkCount": 2,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 100
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1392,
+        "goldRecall": 50,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2079,
+        "goldRecall": 100,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 2866,
+        "goldRecall": 100,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2322,
+        "goldRecall": 100,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q16",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What key metric measures forecasting accuracy in the paper?",
+      "goldChunkCount": 11,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 9.1
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1367,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1849,
+        "goldRecall": 9.1,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2637,
+        "goldRecall": 27.3,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2358,
+        "goldRecall": 18.2,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "patch_q17",
+      "doc": "PatchMLPTS.pdf",
+      "question": "Why does patching reduce computation in Transformer attention maps?",
+      "goldChunkCount": 0,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 0
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1450,
+        "goldRecall": 0,
+        "filterTimeMs": 2
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 2017,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2708,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 8,
+        "tokensFed": 2313,
+        "goldRecall": 0,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q18",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What look-back window horizons are evaluated for long-term forecasting?",
+      "goldChunkCount": 3,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 66.7
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1313,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2151,
+        "goldRecall": 66.7,
+        "filterTimeMs": 2
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2723,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2432,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q19",
+      "doc": "PatchMLPTS.pdf",
+      "question": "Is Patch-MLP-TS claimed to win on every single benchmark setting?",
+      "goldChunkCount": 3,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 66.7
+      },
+      "filter10": {
+        "selectedCount": 5,
+        "tokensFed": 1458,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 8,
+        "tokensFed": 2307,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 11,
+        "tokensFed": 3009,
+        "goldRecall": 66.7,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2427,
+        "goldRecall": 33.3,
+        "filterTimeMs": 1
+      }
+    },
+    {
+      "id": "patch_q20",
+      "doc": "PatchMLPTS.pdf",
+      "question": "What index terms describe Patch-MLP-TS?",
+      "goldChunkCount": 5,
+      "baseline": {
+        "selectedCount": 9,
+        "tokensFed": 2450,
+        "bytesFed": 9840,
+        "goldRecall": 60
+      },
+      "filter10": {
+        "selectedCount": 4,
+        "tokensFed": 1147,
+        "goldRecall": 40,
+        "filterTimeMs": 1
+      },
+      "filter20": {
+        "selectedCount": 7,
+        "tokensFed": 1980,
+        "goldRecall": 40,
+        "filterTimeMs": 1
+      },
+      "filter30": {
+        "selectedCount": 10,
+        "tokensFed": 2725,
+        "goldRecall": 40,
+        "filterTimeMs": 1
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2445,
+        "goldRecall": 40,
+        "filterTimeMs": 2
+      }
+    },
+    {
+      "id": "clip_q01",
+      "doc": "large_30page_doc.pdf",
+      "question": "What is the full title of the CLIP paper by OpenAI?",
+      "goldChunkCount": 63,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 4.8
+      },
+      "filter10": {
+        "selectedCount": 25,
+        "tokensFed": 7029,
+        "goldRecall": 12.7,
+        "filterTimeMs": 11
+      },
+      "filter20": {
+        "selectedCount": 49,
+        "tokensFed": 13615,
+        "goldRecall": 25.4,
+        "filterTimeMs": 10
+      },
+      "filter30": {
+        "selectedCount": 73,
+        "tokensFed": 20097,
+        "goldRecall": 38.1,
+        "filterTimeMs": 9
+      },
+      "filter2500Cap": {
+        "selectedCount": 8,
+        "tokensFed": 2246,
+        "goldRecall": 7.9,
+        "filterTimeMs": 10
+      }
+    },
+    {
+      "id": "clip_q02",
+      "doc": "large_30page_doc.pdf",
+      "question": "How many (image, text) pairs were collected from the internet to train CLIP?",
+      "goldChunkCount": 5,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 20
+      },
+      "filter10": {
+        "selectedCount": 24,
+        "tokensFed": 6626,
+        "goldRecall": 100,
+        "filterTimeMs": 8
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13377,
+        "goldRecall": 100,
+        "filterTimeMs": 9
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 20177,
+        "goldRecall": 100,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2458,
+        "goldRecall": 60,
+        "filterTimeMs": 9
+      }
+    },
+    {
+      "id": "clip_q03",
+      "doc": "large_30page_doc.pdf",
+      "question": "Which baseline vision architecture performance does CLIP match zero-shot on ImageNet?",
+      "goldChunkCount": 95,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 6.3
+      },
+      "filter10": {
+        "selectedCount": 25,
+        "tokensFed": 6957,
+        "goldRecall": 20,
+        "filterTimeMs": 9
+      },
+      "filter20": {
+        "selectedCount": 49,
+        "tokensFed": 13599,
+        "goldRecall": 36.8,
+        "filterTimeMs": 9
+      },
+      "filter30": {
+        "selectedCount": 73,
+        "tokensFed": 20198,
+        "goldRecall": 52.6,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2431,
+        "goldRecall": 7.4,
+        "filterTimeMs": 8
+      }
+    },
+    {
+      "id": "clip_q04",
+      "doc": "large_30page_doc.pdf",
+      "question": "How many labeled training examples from ImageNet were used during CLIP zero-shot evaluation?",
+      "goldChunkCount": 98,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 6.1
+      },
+      "filter10": {
+        "selectedCount": 25,
+        "tokensFed": 6983,
+        "goldRecall": 22.4,
+        "filterTimeMs": 8
+      },
+      "filter20": {
+        "selectedCount": 49,
+        "tokensFed": 13643,
+        "goldRecall": 38.8,
+        "filterTimeMs": 9
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 19865,
+        "goldRecall": 53.1,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2446,
+        "goldRecall": 7.1,
+        "filterTimeMs": 10
+      }
+    },
+    {
+      "id": "clip_q05",
+      "doc": "large_30page_doc.pdf",
+      "question": "How many downstream computer vision benchmarks were evaluated in the CLIP paper?",
+      "goldChunkCount": 46,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 4.3
+      },
+      "filter10": {
+        "selectedCount": 24,
+        "tokensFed": 6986,
+        "goldRecall": 28.3,
+        "filterTimeMs": 8
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13731,
+        "goldRecall": 54.3,
+        "filterTimeMs": 10
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 20307,
+        "goldRecall": 71.7,
+        "filterTimeMs": 9
+      },
+      "filter2500Cap": {
+        "selectedCount": 8,
+        "tokensFed": 2220,
+        "goldRecall": 8.7,
+        "filterTimeMs": 9
+      }
+    },
+    {
+      "id": "clip_q06",
+      "doc": "large_30page_doc.pdf",
+      "question": "What key advantage does natural language supervision offer over crowd-labeled datasets?",
+      "goldChunkCount": 74,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 4.1
+      },
+      "filter10": {
+        "selectedCount": 25,
+        "tokensFed": 6767,
+        "goldRecall": 18.9,
+        "filterTimeMs": 7
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13300,
+        "goldRecall": 44.6,
+        "filterTimeMs": 8
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 20001,
+        "goldRecall": 71.6,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 8,
+        "tokensFed": 2263,
+        "goldRecall": 5.4,
+        "filterTimeMs": 8
+      }
+    },
+    {
+      "id": "clip_q07",
+      "doc": "large_30page_doc.pdf",
+      "question": "What visual tasks are tested in the zero-shot transfer section?",
+      "goldChunkCount": 17,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 5.9
+      },
+      "filter10": {
+        "selectedCount": 24,
+        "tokensFed": 6763,
+        "goldRecall": 17.6,
+        "filterTimeMs": 7
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13446,
+        "goldRecall": 29.4,
+        "filterTimeMs": 7
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 20203,
+        "goldRecall": 41.2,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2487,
+        "goldRecall": 11.8,
+        "filterTimeMs": 8
+      }
+    },
+    {
+      "id": "clip_q08",
+      "doc": "large_30page_doc.pdf",
+      "question": "Where are the code and model weights for CLIP released?",
+      "goldChunkCount": 1,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 100
+      },
+      "filter10": {
+        "selectedCount": 25,
+        "tokensFed": 6829,
+        "goldRecall": 100,
+        "filterTimeMs": 9
+      },
+      "filter20": {
+        "selectedCount": 49,
+        "tokensFed": 13543,
+        "goldRecall": 100,
+        "filterTimeMs": 8
+      },
+      "filter30": {
+        "selectedCount": 73,
+        "tokensFed": 19939,
+        "goldRecall": 100,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2433,
+        "goldRecall": 100,
+        "filterTimeMs": 7
+      }
+    },
+    {
+      "id": "clip_q09",
+      "doc": "large_30page_doc.pdf",
+      "question": "What pre-training objective is used to pair images and text captions in CLIP?",
+      "goldChunkCount": 106,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 7.5
+      },
+      "filter10": {
+        "selectedCount": 24,
+        "tokensFed": 6564,
+        "goldRecall": 21.7,
+        "filterTimeMs": 8
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13330,
+        "goldRecall": 36.8,
+        "filterTimeMs": 7
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 19942,
+        "goldRecall": 52.8,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2498,
+        "goldRecall": 8.5,
+        "filterTimeMs": 8
+      }
+    },
+    {
+      "id": "clip_q10",
+      "doc": "large_30page_doc.pdf",
+      "question": "Why is natural language supervision more flexible than standard fixed 1-of-N class vision models?",
+      "goldChunkCount": 98,
+      "baseline": {
+        "selectedCount": 8,
+        "tokensFed": 2280,
+        "bytesFed": 9204,
+        "goldRecall": 6.1
+      },
+      "filter10": {
+        "selectedCount": 24,
+        "tokensFed": 6679,
+        "goldRecall": 15.3,
+        "filterTimeMs": 7
+      },
+      "filter20": {
+        "selectedCount": 48,
+        "tokensFed": 13548,
+        "goldRecall": 25.5,
+        "filterTimeMs": 7
+      },
+      "filter30": {
+        "selectedCount": 72,
+        "tokensFed": 20197,
+        "goldRecall": 35.7,
+        "filterTimeMs": 8
+      },
+      "filter2500Cap": {
+        "selectedCount": 9,
+        "tokensFed": 2492,
+        "goldRecall": 7.1,
+        "filterTimeMs": 8
+      }
+    }
+  ]
+}

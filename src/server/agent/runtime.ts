@@ -12,6 +12,7 @@ import * as composio from "../composio";
 import type { AppTrigger, Attachment, CardData, Dot, Routine } from "@/lib/types";
 import * as files from "../files";
 import { getTaskChunks } from "../context/db";
+import { fetchSafe } from "./url-safety";
 
 type Pending = {
   responseId: string;
@@ -238,7 +239,7 @@ async function preprocessUrls(text: string, dotId: string): Promise<string> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const res = await fetch(url, {
+    const res = await fetchSafe(url, {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));

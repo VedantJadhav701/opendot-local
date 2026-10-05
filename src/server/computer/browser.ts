@@ -5,6 +5,7 @@ import { chromium, type BrowserContext, type CDPSession, type Page } from "playw
 import { DATA_DIR } from "../db";
 import { emit } from "../bus";
 import { clickScript, typeScript } from "./dom-actions";
+import { validateUrlSafety } from "../agent/url-safety";
 
 // Each dot gets its own persistent Chrome profile, so logins survive restarts. It always runs headless:
 // the Computer tab streams its screen and forwards your mouse and keyboard when you take over.
@@ -178,28 +179,12 @@ export async function lastScreenshot(dotId: string): Promise<Buffer | null> {
 
 const visitedUrls = new Map<string, Map<string, string>>();
 
-function isLocalhost(url: string): boolean {
-  try {
-    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
-    const host = parsed.hostname.toLowerCase();
-    return (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host === "0.0.0.0" ||
-      host.startsWith("192.168.") ||
-      host.startsWith("10.") ||
-      host.endsWith(".local")
-    );
-  } catch {
-    return false;
-  }
-}
-
 export async function openUrl(dotId: string, url: string): Promise<string> {
-  const target = /^https?:\/\//.test(url) ? url : `https://${url}`;
+  const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
 
-  if (isLocalhost(target)) {
-    return `Blocked: Access to local network address (${target}) is restricted.`;
+  const initialSafety = await validateUrlSafety(target);
+  if (!initialSafety.safe) {
+    return `Blocked: Access to restricted URL (${target}): ${initialSafety.reason}`;
   }
 
   let dotVisited = visitedUrls.get(dotId);
@@ -215,6 +200,13 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
 
   const p = await page(dotId, false);
   await p.goto(target, { waitUntil: "domcontentloaded", timeout: 45_000 });
+
+  const finalSafety = await validateUrlSafety(p.url());
+  if (!finalSafety.safe) {
+    await p.goto("about:blank").catch(() => {});
+    return `Blocked: Redirected to restricted URL (${p.url()}): ${finalSafety.reason}`;
+  }
+
   await p.waitForTimeout(800);
   await screenshot(dotId);
 

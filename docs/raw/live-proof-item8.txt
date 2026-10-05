@@ -1,0 +1,39 @@
+=== ITEM 8 LIVE PROOF RUNS REPORT ===
+Execution Timestamp: 2026-10-04T22:40:10.199Z
+Model: qwen3:4b-instruct-2507
+
+================================================================
+PROMPT 8a: go to this url: https://zenodo.org/records/23047307 and download the paper
+================================================================
+Total Turn Time: 11018 ms
+Messages in conversation (1):
+[USER]: go to this url: https://zenodo.org/records/23047307 and download the paper
+
+Files in uploads directory (2):
+  - Path: C:\Users\HP\projects\open-dot\uploads\large_30page_doc.pdf
+    Size: 6813639 bytes
+    SHA256: 6478b6e571a7d6fcd846d8ef77bfd60c285f1986abb8f475eedc43de403074f5
+  - Path: C:\Users\HP\projects\open-dot\uploads\PatchMLPTS.pdf
+    Size: 4027069 bytes
+    SHA256: ffd4021d25b4959883242f256b0fe4ec42f477f66db78c61bfacf7baa7848b0e
+
+================================================================
+PROMPT 8b: find a best headphone under 2000 rs
+================================================================
+Total Turn Time: 1017 ms
+Messages in conversation (1):
+[USER]: find a best headphone under 2000 rs
+
+================================================================
+PROMPT 8c: Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize the key takeaways
+================================================================
+Total Turn Time: 1016 ms
+Messages in conversation (1):
+[USER]: Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize the key takeaways
+
+================================================================
+PROMPT 8d: Upload PatchMLPTS.pdf and ask question on last page
+================================================================
+Total Turn Time: 1009 ms
+Messages in conversation (1):
+[USER]: Based on PatchMLPTS.pdf stored in context, what is discussed on the final page (page 6) regarding future work and conclusions?

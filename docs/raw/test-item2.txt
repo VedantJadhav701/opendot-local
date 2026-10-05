@@ -1,0 +1,25 @@
+=== Testing Item 2: URL Safety & Redirect Validation ===
+PASS: Blocked "file:///C:/Windows/System32" (file protocol) -> Blocked protocol "file:". Only http and https are allowed.
+PASS: Blocked "ftp://example.com/file.txt" (ftp protocol) -> Blocked protocol "ftp:". Only http and https are allowed.
+PASS: Blocked "http://localhost:3000" (localhost host) -> Blocked localhost host "localhost".
+PASS: Blocked "http://test.localhost" (.localhost host) -> Blocked localhost host "test.localhost".
+PASS: Blocked "http://mydevice.local" (.local host) -> Blocked localhost host "mydevice.local".
+PASS: Blocked "http://127.0.0.1:8080" (127.0.0.0/8 loopback) -> Blocked private or loopback IP address "127.0.0.1".
+PASS: Blocked "http://127.255.255.254" (127.0.0.0/8 subnet) -> Blocked private or loopback IP address "127.255.255.254".
+PASS: Blocked "http://10.0.0.1" (10.0.0.0/8 private) -> Blocked private or loopback IP address "10.0.0.1".
+PASS: Blocked "http://10.254.1.10" (10.0.0.0/8 subnet) -> Blocked private or loopback IP address "10.254.1.10".
+PASS: Blocked "http://172.16.0.1" (172.16.0.0/12 private) -> Blocked private or loopback IP address "172.16.0.1".
+PASS: Blocked "http://172.31.255.255" (172.16.0.0/12 boundary) -> Blocked private or loopback IP address "172.31.255.255".
+PASS: Blocked "http://192.168.1.1" (192.168.0.0/16 private) -> Blocked private or loopback IP address "192.168.1.1".
+PASS: Blocked "http://169.254.169.254/latest/meta-data/" (169.254.0.0/16 link-local metadata) -> Blocked private or loopback IP address "169.254.169.254".
+PASS: Blocked "http://0.0.0.0:8000" (0.0.0.0/8 unspecified) -> Blocked private or loopback IP address "0.0.0.0".
+PASS: Blocked "http://[::1]:8000" (IPv6 ::1 loopback) -> Blocked private or loopback IP address "::1".
+PASS: Blocked "http://[fe80::1]" (IPv6 link-local) -> Blocked private or loopback IP address "fe80::1".
+PASS: Blocked "http://[fc00::1]" (IPv6 unique local) -> Blocked private or loopback IP address "fc00::1".
+PASS: Blocked "http://[::ffff:127.0.0.1]" (IPv4-mapped IPv6 loopback) -> Blocked private or loopback IP address "127.0.0.1".
+PASS: Blocked "http://[::ffff:10.0.0.1]" (IPv4-mapped IPv6 private) -> Blocked private or loopback IP address "10.0.0.1".
+PASS: Allowed "https://example.com" -> resolved IP 93.184.215.14
+PASS: Allowed "http://1.1.1.1" -> resolved IP 1.1.1.1
+PASS: Allowed "https://8.8.8.8" -> resolved IP 8.8.8.8
+PASS: fetchSafe blocked private IP access with Security error.
+All Item 2 URL Safety Tests PASSED!

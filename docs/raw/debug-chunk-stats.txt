@@ -1,0 +1,7 @@
+Extractor Chars: 225282
+Total Chunks Generated: 242
+Kept Chunks: 238
+Dropped Duplicate Chunks: 4
+Min Chunk Tokens: 89
+Avg Chunk Tokens: 289.5
+Max Chunk Tokens: 450

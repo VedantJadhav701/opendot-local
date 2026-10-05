@@ -38,11 +38,33 @@ function save(dotId: string, name: string, mime: string, data: Buffer, source: "
   return { id: fileId, name, mime, size: data.length };
 }
 
+import { extractPdf, isPdfBuffer } from "./context/pdf";
+import { chunkText } from "./context/chunker";
+import { saveChunks } from "./context/db";
+
 /** The user attached a file: store it and put a copy in the dot's workspace under uploads/. */
 export async function upload(dotId: string, name: string, mime: string, data: Buffer): Promise<Attachment & { boxPath: string }> {
   const clean = safeName(name);
   const boxPath = await computer.writeFile(dotId, `uploads/${clean}`, data);
-  return { ...save(dotId, clean, mime || guessMime(clean), data, "user", boxPath), boxPath };
+  const att = save(dotId, clean, mime || guessMime(clean), data, "user", boxPath);
+
+  if (att.mime === "application/pdf" || clean.toLowerCase().endsWith(".pdf") || isPdfBuffer(data)) {
+    try {
+      const pdfRes = await extractPdf(data);
+      const taskId = `task_${att.id}`;
+      const chunks = chunkText({
+        text: pdfRes.fullText,
+        source: clean,
+        taskId,
+        dotId,
+      });
+      saveChunks(chunks);
+    } catch (err) {
+      console.error("[pdf] Failed to chunk uploaded PDF", err);
+    }
+  }
+
+  return { ...att, boxPath };
 }
 
 /** The dot shares a file from its computer with the user. */
