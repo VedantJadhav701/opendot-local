@@ -292,6 +292,8 @@ export const TOOLS: ToolDef[] = [
     label: "Writing a file",
     description: "Create or overwrite a text file in your workspace (reports, notes, code). Use share_file to hand a finished file to the user.",
     parameters: obj({ path: str("Path relative to your workspace"), content: str("Full file contents") }),
+    describe: (a) => `write to file ${s(a.path)} in workspace`,
+    defaultDecision: () => "allow",
     execute: async (a, ctx) => `Wrote ${s(a.content).length} chars to ${await computer.writeFile(ctx.dot.id, s(a.path), s(a.content))}`,
   },
   {

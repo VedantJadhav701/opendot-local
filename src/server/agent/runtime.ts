@@ -3,7 +3,7 @@ import { activeModel, getProvider } from "../llm";
 import type { ChatMessage, FunctionToolCall, ToolDefinition } from "../llm";
 import { systemPrompt, type Trigger } from "./prompt";
 import { findTool, setConsult, toolsForDot, type ToolCtx } from "./tools";
-import { review } from "./review";
+import { review, resetTurnTaint, setTurnTainted } from "./review";
 import * as repo from "../repo";
 import * as computer from "../computer";
 import type { ComputerAction } from "../computer/browser";
@@ -289,7 +289,11 @@ async function turn(dotId: string, text: string, trigger: Trigger, signal: Abort
   repo.routeToChannel(dotId, trigger.kind === "channel" ? trigger.channelId : null);
   const dot = repo.getDot(dotId)!;
 
+  resetTurnTaint(dotId);
   const processedText = await preprocessUrls(text, dotId);
+  if (processedText !== text) {
+    setTurnTainted(dotId, true);
+  }
   const messages: ChatMessage[] = rebuildContextMessages(dotId, processedText);
   messages.push(userInput(dotId, processedText, attachments));
 
@@ -474,7 +478,7 @@ async function processCalls(dot: Dot, pending: Pending, signal: AbortSignal, see
     if (def.describe) {
       const action = def.describe(args, ctx);
       repo.setActivity(dot.id, "Checking your rules");
-      const verdict = await review(dot.id, action, (await def.defaultDecision?.(ctx, args)) ?? "allow");
+      const verdict = await review(dot.id, action, (await def.defaultDecision?.(ctx, args)) ?? "allow", def.name);
       if (verdict.decision === "never") {
         activity(dot.id, "Blocked by your rule", verdict.rule?.action);
         pending.outputs.push({
@@ -514,7 +518,12 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
   repo.setActivity(dot.id, def.label);
   activity(dot.id, def.label, summarize(args));
   try {
-    return await def.execute!(args, { dot, signal, depth: 0 });
+    const res = await def.execute!(args, { dot, signal, depth: 0 });
+    const contentFetchingTools = new Set(["web_search", "open_url", "read_page", "download_file", "read_file"]);
+    if (contentFetchingTools.has(def.name)) {
+      setTurnTainted(dot.id, true);
+    }
+    return res;
   } catch (err) {
     if (signal.aborted) throw err;
     return `Error: ${err instanceof Error ? err.message : String(err)}`;
