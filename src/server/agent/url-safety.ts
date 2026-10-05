@@ -18,19 +18,30 @@ function inCidrIPv4(ipStr: string, cidrNet: string, maskBits: number): boolean {
 }
 
 export function isPrivateIp(ip: string): boolean {
-  if (net.isIPv4(ip)) {
+  // Normalize decimal/hex IP representation (e.g. 2130706433 -> 127.0.0.1, 0x7f.0.0.1)
+  let normalizedIp = ip;
+  if (/^\d+$/.test(ip)) {
+    const num = parseInt(ip, 10);
+    if (num >= 0 && num <= 0xffffffff) {
+      normalizedIp = [(num >>> 24) & 0xff, (num >>> 16) & 0xff, (num >>> 8) & 0xff, num & 0xff].join(".");
+    }
+  }
+
+  if (net.isIPv4(normalizedIp)) {
     // 127.0.0.0/8 (loopback)
-    if (inCidrIPv4(ip, "127.0.0.0", 8)) return true;
+    if (inCidrIPv4(normalizedIp, "127.0.0.0", 8)) return true;
     // 10.0.0.0/8 (private)
-    if (inCidrIPv4(ip, "10.0.0.0", 8)) return true;
+    if (inCidrIPv4(normalizedIp, "10.0.0.0", 8)) return true;
     // 172.16.0.0/12 (private)
-    if (inCidrIPv4(ip, "172.16.0.0", 12)) return true;
+    if (inCidrIPv4(normalizedIp, "172.16.0.0", 12)) return true;
     // 192.168.0.0/16 (private)
-    if (inCidrIPv4(ip, "192.168.0.0", 16)) return true;
+    if (inCidrIPv4(normalizedIp, "192.168.0.0", 16)) return true;
     // 169.254.0.0/16 (link-local)
-    if (inCidrIPv4(ip, "169.254.0.0", 16)) return true;
+    if (inCidrIPv4(normalizedIp, "169.254.0.0", 16)) return true;
+    // 100.64.0.0/10 (CGNAT / Carrier-grade NAT)
+    if (inCidrIPv4(normalizedIp, "100.64.0.0", 10)) return true;
     // 0.0.0.0/8
-    if (inCidrIPv4(ip, "0.0.0.0", 8)) return true;
+    if (inCidrIPv4(normalizedIp, "0.0.0.0", 8)) return true;
     return false;
   }
   if (net.isIPv6(ip)) {

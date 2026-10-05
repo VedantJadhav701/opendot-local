@@ -23,13 +23,13 @@ export function resetTurnTaint(dotId: string): void {
 export function checkHardDeny(actionOrCommand: string): string | null {
   const str = actionOrCommand;
 
-  // 1. Recursive delete
+  // 1. Recursive delete (including .exe aliases like rm.exe, del.exe)
   if (
-    /\brm\s+-[a-zA-Z]*r[a-zA-Z]*f?\b/i.test(str) ||
-    /\brm\s+-[a-zA-Z]*f[a-zA-Z]*r\b/i.test(str) ||
+    /\b(rm|rm\.exe)\s+-[a-zA-Z]*r[a-zA-Z]*f?\b/i.test(str) ||
+    /\b(rm|rm\.exe)\s+-[a-zA-Z]*f[a-zA-Z]*r\b/i.test(str) ||
     /\bRemove-Item\b.*-Recurse/i.test(str) ||
-    /\b(rd|rmdir)\s+\/s\b/i.test(str) ||
-    /\bdel\s+(\/f\s+)?\/s\b/i.test(str)
+    /\b(rd|rmdir|rmdir\.exe)\s+\/s\b/i.test(str) ||
+    /\b(del|del\.exe)\s+(\/f\s+)?\/s\b/i.test(str)
   ) {
     return "Hard deny: Recursive delete commands are strictly forbidden.";
   }
@@ -37,7 +37,7 @@ export function checkHardDeny(actionOrCommand: string): string | null {
   // 2. Disk format / diskpart
   if (
     /\bformat\s+[a-zA-Z]:/i.test(str) ||
-    /\bdiskpart\b/i.test(str) ||
+    /\bdiskpart(\.exe)?\b/i.test(str) ||
     /\bmkfs(\.[a-z0-9]+)?\b/i.test(str) ||
     /\bfdisk\b/i.test(str) ||
     /\bparted\b/i.test(str)
@@ -47,18 +47,17 @@ export function checkHardDeny(actionOrCommand: string): string | null {
 
   // 3. Registry edits
   if (
-    /\breg\s+(add|delete|import)\b/i.test(str) ||
-    /\bregedit\b/i.test(str) ||
-    /\bSet-ItemProperty\b.*HK/i.test(str) ||
-    /\bRemove-ItemProperty\b.*HK/i.test(str)
+    /\b(reg|reg\.exe)\s+(add|delete|import)\b/i.test(str) ||
+    /\b(regedit|regedit\.exe)\b/i.test(str) ||
+    /\b(Set-ItemProperty|Remove-ItemProperty)\b.*HK/i.test(str)
   ) {
     return "Hard deny: Windows Registry modifications are strictly forbidden.";
   }
 
   // 4. Credential stores / sensitive files
   if (
-    /\bcmdkey\b/i.test(str) ||
-    /\bVaultCmd\b/i.test(str) ||
+    /\b(cmdkey|cmdkey\.exe)\b/i.test(str) ||
+    /\b(VaultCmd|VaultCmd\.exe)\b/i.test(str) ||
     /\bsecurity\s+find-(generic|internet)-password\b/i.test(str) ||
     /\/etc\/(shadow|passwd|sudoers)/i.test(str) ||
     /\.aws\/credentials/i.test(str)
@@ -73,12 +72,13 @@ export function checkHardDeny(actionOrCommand: string): string | null {
     return "Hard deny: Piping remote content directly into shell/eval is strictly forbidden.";
   }
 
-  // 6. Writing outside workspace
+  // 6. Writing outside workspace (including UNC paths \\server\share and NTFS Alternate Data Streams :stream)
   if (
-    />>?\s*([a-zA-Z]:[\\\/]|\/|~|%USERPROFILE%|\.\.)/i.test(str) ||
-    /\btee\s+(-a\s+)?([a-zA-Z]:[\\\/]|\/|~|\.\.)/i.test(str)
+    />>?\s*([a-zA-Z]:[\\\/]|\/|~|%USERPROFILE%|\.\.|\\\\|\/\/)/i.test(str) ||
+    /\btee\s+(-a\s+)?([a-zA-Z]:[\\\/]|\/|~|\.\.|\\\\|\/\/)/i.test(str) ||
+    />>?\s*[^\s]+:[a-zA-Z0-9_$]+/i.test(str)
   ) {
-    return "Hard deny: Writing or redirecting output outside workspace is strictly forbidden.";
+    return "Hard deny: Writing outside workspace, UNC paths, or Alternate Data Streams is strictly forbidden.";
   }
 
   return null;
