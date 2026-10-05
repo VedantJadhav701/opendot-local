@@ -100,6 +100,7 @@ export async function review(
         dotId,
         action: hardDenyReason,
         decision: "never",
+        createdAt: Date.now(),
       },
     };
   }

@@ -8,7 +8,6 @@ import { setSetting } from "@/server/db";
 import { emit } from "@/server/bus";
 import { computerInfo } from "@/server/snapshot";
 import { models, resetModels, saveApiKey } from "@/server/agent/client";
-import { saveOpenRouterKey } from "@/server/agent/openrouter";
 import * as triggers from "@/server/triggers";
 import * as composio from "@/server/composio";
 import * as voice from "@/server/voice";
@@ -171,7 +170,7 @@ export async function resetComputer(dotId: string) {
   repo.addMessage({
     dotId,
     role: "system",
-    text: computer.modeFor(dotId) === "cloud" ? "Computer reset. A fresh cloud computer starts next time." : "Computer reset. Files in /workspace were kept; installed packages were removed.",
+    text: "Computer reset. Files in /workspace were kept; installed packages were removed.",
   });
 }
 
@@ -191,12 +190,7 @@ export async function setOpenAIKey(key: string): Promise<string | null> {
 }
 
 /** Paste an OpenRouter key in Settings to add open models (empty removes it). */
-export async function setOpenRouterKey(key: string): Promise<string | null> {
-  const err = await saveOpenRouterKey(key.trim());
-  if (err) return err;
-  resetModels();
-  emit({ type: "computer", data: computerInfo() });
-  void models().then(() => emit({ type: "computer", data: computerInfo() })).catch(() => {});
+export async function setOpenRouterKey(_key: string): Promise<string | null> {
   return null;
 }
 
@@ -259,10 +253,8 @@ export async function deleteTrigger(triggerId: string) {
 }
 
 /** Paste an E2B key in Settings for cloud computers (empty removes it). */
-export async function setCloudKey(key: string): Promise<string | null> {
-  const err = await computer.saveCloudKey(key.trim());
-  if (!err) emit({ type: "computer", data: computerInfo() });
-  return err;
+export async function setCloudKey(_key: string): Promise<string | null> {
+  return null;
 }
 
 export async function setDefaultModel(model: string | null) {
