@@ -11,36 +11,34 @@ if (!fs.existsSync(path.join(out, "server.js"))) throw new Error("Run `next buil
 fs.cpSync(path.join(root, "public"), path.join(out, "public"), { recursive: true });
 fs.cpSync(path.join(root, ".next/static"), path.join(out, ".next/static"), { recursive: true });
 
-const require = createRequire(path.join(root, "package.json"));
-const playwrightDir = path.dirname(fs.realpathSync(require.resolve("playwright/package.json")));
-const coreDir = path.dirname(createRequire(path.join(playwrightDir, "package.json")).resolve("playwright-core/package.json"));
-for (const dir of [playwrightDir, fs.realpathSync(coreDir)]) {
-  const dest = path.join(out, path.relative(root, dir));
-  fs.cpSync(dir, dest, { recursive: true, dereference: true });
-  console.log("copied", path.relative(root, dir));
-}
+const EXTERNALS = ["playwright", "playwright-core", "pdf-parse", "pdfjs-dist", "@swc/helpers", "@next/env"];
 const nextNodeModules = path.join(out, ".next/node_modules");
-if (fs.existsSync(nextNodeModules)) {
-  fs.cpSync(fs.realpathSync(coreDir), path.join(nextNodeModules, "playwright-core"), { recursive: true, dereference: true });
-  fs.cpSync(playwrightDir, path.join(nextNodeModules, "playwright"), { recursive: true, dereference: true });
-  console.log("copied playwright and playwright-core into .next/node_modules");
+
+for (const pkg of EXTERNALS) {
+  try {
+    const pkgJson = require.resolve(`${pkg}/package.json`);
+    const realDir = fs.realpathSync(path.dirname(pkgJson));
+    
+    const destRoot = path.join(out, "node_modules", pkg);
+    fs.cpSync(realDir, destRoot, { recursive: true, dereference: true });
+
+    if (fs.existsSync(nextNodeModules)) {
+      const destNext = path.join(nextNodeModules, pkg);
+      fs.cpSync(realDir, destNext, { recursive: true, dereference: true });
+    }
+    console.log(`copied ${pkg} to standalone node_modules & .next/node_modules`);
+  } catch (err) {
+    console.warn(`Could not copy ${pkg}:`, err.message);
+  }
 }
 
-// Tracing also misses Next's own prebuilt server runtimes (e.g. the one API routes load).
+const require = createRequire(path.join(root, "package.json"));
 const nextDir = fs.realpathSync(path.dirname(require.resolve("next/package.json")));
 fs.cpSync(path.join(nextDir, "dist/compiled/next-server"), path.join(out, path.relative(root, nextDir), "dist/compiled/next-server"), {
   recursive: true,
   filter: (src) => fs.statSync(src).isDirectory() || /\.prod\.js$/.test(src),
 });
 console.log("copied next/dist/compiled/next-server (production runtimes)");
-
-const swcHelpersDir = fs.realpathSync(path.dirname(require.resolve("@swc/helpers/package.json")));
-fs.cpSync(swcHelpersDir, path.join(out, path.relative(root, swcHelpersDir)), { recursive: true });
-console.log("copied @swc/helpers");
-
-const nextEnvDir = fs.realpathSync(path.dirname(require.resolve("@next/env/package.json")));
-fs.cpSync(nextEnvDir, path.join(out, path.relative(root, nextEnvDir)), { recursive: true });
-console.log("copied @next/env");
 
 // Playwright mentions electron, so tracing drags it in; the app already runs inside Electron.
 const pnpmDir = path.join(out, "node_modules/.pnpm");
