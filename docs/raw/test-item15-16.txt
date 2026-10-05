@@ -1,0 +1,8 @@
+=== Testing Item 15 & 16: Ollama Tool Fields & Honest Client Stubs ===
+Test 1: Reasoning model detection
+PASS: Reasoning model detection is accurate.
+Test 2: Computer tool support
+PASS: supportsComputerTool checks model capabilities.
+Test 3: hasKey = true, keySource = ollama
+PASS: Honest client functions executed cleanly.
+All Item 15 & 16 Unit Tests PASSED!
