@@ -1,6 +1,6 @@
-# Open Dot Local
+# OpenDot Local
 
-**Open Dot Local** is a free, local-first, cross-platform (Windows & macOS) personal AI desktop agent powered by local Ollama models.
+**OpenDot Local** is a free, local-first, cross-platform (Windows & macOS) personal AI desktop agent powered by local Ollama models.
 
 ---
 
@@ -79,6 +79,4 @@ src/server/
 
 ---
 
-## 📜 License & Open Source Attribution
-
-Open Dot Local is released under open-source software license terms.
+Not affiliated with Composio, OpenAI or Ollama.
