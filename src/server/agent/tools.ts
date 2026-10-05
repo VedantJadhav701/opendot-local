@@ -1,4 +1,5 @@
 import "server-only";
+import path from "node:path";
 import * as repo from "../repo";
 import * as computer from "../computer";
 import { RISKY_CLICK } from "../computer/dom-actions";

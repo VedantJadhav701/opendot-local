@@ -156,7 +156,7 @@ export async function resolveCard(messageId: string, choice: "approve" | "deny" 
     pending.outputs.push({ role: "tool", name: call.function.name, tool_call_id: call.id, content: outputText });
 
     pending.index++;
-    if (await processCalls(dot, pending, signal)) return;
+    if (await processCalls(dot, pending, signal, new Map())) return;
     await drive(dot, pending.outputs, pending.trigger, signal);
   });
 }
