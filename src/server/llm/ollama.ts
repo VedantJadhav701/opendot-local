@@ -81,20 +81,69 @@ export class ThinkStreamFilter {
   }
 }
 
-type QueueTask<T> = {
+export type QueueTask<T> = {
   fn: (queueWaitMs: number) => Promise<T>;
   resolve: (val: T) => void;
   reject: (err: unknown) => void;
   enqueueTime: number;
+  signal?: AbortSignal;
+  abortHandler?: () => void;
 };
 
 const gQueue = globalThis as unknown as { __llmQueue?: QueueTask<any>[]; __isProcessingLLMQueue?: boolean };
-const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
+export const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
 
-function enqueueLLMRequest<T>(fn: (queueWaitMs: number) => Promise<T>): Promise<T> {
+export function enqueueLLMRequest<T>(
+  fn: (queueWaitMs: number) => Promise<T>,
+  signal?: AbortSignal,
+  timeoutMs = 120_000
+): Promise<T> {
   const enqueueTime = Date.now();
   return new Promise<T>((resolve, reject) => {
-    queue.push({ fn, resolve, reject, enqueueTime });
+    let timer: NodeJS.Timeout | null = null;
+
+    const task: QueueTask<T> = {
+      fn,
+      resolve: (val) => {
+        if (timer) clearTimeout(timer);
+        if (task.abortHandler && signal) signal.removeEventListener("abort", task.abortHandler);
+        resolve(val);
+      },
+      reject: (err) => {
+        if (timer) clearTimeout(timer);
+        if (task.abortHandler && signal) signal.removeEventListener("abort", task.abortHandler);
+        reject(err);
+      },
+      enqueueTime,
+      signal,
+    };
+
+    if (signal) {
+      if (signal.aborted) {
+        return reject(signal.reason || new Error("Aborted before enqueue"));
+      }
+      const abortHandler = () => {
+        const idx = queue.indexOf(task);
+        if (idx !== -1) {
+          queue.splice(idx, 1);
+        }
+        task.reject(signal.reason || new Error("Request aborted while in queue"));
+      };
+      task.abortHandler = abortHandler;
+      signal.addEventListener("abort", abortHandler, { once: true });
+    }
+
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        const idx = queue.indexOf(task);
+        if (idx !== -1) {
+          queue.splice(idx, 1);
+        }
+        task.reject(new Error(`LLM Request timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    }
+
+    queue.push(task);
     processLLMQueue();
   });
 }
@@ -104,12 +153,21 @@ async function processLLMQueue() {
   gQueue.__isProcessingLLMQueue = true;
   const task = queue.shift()!;
   const queueWaitMs = Date.now() - task.enqueueTime;
+
+  let hungTimeout: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    hungTimeout = setTimeout(() => {
+      reject(new Error("LLM Task execution hung - forced queue unlock"));
+    }, 120_000);
+  });
+
   try {
-    const res = await task.fn(queueWaitMs);
+    const res = await Promise.race([task.fn(queueWaitMs), timeoutPromise]);
     task.resolve(res);
   } catch (err) {
     task.reject(err);
   } finally {
+    if (hungTimeout) clearTimeout(hungTimeout);
     gQueue.__isProcessingLLMQueue = false;
     processLLMQueue();
   }
@@ -408,7 +466,7 @@ export class OllamaProvider implements LLMProvider {
           completionTokens,
         },
       };
-    });
+    }, signal);
   }
 }
 
