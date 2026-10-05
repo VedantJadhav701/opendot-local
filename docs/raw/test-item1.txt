@@ -1,0 +1,7 @@
+=== Testing Item 1: resolveWorkspacePath Security Tests ===
+PASS: Parent traversal '../ws-evil' blocked cleanly.
+PASS: Absolute path 'C:\Windows' blocked cleanly.
+PASS: Sibling directory prefix path blocked cleanly.
+PASS: Symlink escape blocked cleanly.
+PASS: Valid workspace path resolved: C:\Users\HP\projects\open-dot\.data\dots\test-security-dot-item1\workspace\valid\subfolder\file.txt
+All Item 1 Security Tests PASSED!

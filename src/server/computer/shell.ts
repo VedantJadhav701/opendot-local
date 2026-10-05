@@ -68,11 +68,33 @@ export async function runOnUserComputer(command: string, signal?: AbortSignal): 
 }
 
 export function resolveWorkspacePath(dotId: string, p: string): string {
-  const root = workspaceDir(dotId);
-  const rel = p.replace(/^\/?workspace\/?/, "");
+  const rawRoot = workspaceDir(dotId);
+  const root = fs.existsSync(rawRoot) ? fs.realpathSync(rawRoot) : path.resolve(rawRoot);
+  const rel = p.replace(/^\/?workspace\/?/i, "");
   const full = path.resolve(root, rel);
-  if (!full.startsWith(root)) throw new Error("Path must stay inside /workspace");
-  return full;
+
+  let targetPath = full;
+  if (fs.existsSync(full)) {
+    targetPath = fs.realpathSync(full);
+  } else {
+    let parent = path.dirname(full);
+    let childPath = path.basename(full);
+    while (parent && parent !== path.dirname(parent)) {
+      if (fs.existsSync(parent)) {
+        const realParent = fs.realpathSync(parent);
+        targetPath = path.join(realParent, childPath);
+        break;
+      }
+      childPath = path.join(path.basename(parent), childPath);
+      parent = path.dirname(parent);
+    }
+  }
+
+  const relative = path.relative(root, targetPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("Path must stay inside /workspace");
+  }
+  return targetPath;
 }
 
 export function resetDotComputer(dotId: string) {
