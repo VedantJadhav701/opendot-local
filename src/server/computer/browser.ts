@@ -229,8 +229,9 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
     return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}\n\nYou have read the page. Provide your final response now.`;
   }
 
-  dotVisited.set(target, cleanText);
-  return `Opened ${p.url()} — "${title}". Page Content:\n${cleanText}\n\nYou have read the page. Provide your final response now.`;
+  const truncatedText = cleanText.length > 3500 ? cleanText.slice(0, 3500) + "\n...[content truncated]" : cleanText;
+  dotVisited.set(target, truncatedText);
+  return `Opened ${p.url()} — "${title}". Page Content:\n${truncatedText}\n\nYou have read the page. Provide your final response now.`;
 }
 
 export async function readPage(dotId: string, userQuery = ""): Promise<string> {
@@ -253,7 +254,8 @@ export async function readPage(dotId: string, userQuery = ""): Promise<string> {
     return `URL: ${p.url()}\nTitle: ${title}\n[Evidence Budget ~${filterRes.totalTokens}/2500 tokens (${selected.length}/${chunks.length} chunks)]:\n\n${evidenceText}`;
   }
 
-  return `URL: ${p.url()}\nTitle: ${title}\n\n${cleanText}`;
+  const truncatedText = cleanText.length > 3500 ? cleanText.slice(0, 3500) + "\n...[content truncated]" : cleanText;
+  return `URL: ${p.url()}\nTitle: ${title}\n\n${truncatedText}`;
 }
 
 export async function currentPageInfo(dotId: string): Promise<string> {

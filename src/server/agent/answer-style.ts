@@ -31,5 +31,8 @@ export function sanitizeAnswerStyle(text: string): string {
     }
   }
 
+  // 3. Remove leading repeating token degeneration (e.g. "000000000...")
+  clean = clean.replace(/^(?:0{3,}|[.\s]{10,})+/, "");
+
   return clean;
 }
