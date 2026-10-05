@@ -27,11 +27,14 @@ function runTests() {
 
   // Test 3: Hallucinated URL stripped/flagged
   const text3 = "This paper was published at https://arxiv.org/abs/2401.99999 as original research.";
-  const sanitized3 = sanitizeResponseUrls(text3, context);
-  console.log("Test 3 (Hallucinated URL):", sanitized3);
-  if (sanitized3.includes("arxiv.org") || !sanitized3.includes("[unverified URL removed]")) {
-    throw new Error("Test 3 Failed: Hallucinated URL was not stripped");
+  // Test 4: Different path on seen origin MUST be stripped
+  const text4 = "Visit https://vedantjadhav.hashnode.dev/unseen-fake-path for more.";
+  const sanitized4 = sanitizeResponseUrls(text4, context);
+  console.log("Test 4 (Unseen Path on Seen Origin):", sanitized4);
+  if (sanitized4.includes("unseen-fake-path") || !sanitized4.includes("[unverified URL removed]")) {
+    throw new Error("Test 4 Failed: Unseen path on seen origin was improperly allowed!");
   }
+  console.log("PASS: Unseen path on seen origin was correctly stripped.");
 
   console.log("All URL Validator Unit Tests PASSED!");
 }

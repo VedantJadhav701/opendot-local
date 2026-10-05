@@ -1,0 +1,6 @@
+=== Testing Item 14: URL Validator Exact URL Enforcement Unit Tests ===
+Test 1 (Allowed User URL): Here is the summary of https://vedantjadhav.hashnode.dev/amd-llm-lab for you.
+Test 2 (Allowed Tool URL): Searched via https://html.duckduckgo.com/html and found top options.
+Test 4 (Unseen Path on Seen Origin): Visit [unverified URL removed] for more.
+PASS: Unseen path on seen origin was correctly stripped.
+All URL Validator Unit Tests PASSED!

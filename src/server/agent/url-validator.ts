@@ -14,32 +14,21 @@ export function sanitizeResponseUrls(text: string, contextMessages: ChatMessage[
     const rawContent = typeof m.content === "string" ? m.content : JSON.stringify(m);
     const matches = rawContent.match(urlRegex) || [];
     for (const url of matches) {
-      const clean = url.replace(/[.,;)]+$/, "").toLowerCase();
+      const clean = url.replace(/[.,;:]+$/, "").toLowerCase();
       allowedUrls.add(clean);
-      try {
-        const parsed = new URL(clean);
-        allowedUrls.add(parsed.hostname.toLowerCase());
-        allowedUrls.add(parsed.origin.toLowerCase());
-      } catch {}
+      allowedUrls.add(clean.replace(/\/$/, ""));
     }
   }
 
   return text.replace(urlRegex, (matched) => {
-    const trailingPunctuation = matched.match(/[.,;)]+$/)?.[0] || "";
-    const cleanMatched = matched.replace(/[.,;)]+$/, "");
+    const trailingPunctuation = matched.match(/[.,;:]+$/)?.[0] || "";
+    const cleanMatched = matched.replace(/[.,;:]+$/, "");
     const lowerClean = cleanMatched.toLowerCase();
+    const lowerCleanNoSlash = lowerClean.replace(/\/$/, "");
 
-    let isAllowed = allowedUrls.has(lowerClean);
-    if (!isAllowed) {
-      for (const allowed of allowedUrls) {
-        if (allowed.length > 8 && (lowerClean.startsWith(allowed) || allowed.startsWith(lowerClean))) {
-          isAllowed = true;
-          break;
-        }
-      }
+    if (allowedUrls.has(lowerClean) || allowedUrls.has(lowerCleanNoSlash)) {
+      return matched;
     }
-
-    if (isAllowed) return matched;
     return `[unverified URL removed]${trailingPunctuation}`;
   });
 }
