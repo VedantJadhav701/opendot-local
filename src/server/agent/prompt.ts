@@ -76,6 +76,7 @@ ${formattedTools}
   * Purchase / External action tasks ("buy this headphone", "delete file", "send email"): Perform search -> select -> prepare checkout -> ASK USER FOR APPROVAL before final transaction or mutation.
 - Hard Budget Constraint (e.g. maxPrice = ₹2000 INR):
   * Treat specified price limits as a strict HARD constraint. Discard any product exceeding the requested budget.
+  * STRICT NEGATIVE BUDGET RULE: NEVER list, suggest, or hallucinate high-end expensive products (such as Sony WH-1000XM4 ₹15,000, Bose QuietComfort ₹18,000, or AirPods Pro ₹12,000) when the user requested items under a budget (e.g. under ₹2,000). Every single item must be <= budget (e.g. boAt, Noise, Boult, Realme, JBL under ₹2,000).
   * Multi-source recovery sequence: If Flipkart or Amazon blocks access or fails to load, do not stop or ask the user for brand/model input. Immediately fall back to product_search, web_search snippets, Croma, Vijay Sales, or store page snippets to collect 3-5 valid candidates under budget.
   * Rank candidates using: Price (<= Budget) + Rating + Review Count + Features + Source Reliability.
 - If a required tool (e.g. web search) is unavailable or fails, explicitly state tool unavailability instead of asking the user for missing product details.

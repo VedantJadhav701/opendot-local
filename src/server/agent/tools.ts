@@ -205,14 +205,24 @@ export const TOOLS: ToolDef[] = [
     execute: async (a) => {
       const cat = s(a.category) || "headphones";
       const maxP = parseInt(s(a.maxPrice || "2000"), 10) || 2000;
-      const query = `best ${cat} under ${maxP} rs India price rating`;
-      const searchRes = await executeWebSearch(query);
+      let query = `best ${cat} under ${maxP} rs India price rating`;
+      let searchRes = await executeWebSearch(query);
+
       try {
-        const parsed = JSON.parse(searchRes);
+        let parsed = JSON.parse(searchRes);
+        let results = parsed.results || [];
+        if (!results.length || results.every((r: any) => !r.snippet || r.snippet.length < 50)) {
+          const fallbackQuery = `top 5 ${cat} under ${maxP} rupees India boat noise boult realme jbl price`;
+          const fallbackRes = await executeWebSearch(fallbackQuery);
+          parsed = JSON.parse(fallbackRes);
+          results = parsed.results || [];
+        }
+
         return JSON.stringify({
           constraint: { category: cat, maxPrice: maxP, currency: "INR" },
           query,
-          results: parsed.results || [],
+          results,
+          note: `STRICT CONSTRAINT: Only recommend products with price <= ${maxP} INR. Do not include high-end items over ${maxP} INR.`,
         }, null, 2);
       } catch {
         return searchRes;
