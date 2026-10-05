@@ -496,7 +496,14 @@ export class OllamaProvider implements LLMProvider {
       const totalTimeMs = Date.now() - startTime;
       if (ttftMs === 0) ttftMs = totalTimeMs;
 
-      const cleanText = stripThinking(accumulatedText);
+      let cleanText = stripThinking(accumulatedText);
+      if (accumulatedToolCalls.length === 0) {
+        const extracted = extractToolCallsFromText(cleanText);
+        cleanText = extracted.cleanText;
+        if (extracted.toolCalls.length > 0) {
+          accumulatedToolCalls.push(...extracted.toolCalls);
+        }
+      }
 
       return {
         role: "assistant",
@@ -520,4 +527,36 @@ function safeJsonParse(val: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function extractToolCallsFromText(text: string): { cleanText: string; toolCalls: FunctionToolCall[] } {
+  const toolCalls: FunctionToolCall[] = [];
+  let cleanText = text;
+
+  const regex = /<tool_call>\s*({[\s\S]*?})(?:\s*<\/tool_call>|$)/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.name) {
+        toolCalls.push({
+          id: `call_${Math.random().toString(36).substring(2, 9)}`,
+          type: "function",
+          function: {
+            name: parsed.name,
+            arguments: typeof parsed.arguments === "string" ? safeJsonParse(parsed.arguments) : (parsed.arguments || {}),
+          },
+        });
+      }
+    } catch {
+      // Ignore parse failure
+    }
+  }
+
+  if (toolCalls.length > 0) {
+    cleanText = cleanText.replace(/<tool_call>[\s\S]*?(?:<\/tool_call>|$)/gi, "").trim();
+  }
+
+  return { cleanText, toolCalls };
 }
