@@ -297,14 +297,13 @@ function Composer({ dot, onSend, onVoice }: { dot: Dot; onSend: (text: string, a
               <ArrowUp className="size-4" strokeWidth={2.25} />
             </button>
           ) : (
-            // Empty composer: the round button starts voice mode. What's said lands in this chat.
             <button
-              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-opacity hover:opacity-85"
-              onClick={onVoice}
-              aria-label={`Voice mode with ${dot.name}`}
-              title="Voice mode"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-25"
+              disabled={pending || busy || !text.trim()}
+              onClick={submit}
+              aria-label="Send"
             >
-              <AudioLines className="size-4" strokeWidth={2} />
+              <ArrowUp className="size-4" strokeWidth={2.25} />
             </button>
           )}
         </div>

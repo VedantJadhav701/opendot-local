@@ -1,5 +1,5 @@
 import "server-only";
-import { activeModel, getProvider } from "../llm";
+import { activeModel, getProvider, getResolvedSync } from "../llm";
 import type { ChatMessage, FunctionToolCall, ToolDefinition } from "../llm";
 import { systemPrompt, type Trigger } from "./prompt";
 import { findTool, setConsult, toolsForDot, type ToolCtx } from "./tools";
@@ -13,6 +13,8 @@ import type { AppTrigger, Attachment, CardData, Dot, Routine } from "@/lib/types
 import * as files from "../files";
 import { getTaskChunks } from "../context/db";
 import { fetchSafe } from "./url-safety";
+import { selectModel } from "../models/scorer";
+import os from "node:os";
 
 type Pending = {
   responseId: string;
@@ -337,8 +339,9 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnCompletionTokens += m.completionTokens;
       const numCtx = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
       const pct = Math.round((m.promptTokens / numCtx) * 100);
+      const genTokPerSec = m.totalTimeMs > m.ttftMs && m.completionTokens > 0 ? Math.round((m.completionTokens / ((m.totalTimeMs - m.ttftMs) / 1000)) * 10) / 10 : 0;
       console.log(
-        `[dots] Turn Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Prompt Tokens: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Total: ${m.totalTimeMs}ms | Completion Tokens: ${m.completionTokens}`
+        `[dots] Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Prompt: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Gen: ${m.completionTokens} tok (${genTokPerSec} tok/s) | Total: ${m.totalTimeMs}ms`
       );
       if (pct >= 85) {
         console.warn(`[dots] WARNING: Prompt token budget usage at ${pct}% of context (${m.promptTokens}/${numCtx})`);
@@ -371,7 +374,21 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
 }
 
 async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false): Promise<ChatMessage> {
-  const modelName = await activeModel(dot.model);
+  const resolved = getResolvedSync();
+  const latestUserText = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const routed = dot.model
+    ? null
+    : selectModel({ text: latestUserText, toolCount: messages.filter((message) => message.role === "tool").length, multiStep: messages.length > 8 }, resolved.available, {
+        os: process.platform,
+        cpu: os.cpus()[0]?.model || os.arch(),
+        ramGB: os.totalmem() / 1024 ** 3,
+        gpu: null,
+        vramGB: null,
+        ollama: true,
+        docker: false,
+        diskFreeGB: null,
+      });
+  const modelName = await activeModel(dot.model || routed?.selected);
   const provider = getProvider(modelName);
 
   const toolDefs: ToolDefinition[] = omitTools
@@ -398,15 +415,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   let draftMessageId: string | null = null;
   let accumulatedText = "";
 
-  const responseMsg = await provider.chatStream(
-    {
-      model: modelName,
-      messages: fullMessages,
-      tools: toolDefs.length ? toolDefs : undefined,
-      temperature: 0.2,
-      context_length: defaultContextLength,
-    },
-    (chunk) => {
+  const onChunk = (chunk: import("../llm").ChatChunk) => {
       if (chunk.delta?.content) {
         if (!draftMessageId) {
           const m = repo.addMessage({ dotId: dot.id, role: "dot", text: "" });
@@ -415,9 +424,35 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
         accumulatedText += chunk.delta.content;
         emit({ type: "message_delta", id: draftMessageId, dotId: dot.id, delta: chunk.delta.content });
       }
-    },
-    signal
-  );
+    };
+
+  const streamOnce = (contextLength: number, numPredict?: number) =>
+    provider.chatStream(
+      {
+        model: modelName,
+        messages: pruneMessagesForContext([systemMsg, ...messages], toolDefs, contextLength),
+        tools: toolDefs.length ? toolDefs : undefined,
+        temperature: 0.2,
+        context_length: contextLength,
+        num_predict: numPredict,
+      },
+      onChunk,
+      signal
+    );
+
+  let responseMsg: ChatMessage;
+  try {
+    responseMsg = await streamOnce(defaultContextLength);
+  } catch (err) {
+    if (!isTimeoutError(err) || signal.aborted) throw err;
+    repo.addMessage({ dotId: dot.id, role: "activity", text: "Model was slow. Retrying with shorter context." });
+    if (draftMessageId) {
+      repo.updateMessage(draftMessageId, { text: "Model was slow. Retrying with shorter context." });
+    }
+    draftMessageId = null;
+    accumulatedText = "";
+    responseMsg = await streamOnce(Math.min(defaultContextLength, 8192), 320);
+  }
 
   if (draftMessageId) {
     const { sanitizeResponseUrls } = await import("./url-validator");
@@ -536,7 +571,7 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
   activity(dot.id, def.label, summarize(args));
   try {
     const res = await def.execute!(args, { dot, signal, depth: 0 });
-    const contentFetchingTools = new Set(["web_search", "open_url", "read_page", "download_file", "read_file"]);
+    const contentFetchingTools = new Set(["web_search", "search_web", "open_url", "read_page", "inspect_page_links", "summarize_site", "download_file", "read_file"]);
     if (contentFetchingTools.has(def.name)) {
       setTurnTainted(dot.id, true);
     }
@@ -572,7 +607,8 @@ export function rebuildContextMessages(dotId: string, exclude: string, maxTokens
       .replace(/\[Attached PDF Content[\s\S]*?\]/g, "")
       .trim();
     const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
-    return { role: "assistant" as const, content: `[Prior turn summary]: ${shortSummary}` };
+    const expandedSummary = summaryText.length > 700 ? `${summaryText.slice(0, 697)}...` : shortSummary;
+    return { role: "assistant" as const, content: `[Prior turn summary]: ${expandedSummary}` };
   });
 }
 
@@ -675,6 +711,7 @@ function safeParse(raw: string): Record<string, unknown> {
 }
 
 const capitalize = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const isTimeoutError = (err: unknown) => err instanceof Error && /timed out|timeout|hung/i.test(err.message);
 
 function estimateMessageTokens(msg: ChatMessage): number {
   let len = (msg.content || "").length;
@@ -716,4 +753,3 @@ export function pruneMessagesForContext(
 
   return [systemMsg, ...pruned];
 }
-
