@@ -305,6 +305,63 @@ export const TOOLS: ToolDef[] = [
     execute: async (a, ctx) => `Wrote ${s(a.content).length} chars to ${await computer.writeFile(ctx.dot.id, s(a.path), s(a.content))}`,
   },
   {
+    name: "search_documents",
+    label: "Searching local documents",
+    description: "Search indexed workspace documents and uploaded PDFs for relevant keywords or topics.",
+    parameters: obj({ query: str("Keyword query to search in workspace documents") }),
+    execute: async (a, ctx) => {
+      const { getDotChunks } = await import("../context/db");
+      const { filterChunks } = await import("../context/filter");
+      const chunks = getDotChunks(ctx.dot.id, 200);
+      if (!chunks.length) return "No indexed documents found in workspace.";
+      const res = filterChunks(s(a.query), chunks, { maxEvidenceTokens: 2500 });
+      if (!res.selectedChunks.length) return `No document chunks matched "${s(a.query)}".`;
+      return res.selectedChunks
+        .map((c, i) => `[Document: ${c.source || "workspace"}] Chunk ${i + 1}:\n${c.text}`)
+        .join("\n\n");
+    },
+  },
+  {
+    name: "read_document",
+    label: "Reading document",
+    description: "Read text contents from a specific workspace file or indexed document section.",
+    parameters: obj({ path_or_title: str("Path or title of the document to read") }),
+    execute: async (a, ctx) => {
+      const target = s(a.path_or_title);
+      const buf = await computer.readFile(ctx.dot.id, target).catch(() => null);
+      if (buf) {
+        const { extractPdf, isPdfBuffer } = await import("../context/pdf");
+        if (isPdfBuffer(buf) || target.toLowerCase().endsWith(".pdf")) {
+          const pdfRes = await extractPdf(buf);
+          return pdfRes.fullText ? pdfRes.fullText.slice(0, 15_000) : "Scanned PDF or no text layer found.";
+        }
+        return buf.toString("utf8").slice(0, 15_000);
+      }
+      const { getDotChunks } = await import("../context/db");
+      const chunks = getDotChunks(ctx.dot.id, 200).filter((c) => c.source?.toLowerCase().includes(target.toLowerCase()));
+      if (chunks.length > 0) {
+        return chunks.map((c, i) => `[${c.source}] Section ${i + 1}:\n${c.text}`).join("\n\n").slice(0, 15_000);
+      }
+      return `Document not found: "${target}". Use search_documents to list available files.`;
+    },
+  },
+  {
+    name: "find_in_documents",
+    label: "Finding evidence in documents",
+    description: "Find specific facts, sections, or answers across all indexed workspace documents.",
+    parameters: obj({ query: str("Specific fact or question to look up in local documents") }),
+    execute: async (a, ctx) => {
+      const { getDotChunks } = await import("../context/db");
+      const { filterChunks } = await import("../context/filter");
+      const chunks = getDotChunks(ctx.dot.id, 250);
+      if (!chunks.length) return "No indexed documents found in workspace.";
+      const res = filterChunks(s(a.query), chunks, { maxEvidenceTokens: 3000 });
+      if (!res.selectedChunks.length) return `No evidence found for "${s(a.query)}".`;
+      return `Found ${res.selectedChunks.length} evidence sections (~${res.totalTokens} tokens):\n\n` +
+        res.selectedChunks.map((c, i) => `[Source: ${c.source}] Evidence ${i + 1}:\n${c.text}`).join("\n\n");
+    },
+  },
+  {
     name: "share_file",
     label: "Sharing a file",
     description:
