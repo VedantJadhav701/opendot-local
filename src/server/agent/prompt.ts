@@ -76,7 +76,7 @@ export function systemPrompt(dot: Dot, trigger: Trigger, requestText = ""): stri
   const instructionsBlock = dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : "";
 
   const shoppingBlock = isShoppingIntent(requestText)
-    ? `\n# Shopping Instructions\n- Use product_search results to answer shopping requests.\n- Only recommend products with verified price <= requested max budget.\n- Include product name, price, rating, rating count, link, and sponsored flag.\n- Never recommend category or search pages as products.\n- Require user approval before making purchases or external transactions.\n`
+    ? `\n# Shopping Instructions\n- Use product_search results to answer shopping requests.\n- Always include any specific brand requested by the user in the category or brand parameter (e.g. "oneplus headphones").\n- Only recommend products with verified price <= requested max budget.\n- Include product name, price, rating, rating count, link, and sponsored flag.\n- Never recommend category or search pages as products.\n- Require user approval before making purchases or external transactions.\n`
     : "";
 
   return `You are ${dot.name}, a "dot" — a personal AI agent that works on its own on behalf of your user.

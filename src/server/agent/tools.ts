@@ -502,19 +502,29 @@ export const TOOLS: ToolDef[] = [
     description:
       "Search Indian product listings and return concrete products with prices. Use for shopping research. Never return category pages as products.",
     parameters: obj({
-      category: str("Product category, e.g. headphones"),
+      category: str("Product category or full search query including brand, e.g. 'oneplus headphones' or 'headphones'"),
+      brand: str("Optional brand filter, e.g. 'oneplus' or 'boat'"),
       maxPrice: str("Maximum budget in INR, e.g. 2000"),
     }),
     execute: async (a) => {
-      const category = s(a.category).trim() || "headphones";
+      const rawCategory = s(a.category).trim() || "headphones";
+      const brand = s(a.brand).trim();
       const maxPrice = Math.max(
         1,
         parseInt(s(a.maxPrice || "2000"), 10) || 2000
       );
 
+      let searchQuery = rawCategory;
+      if (brand && !searchQuery.toLowerCase().includes(brand.toLowerCase())) {
+        searchQuery = `${brand} ${searchQuery}`.trim();
+      }
+
+      const knownBrands = ["oneplus", "boat", "sony", "jbl", "realme", "oppo", "apple", "samsung", "noise", "boult", "zebronics", "ptron", "hammer", "triggr"];
+      const targetBrand = brand || knownBrands.find((b) => searchQuery.toLowerCase().includes(b)) || "";
+
       const [amazonRes, flipkartRes] = await Promise.all([
-        scrapeAmazonListing(category, maxPrice),
-        scrapeFlipkartListing(category, maxPrice),
+        scrapeAmazonListing(searchQuery, maxPrice),
+        scrapeFlipkartListing(searchQuery, maxPrice),
       ]);
 
       const sourcesStatus = [
@@ -538,7 +548,7 @@ export const TOOLS: ToolDef[] = [
       let validProducts = [...unique.values()];
 
       if (validProducts.length < 3) {
-        const fallbackItems = await fallbackDDGPageExtraction(category, maxPrice);
+        const fallbackItems = await fallbackDDGPageExtraction(searchQuery, maxPrice);
         for (const item of fallbackItems) {
           const key = item.url.split("?")[0].toLowerCase();
           if (!unique.has(key)) {
@@ -548,19 +558,31 @@ export const TOOLS: ToolDef[] = [
         validProducts = [...unique.values()];
       }
 
-      const nonSponsored = validProducts.filter((p) => !p.sponsored && p.price <= maxPrice);
-      const sponsored = validProducts.filter((p) => p.sponsored && p.price <= maxPrice);
+      let nonSponsored = validProducts.filter((p) => !p.sponsored && p.price <= maxPrice);
+      let sponsored = validProducts.filter((p) => p.sponsored && p.price <= maxPrice);
+
+      if (targetBrand) {
+        const brandMatch = (p: ScrapedProduct) => p.name.toLowerCase().includes(targetBrand.toLowerCase());
+        const brandNonSponsored = nonSponsored.filter(brandMatch);
+        const otherNonSponsored = nonSponsored.filter((p) => !brandMatch(p));
+        const brandSponsored = sponsored.filter(brandMatch);
+        const otherSponsored = sponsored.filter((p) => !brandMatch(p));
+
+        nonSponsored = [...brandNonSponsored, ...otherNonSponsored];
+        sponsored = [...brandSponsored, ...otherSponsored];
+      }
+
       const rankedProducts = [...nonSponsored, ...sponsored].slice(0, 8);
 
       return JSON.stringify(
         {
           type: "product_search_results",
-          constraint: { category, maxPrice, currency: "INR" },
+          constraint: { category: searchQuery, ...(targetBrand ? { brand: targetBrand } : {}), maxPrice, currency: "INR" },
           sources: sourcesStatus,
           count: rankedProducts.length,
           products: rankedProducts,
           ...(rankedProducts.length === 0
-            ? { message: `0 products found under ${maxPrice} INR constraint across checked sources.` }
+            ? { message: `0 products found under ${maxPrice} INR constraint for "${searchQuery}" across checked sources.` }
             : {}),
         },
         null,
