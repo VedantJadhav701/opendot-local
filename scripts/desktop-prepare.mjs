@@ -11,6 +11,7 @@ if (!fs.existsSync(path.join(out, "server.js"))) throw new Error("Run `next buil
 fs.cpSync(path.join(root, "public"), path.join(out, "public"), { recursive: true });
 fs.cpSync(path.join(root, ".next/static"), path.join(out, ".next/static"), { recursive: true });
 
+const require = createRequire(path.join(root, "package.json"));
 const EXTERNALS = ["playwright", "playwright-core", "pdf-parse", "pdfjs-dist", "@swc/helpers", "@next/env"];
 const nextNodeModules = path.join(out, ".next/node_modules");
 
