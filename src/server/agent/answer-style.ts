@@ -12,11 +12,24 @@ export function sanitizeAnswerStyle(text: string): string {
     ""
   );
 
-  // 2. Remove closing offers at end of message
-  clean = clean.replace(
-    /(?:\n\n|\n|^)\s*(?:let me know|feel free|hope this helps|how else can i|if you have any|if you'd like|is there anything else|reach out if)[\s\S]*$/gi,
-    ""
-  ).trim();
+  // 2. Remove closing offers strictly at end of message (last paragraph / last ~200 chars)
+  const offerRegex = /(?:let me know|feel free|hope this helps|how else can i|if you have any|if you'd like|is there anything else|reach out if)/i;
+
+  const paragraphs = clean.split(/\n\s*\n/);
+  if (paragraphs.length > 0) {
+    const lastParagraph = paragraphs[paragraphs.length - 1];
+    const match = lastParagraph.match(/^(?:\s*)(?:let me know|feel free|hope this helps|how else can i|if you have any|if you'd like|is there anything else|reach out if)[\s\S]*$/i);
+    if (match && lastParagraph.length <= 250) {
+      paragraphs.pop();
+      clean = paragraphs.join("\n\n").trim();
+    } else {
+      const inlineMatch = lastParagraph.match(/(?:\s*)(?:let me know|feel free|hope this helps|how else can i|if you have any|if you'd like|is there anything else|reach out if)[\s\S]*$/i);
+      if (inlineMatch && (lastParagraph.length - (inlineMatch.index || 0)) <= 200) {
+        paragraphs[paragraphs.length - 1] = lastParagraph.slice(0, inlineMatch.index).trim();
+        clean = paragraphs.join("\n\n").trim();
+      }
+    }
+  }
 
   return clean;
 }

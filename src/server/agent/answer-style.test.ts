@@ -11,12 +11,15 @@ function runTests() {
     throw new Error("Test 1 Failed: Emoji was not removed");
   }
 
-  // Test 2: Closing offer removal
-  const raw2 = "JBL Tune 130T is ₹1,999.\n\nLet me know if you'd like help finding a specific model or checking availability!";
-  const clean2 = sanitizeAnswerStyle(raw2);
-  console.log("Test 2 (Closing Offer Removal):", clean2);
-  if (clean2.includes("Let me know")) {
-    throw new Error("Test 2 Failed: Closing offer was not removed");
+  // Test 3: Mid-answer "If you have any..." line must SURVIVE
+  const raw3 = "If you have any issues with port binding, check firewalls.\n\nThe server runs on port 3000.\n\nLet me know if you need more help!";
+  const clean3 = sanitizeAnswerStyle(raw3);
+  console.log("Test 3 (Mid-answer phrase survival):", clean3);
+  if (!clean3.includes("If you have any issues with port binding")) {
+    throw new Error("Test 3 Failed: Mid-answer phrase was incorrectly removed!");
+  }
+  if (clean3.includes("Let me know if you need more help")) {
+    throw new Error("Test 3 Failed: Trailing closing offer was not removed!");
   }
 
   console.log("All Answer Style Unit Tests PASSED!");
