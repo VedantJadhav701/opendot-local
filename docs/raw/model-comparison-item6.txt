@@ -1,0 +1,192 @@
+=== ITEM 6 BENCHMARK REPORT ===
+Timestamp: 2026-10-05T08:53:39.944Z
+
+--- 1. OLLAMA PS SNAPSHOT ---
+NAME                      ID              SIZE      PROCESSOR          CONTEXT    UNTIL               
+qwen3:4b-instruct-2507    a9c2f5d5368b    4.1 GB    42%/58% CPU/GPU    8192       29 minutes from now    
+
+
+--- 2. FOUR LIVE PROMPTS TIMING & TOOL CALL DATA (Model: qwen3:4b-instruct-2507-q4_K_M) ---
+
+[PROMPT: Zenodo Download]
+Prompt Text: "go to this url: https://zenodo.org/records/23047307 and download the paper"
+Total Turn Time: 89378 ms
+Ordered Messages & Tool Actions (4):
+  - [USER]: go to this url: https://zenodo.org/records/23047307 and download the paper
+  - [ACTIVITY]: Browsing the web · https://zenodo.org/records/23047307
+  - [ACTIVITY]: Downloading file · https://zenodo.org/record/23047307/files/PatchMLPTS.pdf
+  - [DOT]: The paper "Patch-MLP-TS: A Channel-Independent, Attention-Free Architecture for Long-Term Time Series Forecasting" cannot be downloaded due to a 403 Forbidden error, indicating restricted access. This may be due to rate limiting or authentication requirements.  I recommend checking the official Zeno
+
+[PROMPT: Headphones Search]
+Prompt Text: "find a best headphone under 2000 rs"
+Total Turn Time: 157870 ms
+Ordered Messages & Tool Actions (6):
+  - [USER]: find a best headphone under 2000 rs
+  - [ACTIVITY]: Searching the web
+  - [ACTIVITY]: Browsing the web · https://www.flipkart.com/
+  - [ACTIVITY]: Searching the web
+  - [ACTIVITY]: Browsing the web · https://www.amazon.in/
+  - [DOT]: The best headphones under ₹2000 in India, based on user reviews and performance, are:  1. **JBL Tune 135BT**      - Price: ₹1,999      - Rating: 4.5/5 (based on 10,000+ reviews)      - Features: Bluetooth 5.0, 30-hour battery, good sound clarity, water-resistant.      - Link: [JBL Tune 135BT on Amaz
+
+[PROMPT: Hashnode Summary]
+Prompt Text: "Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize the key takeaways"
+Total Turn Time: 112692 ms
+Ordered Messages & Tool Actions (2):
+  - [USER]: Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize the key takeaways
+  - [DOT]: Key Takeaways from "AMD LLM Lab: 57 LLM Benchmarks on MI300X":  1. **Parameter Count Isn’t Enough**      Theoretical parameter-count estimates (e.g., 7B × 2 bytes = 14 GB) fail to capture actual inference memory needs due to overheads like KV cache, activations, and framework runtime.  2. **Measured
+
+[PROMPT: PDF Explain]
+Prompt Text: "Based on PatchMLPTS.pdf in context, what is discussed on the final page regarding future work?"
+Total Turn Time: 11959 ms
+Ordered Messages & Tool Actions (2):
+  - [USER]: Based on PatchMLPTS.pdf in context, what is discussed on the final page regarding future work?
+  - [DOT]: I don't have access to any file named "PatchMLPTS.pdf" in the context or workspace. I cannot read or retrieve content from that file. Please provide the text or content of the final page of the document, or confirm if you'd like me to search for information related to future work in machine learning
+
+--- 3. 10-PROMPT MODEL COMPARISON (qwen3:4b-instruct-2507-q4_K_M vs qwen3:1.7b) ---
+
+================================================================
+MODEL: qwen3:4b-instruct-2507-q4_K_M
+================================================================
+Prompt 1: "What is 15 multiplied by 24?"
+  - Total Time: 5085 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: 15 multiplied by 24 is 360.
+
+Prompt 2: "find a best headphone under 2000 rs"
+  - Total Time: 120213 ms
+  - Valid Tool Call: YES
+  - Repeated Calls: YES
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: 
+
+Prompt 3: "go to this url: https://zenodo.org/records/23047307 and download the paper"
+  - Total Time: 74287 ms
+  - Valid Tool Call: YES
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: The paper could not be downloaded due to a 403 Forbidden error. This may indicate restricted access or temporary blocking.  I recommend checking the Z
+
+Prompt 4: "Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize key takeaways"
+  - Total Time: 82979 ms
+  - Valid Tool Call: YES
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: I'll proceed with reading the content of the page directly from the pre-fetched data, as the browser launch failed due to a profile conflict.  Key tak
+
+Prompt 5: "Write a python function to check if a string is a palindrome."
+  - Total Time: 19405 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: ```python def is_palindrome(s):     """     Check if a string is a palindrome (reads the same forwards and backwards).          Args:         s (str):
+
+Prompt 6: "List 3 major features of Next.js Turbopack."
+  - Total Time: 17347 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: Next.js Turbopack is not a standalone or officially released feature of Next.js as of now. Next.js primarily uses Vite or Webpack for building and bun
+
+Prompt 7: "What is the capital of France and its population?"
+  - Total Time: 12074 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: The capital of France is Paris. As of the most recent estimates, the population of Paris is approximately 2.1 million inhabitants within the city limi
+
+Prompt 8: "Explain what a transformer architecture is in 2 sentences."
+  - Total Time: 9141 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: A transformer architecture is a type of neural network that relies entirely on attention mechanisms to process sequential data, eliminating the need f
+
+Prompt 9: "Create a JSON object representing a user with name, age, and email."
+  - Total Time: 6124 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: {   "name": "John Doe",   "age": 30,   "email": "john.doe@example.com" }
+
+Prompt 10: "Summarize the main conclusion of PatchMLPTS.pdf."
+  - Total Time: 11684 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: I don't have access to any file named "PatchMLPTS.pdf" in your workspace or on your computer. I cannot read or summarize a file that isn't available o
+
+================================================================
+MODEL: qwen3:1.7b
+================================================================
+Prompt 1: "What is 15 multiplied by 24?"
+  - Total Time: 4621 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: 15 multiplied by 24 is 360.
+
+Prompt 2: "find a best headphone under 2000 rs"
+  - Total Time: 120319 ms
+  - Valid Tool Call: YES
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: 
+
+Prompt 3: "go to this url: https://zenodo.org/records/23047307 and download the paper"
+  - Total Time: 120046 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: (no reply)
+
+Prompt 4: "Browse https://vedantjadhav.hashnode.dev/amd-llm-lab and summarize key takeaways"
+  - Total Time: 120268 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: (no reply)
+
+Prompt 5: "Write a python function to check if a string is a palindrome."
+  - Total Time: 120290 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: (no reply)
+
+Prompt 6: "List 3 major features of Next.js Turbopack."
+  - Total Time: 120300 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: (no reply)
+
+Prompt 7: "What is the capital of France and its population?"
+  - Total Time: 120244 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: FAIL
+  - Final Answer Snippet: (no reply)
+
+Prompt 8: "Explain what a transformer architecture is in 2 sentences."
+  - Total Time: 64062 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: A transformer architecture is a type of neural network model that relies entirely on attention mechanisms to process and understand sequences, such as
+
+Prompt 9: "Create a JSON object representing a user with name, age, and email."
+  - Total Time: 11229 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: {   "name": "John Doe",   "age": 30,   "email": "john.doe@example.com" }
+
+Prompt 10: "Summarize the main conclusion of PatchMLPTS.pdf."
+  - Total Time: 19140 ms
+  - Valid Tool Call: NO
+  - Repeated Calls: NO
+  - Answer Correctness: PASS
+  - Final Answer Snippet: I don't have access to any file named "PatchMLPTS.pdf" in my workspace or on your computer. I cannot read or summarize it without first downloading or
+
