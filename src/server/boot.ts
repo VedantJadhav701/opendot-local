@@ -15,8 +15,9 @@ export function boot() {
   startScheduler();
   // Listen for Composio trigger events (only if the user added a Composio API key).
   void startTriggerEvents();
-  // Learn which models the key can use, then tell any open windows (fills the model pickers).
-  if (canThink()) void models().then(() => emit({ type: "computer", data: computerInfo() })).catch(() => {});
+  // Learn which models are installed locally & cloud, then broadcast to UI (fills the model pickers).
+  const { resolveModels } = require("./llm");
+  void resolveModels().then(() => emit({ type: "computer", data: computerInfo() })).catch(() => {});
   // Reconnect to Composio For You with the saved sign-in (fills Settings → Apps and the dots' tools).
   if (signedIn()) void refreshComposio().catch((err) => console.warn("[dots] Composio:", err instanceof Error ? err.message : err));
 }

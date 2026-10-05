@@ -8,7 +8,32 @@ const DEFAULT_REVIEW_MODELS = ["qwen3:0.6b", "qwen3:1.7b", "llama3.2:1b", "qwen2
 
 let activeProvider: LLMProvider = new OllamaProvider();
 
-export function getProvider(): LLMProvider {
+export function getProvider(model?: string): LLMProvider {
+  const { hasCloudBoostKey, getCloudBoostKey } = require("../vault");
+  let cloudModel = getSetting("cloud_boost_model") || "moonshotai/kimi-k3";
+  if (cloudModel.includes("llama-3.1-70b")) {
+    cloudModel = "moonshotai/kimi-k3";
+  }
+  const cloudUrl = getSetting("cloud_boost_url") || "https://integrate.api.nvidia.com/v1";
+
+  const isCloudTarget =
+    model &&
+    (model === cloudModel ||
+      model.includes("moonshotai") ||
+      model.includes("kimi") ||
+      model.includes("muse-glimmer") ||
+      model.includes("meta/") ||
+      model.includes("cloud"));
+
+  if (hasCloudBoostKey() && isCloudTarget) {
+    const { OpenAICompatProvider } = require("./openai-compat");
+    return new OpenAICompatProvider({
+      baseUrl: cloudUrl,
+      apiKey: getCloudBoostKey() || undefined,
+      model: model || cloudModel,
+    });
+  }
+
   return activeProvider;
 }
 
@@ -22,8 +47,20 @@ export async function isOllamaConnected(): Promise<boolean> {
 
 export async function listAvailableModels(): Promise<ModelInfo[]> {
   const isHealthy = await isOllamaConnected();
-  if (!isHealthy) return [];
-  return activeProvider.listModels();
+  const models = isHealthy ? await activeProvider.listModels() : [];
+
+  const { hasCloudBoostKey } = require("../vault");
+  if (hasCloudBoostKey()) {
+    const cloudModel = getSetting("cloud_boost_model") || "moonshotai/kimi-k3";
+    const cloudModels = [cloudModel, "meta/muse-glimmer-30b"];
+    for (const cm of cloudModels) {
+      if (!models.some((m) => m.id === cm)) {
+        models.push({ id: cm, name: `${cm} (Cloud)` });
+      }
+    }
+  }
+
+  return models;
 }
 
 let lastResolved: { main: string; review: string; available: string[] } = {
@@ -33,7 +70,18 @@ let lastResolved: { main: string; review: string; available: string[] } = {
 };
 
 export function getResolvedSync(): { main: string; review: string; available: string[] } {
-  return lastResolved;
+  const { hasCloudBoostKey } = require("../vault");
+  const cloudModel = getSetting("cloud_boost_model") || "moonshotai/kimi-k3";
+  const available = [...lastResolved.available];
+  const cloudModels = [cloudModel, "meta/muse-glimmer-30b"];
+  if (hasCloudBoostKey()) {
+    for (const cm of cloudModels) {
+      if (!available.includes(cm)) {
+        available.push(cm);
+      }
+    }
+  }
+  return { ...lastResolved, available };
 }
 
 export async function resolveModels(): Promise<{ main: string; review: string; available: string[] }> {

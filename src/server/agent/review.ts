@@ -133,8 +133,8 @@ export async function review(
     .join("\n");
 
   try {
-    const provider = getProvider();
     const reviewModel = await activeReviewModel();
+    const provider = getProvider(reviewModel);
 
     const response = await provider.chat({
       model: reviewModel,

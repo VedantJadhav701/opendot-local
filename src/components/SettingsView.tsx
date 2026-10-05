@@ -280,7 +280,7 @@ function AppsList() {
 function CloudBoostCard() {
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("https://integrate.api.nvidia.com/v1");
-  const [modelId, setModelId] = useState("meta/llama-3.1-70b-instruct");
+  const [modelId, setModelId] = useState("moonshotai/kimi-k3");
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -323,7 +323,7 @@ function CloudBoostCard() {
               className="w-full rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              placeholder="meta/llama-3.1-70b-instruct"
+              placeholder="moonshotai/kimi-k3"
             />
           </div>
         </div>

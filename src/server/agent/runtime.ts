@@ -372,7 +372,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
 
 async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false): Promise<ChatMessage> {
   const modelName = await activeModel(dot.model);
-  const provider = getProvider();
+  const provider = getProvider(modelName);
 
   const toolDefs: ToolDefinition[] = omitTools
     ? []
@@ -582,8 +582,8 @@ setConsult(async (target, message, from, _depth, signal) => {
   if (!channelId) repo.addMessage({ dotId: target.id, role: "user", text: message, from: `dot:${from.name}` });
   repo.setActivity(target.id, `Helping ${from.name}`);
   try {
-    const provider = getProvider();
     const targetModel = await activeModel(target.model);
+    const provider = getProvider(targetModel);
 
     const res = await provider.chat(
       {
