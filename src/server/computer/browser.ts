@@ -256,6 +256,33 @@ export async function readPage(dotId: string, userQuery = ""): Promise<string> {
   return `URL: ${p.url()}\nTitle: ${title}\n\n${cleanText}`;
 }
 
+export async function currentPageInfo(dotId: string): Promise<string> {
+  const p = await page(dotId);
+  return `Current browser page:\nURL: ${p.url()}\nTitle: ${await p.title()}`;
+}
+
+export async function pageLinks(dotId: string): Promise<string> {
+  const p = await page(dotId);
+  const links = await p.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
+      .map((a) => ({
+        text: (a.innerText || a.getAttribute("aria-label") || a.title || "").replace(/\s+/g, " ").trim(),
+        href: a.href,
+      }))
+      .filter((link) => link.href && /^https?:\/\//i.test(link.href))
+      .slice(0, 60)
+  );
+  if (!links.length) return `No visible page links found on ${p.url()}.`;
+  const unique = new Map<string, { text: string; href: string }>();
+  for (const link of links) {
+    if (!unique.has(link.href)) unique.set(link.href, link);
+  }
+  const lines = Array.from(unique.values())
+    .slice(0, 40)
+    .map((link, index) => `${index + 1}. ${link.text || "(untitled link)"} - ${link.href}`);
+  return `Links visible on ${p.url()}:\n${lines.join("\n")}`;
+}
+
 const KEY_MAP: Record<string, string> = {
   ENTER: "Enter", RETURN: "Enter", ESC: "Escape", ESCAPE: "Escape", TAB: "Tab", SPACE: " ", BACKSPACE: "Backspace",
   DELETE: "Delete", UP: "ArrowUp", DOWN: "ArrowDown", LEFT: "ArrowLeft", RIGHT: "ArrowRight", ARROWUP: "ArrowUp",

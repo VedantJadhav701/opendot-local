@@ -109,33 +109,41 @@ async function searchSearXNG(q: string, baseUrl: string): Promise<{ title: strin
   }
 }
 
+async function executeWebSearch(query: string): Promise<string> {
+  const q = query.trim();
+  if (!q) return "Search query cannot be empty.";
+
+  try {
+    let results = await searchDDGHtml(q);
+    if (!results.length) {
+      results = await searchDDGLite(q);
+    }
+    if (!results.length && process.env.SEARXNG_URL) {
+      results = await searchSearXNG(q, process.env.SEARXNG_URL);
+    }
+    if (!results.length) {
+      return `Search unavailable: No results returned for "${q}". Try using open_url to browse directly.`;
+    }
+    return JSON.stringify({ query: q, source: "web_search", results }, null, 2);
+  } catch (err: any) {
+    return `Search unavailable: ${err.message}. Try using open_url to browse directly.`;
+  }
+}
+
 export const TOOLS: ToolDef[] = [
   {
     name: "web_search",
     label: "Searching the web",
-    description: "Search the web for products, articles, research, prices, and facts. Returns top 5 results with titles, URLs, and snippets.",
+    description: "Search the web for public products, articles, research, prices, facts, projects, companies, usernames, and developer credits. Returns top results with titles, URLs, and snippets.",
     parameters: obj({ query: str("The search query to look up on the web") }),
-    execute: async (a) => {
-      const q = s(a.query);
-      if (!q.trim()) return "Search query cannot be empty.";
-      
-      // Fallback chain: 1. DDG HTML -> 2. DDG Lite -> 3. SearXNG -> 4. Clear error
-      try {
-        let results = await searchDDGHtml(q);
-        if (!results.length) {
-          results = await searchDDGLite(q);
-        }
-        if (!results.length && process.env.SEARXNG_URL) {
-          results = await searchSearXNG(q, process.env.SEARXNG_URL);
-        }
-        if (!results.length) {
-          return `Search unavailable: No results returned for "${q}". Try using open_url to browse directly.`;
-        }
-        return JSON.stringify(results, null, 2);
-      } catch (err: any) {
-        return `Search unavailable: ${err.message}. Try using open_url to browse directly.`;
-      }
-    },
+    execute: async (a) => executeWebSearch(s(a.query)),
+  },
+  {
+    name: "search_web",
+    label: "Searching the web",
+    description: "Alias for web_search. Use when the user says search, browse, look up, or find public information.",
+    parameters: obj({ query: str("The search query to look up on the web") }),
+    execute: async (a) => executeWebSearch(s(a.query)),
   },
   {
     name: "download_file",
@@ -320,11 +328,52 @@ export const TOOLS: ToolDef[] = [
     execute: (a, ctx) => computer.openUrl(ctx.dot.id, s(a.url)),
   },
   {
+    name: "open_browser",
+    label: "Opening browser",
+    description: "Open the managed Chromium browser when the user asks to open a browser, Chrome, or Brave without giving a specific URL.",
+    parameters: obj({}, []),
+    defaultDecision: () => "allow",
+    execute: async (_a, ctx) => {
+      await computer.wake(ctx.dot.id);
+      return "Opened the managed Chromium browser. Use open_url for a specific site or read_page to inspect the current page.";
+    },
+  },
+  {
+    name: "open_current_browser",
+    label: "Opening browser",
+    description: "Wake the managed browser and report the current page URL and title.",
+    parameters: obj({}, []),
+    defaultDecision: () => "allow",
+    execute: async (_a, ctx) => {
+      await computer.wake(ctx.dot.id);
+      return computer.currentPageInfo(ctx.dot.id);
+    },
+  },
+  {
     name: "read_page",
     label: "Reading the web",
     description: "Get the visible text of the page currently open in your browser.",
     parameters: obj({}),
     execute: (_a, ctx) => computer.readPage(ctx.dot.id),
+  },
+  {
+    name: "inspect_page_links",
+    label: "Inspecting links",
+    description: "List visible links on the current browser page with link text and URLs. Use this to inspect a website's navigation, social links, source links, and docs links.",
+    parameters: obj({}, []),
+    execute: (_a, ctx) => computer.pageLinks(ctx.dot.id),
+  },
+  {
+    name: "summarize_site",
+    label: "Summarizing site",
+    description: "Open a public website, read its visible homepage text, and collect visible links so you can summarize what the site does with sources.",
+    parameters: obj({ url: str("Website URL to summarize") }),
+    defaultDecision: () => "allow",
+    execute: async (a, ctx) => {
+      const opened = await computer.openUrl(ctx.dot.id, s(a.url));
+      const links = await computer.pageLinks(ctx.dot.id).catch((err: unknown) => `Could not inspect links: ${err instanceof Error ? err.message : String(err)}`);
+      return `${opened}\n\n${links}`;
+    },
   },
   {
     name: "click",
