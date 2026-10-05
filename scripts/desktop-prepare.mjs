@@ -19,6 +19,12 @@ for (const dir of [playwrightDir, fs.realpathSync(coreDir)]) {
   fs.cpSync(dir, dest, { recursive: true, dereference: true });
   console.log("copied", path.relative(root, dir));
 }
+const nextNodeModules = path.join(out, ".next/node_modules");
+if (fs.existsSync(nextNodeModules)) {
+  fs.cpSync(fs.realpathSync(coreDir), path.join(nextNodeModules, "playwright-core"), { recursive: true, dereference: true });
+  fs.cpSync(playwrightDir, path.join(nextNodeModules, "playwright"), { recursive: true, dereference: true });
+  console.log("copied playwright and playwright-core into .next/node_modules");
+}
 
 // Tracing also misses Next's own prebuilt server runtimes (e.g. the one API routes load).
 const nextDir = fs.realpathSync(path.dirname(require.resolve("next/package.json")));
