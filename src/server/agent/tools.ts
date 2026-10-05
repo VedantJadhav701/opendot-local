@@ -180,14 +180,16 @@ async function scrapeAmazonListing(category: string, maxPrice: number): Promise<
     const context = await browserInstance.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 800 },
+      extraHTTPHeaders: {
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
     });
     const page = await context.newPage();
     const priceFilterPaise = Math.round(maxPrice * 100);
     const searchUrl = `https://www.amazon.in/s?k=${encodeURIComponent(category)}&rh=p_36%3A-${priceFilterPaise}`;
 
-    const navPromise = page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 18000 });
-    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 19000));
-    const response = await Promise.race([navPromise, timeoutPromise]);
+    const response = await page.goto(searchUrl, { waitUntil: "commit", timeout: 12000 }).catch(() => null);
 
     if (response && (response.status() === 403 || response.status() === 503)) {
       await browserInstance.close();
@@ -272,13 +274,15 @@ async function scrapeFlipkartListing(category: string, maxPrice: number): Promis
     const context = await browserInstance.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 800 },
+      extraHTTPHeaders: {
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
     });
     const page = await context.newPage();
-    const searchUrl = `https://www.flipkart.com/search?q=${encodeURIComponent(category)}&p%5B%5D=facets.price_range.from%3DMin&p%5B%5D=facets.price_range.to%3D${maxPrice}`;
+    const searchUrl = `https://www.flipkart.com/search?q=${encodeURIComponent(`${category} under ${maxPrice}`)}`;
 
-    const navPromise = page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 18000 });
-    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 19000));
-    const response = await Promise.race([navPromise, timeoutPromise]);
+    const response = await page.goto(searchUrl, { waitUntil: "commit", timeout: 12000 }).catch(() => null);
 
     if (response && (response.status() === 403 || response.status() === 503)) {
       await browserInstance.close();
@@ -298,23 +302,40 @@ async function scrapeFlipkartListing(category: string, maxPrice: number): Promis
       const cards = Array.from(document.querySelectorAll('div[data-id], div._1sd2vB, div._75WR14, div._4ddW1m, div._1AtVbE'));
 
       for (const card of cards) {
-        const titleEl = card.querySelector('a.s1Q9rs, a.IRyWSu, div._4rR01T, a.w722Hn, a.WP1v3D, div.KzDlHZ, a.VigAec');
-        const title = titleEl?.textContent?.trim() || "";
+        const aElements = Array.from(card.querySelectorAll('a[href*="/p/"]'));
+        let title = "";
+        for (const a of aElements) {
+          const t = a.getAttribute('title') || a.textContent?.trim() || "";
+          if (t && t.length > 5 && !t.includes("₹") && !t.includes("% off")) {
+            title = t;
+            break;
+          }
+        }
+        if (!title) {
+          const titleEl = card.querySelector('a.wEPWZ1, a.W7B3-o, div.KzDlHZ, a.VigAec, a.s1Q9rs, a.IRyWSu, div._4rR01T, a[title]');
+          title = (titleEl?.getAttribute('title') || titleEl?.textContent?.trim() || "").slice(0, 90);
+        }
         if (!title || title.length < 5) continue;
 
-        const priceEl = card.querySelector('div._30jeq3, div._1vC4OE, div.Nx9bqj');
-        const priceText = priceEl?.textContent || "";
-        const cleanPrice = priceText.replace(/[^0-9]/g, "");
-        const price = cleanPrice ? parseInt(cleanPrice, 10) : null;
+        const priceEls = Array.from(card.querySelectorAll('div')).filter(d => d.textContent && d.textContent.includes('₹'));
+        let price: number | null = null;
+        for (const pEl of priceEls) {
+          const cleanPrice = (pEl.textContent || "").replace(/[^0-9]/g, "");
+          const parsed = cleanPrice ? parseInt(cleanPrice, 10) : null;
+          if (parsed && parsed > 0 && parsed <= maxP) {
+            price = parsed;
+            break;
+          }
+        }
 
         if (price === null || price <= 0 || price > maxP) continue;
 
-        const ratingEl = card.querySelector('div._3LWZlK, div.X1q_D1');
+        const ratingEl = card.querySelector('div._3LWZlK, div.X1q_D1, div.CGWMgT, span._2d4WWh');
         const ratingVal = ratingEl?.textContent?.trim() || "";
         const ratingMatch = ratingVal.match(/([0-9]+(?:\.[0-9]+)?)/);
         const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
 
-        const ratingCountEl = card.querySelector('span._2_R_ns, span.WFLhYf, span.B_NuTv');
+        const ratingCountEl = card.querySelector('span._2_R_ns, span.WFLhYf, span.B_NuTv, span.rP1awC');
         const ratingCountText = ratingCountEl?.textContent || "";
         const ratingCountClean = ratingCountText.replace(/[^0-9]/g, "");
         const ratingCount = ratingCountClean ? parseInt(ratingCountClean, 10) : null;
@@ -325,7 +346,7 @@ async function scrapeFlipkartListing(category: string, maxPrice: number): Promis
         if (!url || url.includes('/search?') || url.includes('/headphones/')) continue;
         url = url.split("?")[0];
 
-        const isSponsored = Boolean(card.querySelector('div._2tDEn2, span._1t8T2H') || card.textContent?.includes("Ad"));
+        const isSponsored = Boolean(card.querySelector('div._2tDEn2, span._1t8T2H, div.vt5f6t') || card.textContent?.includes("Ad"));
 
         results.push({
           name: title.slice(0, 90),

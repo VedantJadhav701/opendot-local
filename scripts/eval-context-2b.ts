@@ -316,13 +316,8 @@ async function main() {
     const hybridPromptText = hybridSelected.map((c, i) => `[Chunk ${i + 1}]\n${c.text}`).join("\n\n");
     const hybridLLMPrompt = `Context:\n${hybridPromptText}\n\nQuestion: ${q.question}`;
 
-    console.log(`  Running Baseline LLM call for ${q.id}...`);
     const baselineAns = await callOllamaLLM(baselineLLMPrompt);
-
-    console.log(`  Running BM25 LLM call for ${q.id}...`);
     const bm25Ans = await callOllamaLLM(bm25LLMPrompt);
-
-    console.log(`  Running Hybrid LLM call for ${q.id}...`);
     const hybridAns = await callOllamaLLM(hybridLLMPrompt);
 
     e2eResults.push({
