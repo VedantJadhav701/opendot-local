@@ -200,33 +200,150 @@ export const TOOLS: ToolDef[] = [
   {
     name: "product_search",
     label: "Searching products",
-    description: "Search for e-commerce products, prices, ratings, and specifications under target budget constraints.",
-    parameters: obj({ category: str("Product category e.g. headphones"), maxPrice: str("Maximum budget e.g. 2000") }),
+    description:
+      "Search Indian product listings and return concrete products with prices. Use for shopping research. Never return category pages as products.",
+    parameters: obj({
+      category: str("Product category, e.g. headphones"),
+      maxPrice: str("Maximum budget in INR, e.g. 2000"),
+    }),
     execute: async (a) => {
-      const cat = s(a.category) || "headphones";
-      const maxP = parseInt(s(a.maxPrice || "2000"), 10) || 2000;
-      let query = `best ${cat} under ${maxP} rs India price rating`;
-      let searchRes = await executeWebSearch(query);
+      const category = s(a.category).trim() || "headphones";
+      const maxPrice = Math.max(
+        1,
+        parseInt(s(a.maxPrice || "2000"), 10) || 2000
+      );
 
-      try {
-        let parsed = JSON.parse(searchRes);
-        let results = parsed.results || [];
-        if (!results.length || results.every((r: any) => !r.snippet || r.snippet.length < 50)) {
-          const fallbackQuery = `top 5 ${cat} under ${maxP} rupees India boat noise boult realme jbl price`;
-          const fallbackRes = await executeWebSearch(fallbackQuery);
-          parsed = JSON.parse(fallbackRes);
-          results = parsed.results || [];
+      const queries = [
+        `"${category}" under ₹${maxPrice} India price rating`,
+        `best ${category} under ${maxPrice} INR India price review`,
+        `site:amazon.in ${category} under ${maxPrice}`,
+        `site:flipkart.com ${category} under ${maxPrice}`,
+        `site:croma.com ${category} under ${maxPrice}`,
+      ];
+
+      const allResults: Array<{
+        title: string;
+        url: string;
+        domain: string;
+        snippet: string;
+        rank: number;
+      }> = [];
+
+      for (const query of queries) {
+        const raw = await executeWebSearch(query);
+
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.results)) {
+            for (const result of parsed.results) {
+              if (!result?.url || !result?.title) continue;
+
+              const url = String(result.url);
+              const title = String(result.title);
+              const snippet = String(result.snippet || "");
+
+              let domain = "";
+              try {
+                domain = new URL(url).hostname.toLowerCase();
+              } catch {
+                continue;
+              }
+
+              allResults.push({
+                title,
+                url,
+                domain,
+                snippet,
+                rank: Number(result.rank || 999),
+              });
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      const unique = new Map<string, (typeof allResults)[number]>();
+
+      for (const result of allResults) {
+        const key = result.url.split("?")[0].toLowerCase();
+
+        if (!unique.has(key)) {
+          unique.set(key, result);
+        }
+      }
+
+      const candidates = [...unique.values()]
+        .filter((r) => {
+          const combined = `${r.title} ${r.snippet}`.toLowerCase();
+
+          const looksLikeCategory =
+            /\/headphones\/?$|\/headphones\/|\/category\/|\/search\/|\/collections\/|\/shop\/?$|\/products\/?$|\/pricing\//i.test(
+              r.url
+            );
+
+          if (looksLikeCategory) return false;
+
+          const hasProductSignal =
+            /\b(headphone|headphones|earphone|earphones|earbud|tws)\b/i.test(
+              combined
+            );
+
+          return hasProductSignal;
+        })
+        .slice(0, 15);
+
+      const priceRegex =
+        /(?:₹|rs\.?|inr)\s*([0-9][0-9,]*(?:\.[0-9]+)?)/gi;
+
+      const parsedCandidates = candidates.map((candidate) => {
+        const text = `${candidate.title} ${candidate.snippet}`;
+        const prices: number[] = [];
+
+        for (const match of text.matchAll(priceRegex)) {
+          const value = Number(match[1].replace(/,/g, ""));
+          if (Number.isFinite(value)) {
+            prices.push(value);
+          }
         }
 
-        return JSON.stringify({
-          constraint: { category: cat, maxPrice: maxP, currency: "INR" },
-          query,
-          results,
-          note: `STRICT CONSTRAINT: Only recommend products with price <= ${maxP} INR. Do not include high-end items over ${maxP} INR.`,
-        }, null, 2);
-      } catch {
-        return searchRes;
-      }
+        const validPrices = prices.filter((p) => p > 0 && p <= maxPrice);
+
+        return {
+          name: candidate.title,
+          url: candidate.url,
+          domain: candidate.domain,
+          snippet: candidate.snippet,
+          prices: validPrices,
+          price:
+            validPrices.length > 0
+              ? Math.min(...validPrices)
+              : null,
+        };
+      });
+
+      const valid = parsedCandidates.filter(
+        (p) => p.price !== null && p.price <= maxPrice
+      );
+
+      return JSON.stringify(
+        {
+          type: "product_search_results",
+          constraint: {
+            category,
+            maxPrice,
+            currency: "INR",
+          },
+          count: valid.length,
+          products: valid.slice(0, 8),
+          excludedResults: parsedCandidates.length - valid.length,
+          rule:
+            `ONLY recommend products with verified search-result price <= ${maxPrice} INR. ` +
+            `Do not treat category/search pages as products.`,
+        },
+        null,
+        2
+      );
     },
   },
   {
