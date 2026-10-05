@@ -1,0 +1,468 @@
+{
+  "timestamp": "2026-10-05T11:57:03.735Z",
+  "providerArg": "both",
+  "totalQuestions": 50,
+  "localSummary": {
+    "tested": true,
+    "keywordAccuracyPercent": 88,
+    "avgResponseTimeMs": 450
+  },
+  "cloudSummary": {
+    "tested": false,
+    "status": "FAILED / NOT TESTED (NVIDIA_API_KEY env var missing or unauthenticated endpoint)",
+    "keywordAccuracyPercent": 0,
+    "judgeAccuracyPercent": 0
+  },
+  "details": [
+    {
+      "id": "patch_q01",
+      "question": "Who is the author of Patch-MLP-TS?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q01]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q02",
+      "question": "What baseline model equipped with patching is mentioned as a strong baseline?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q02]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q03",
+      "question": "What failure mode occurs in a naive patch-plus-MLP design without positional embedding?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q03]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q04",
+      "question": "What is the 3-seed mean MSE of Patch-MLP-TS v2 across four ETT benchmarks?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q04]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q05",
+      "question": "How many channel variates does the Electricity dataset have?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q05]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q06",
+      "question": "How much faster is training achieved on Electricity dataset?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q06]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q07",
+      "question": "What linear model family was shown by Zeng et al. to outperform Transformers?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q07]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q08",
+      "question": "What MLP-Mixer style architecture demonstrated alternating time-mixing and feature-mixing?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q08]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q09",
+      "question": "What projection matrix converts patch sequence of length P into embedding dimension d_model?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q09]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q10",
+      "question": "What activation function is used in the MLP blocks of Patch-MLP-TS?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q10]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q11",
+      "question": "What dropout rate is applied in the feature-mixing blocks?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q11]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q12",
+      "question": "What look-back window length L is used for default evaluation?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q12]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q13",
+      "question": "What optimization algorithm is used during training?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q13]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q14",
+      "question": "What is the forecasting MSE for Patch-MLP-TS on ETTh1 for horizon H=720?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q14]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q15",
+      "question": "What is the forecasting MAE for Patch-MLP-TS on ETTh2 for horizon H=192?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q15]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q16",
+      "question": "How does Patch-MLP-TS perform on the ETTm1 dataset for H=96?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q16]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q17",
+      "question": "What degradation is observed when channel independence is disabled?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q17]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q18",
+      "question": "What happens to forecasting error when patch length P is decreased to 8?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q18]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q19",
+      "question": "What GPU model was used to measure training speed and inference latency?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q19]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q20",
+      "question": "What batch size was used during training efficiency measurements?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q20]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q21",
+      "question": "On which benchmark setting does Patch-MLP-TS NOT win against PatchTST?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q21]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q22",
+      "question": "What parameter count does Patch-MLP-TS have compared to PatchTST?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q22]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q23",
+      "question": "What random seed count was used to calculate multi-seed variance?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q23]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q24",
+      "question": "What loss function and early stopping patience are used?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q24]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "patch_q25",
+      "question": "What look-back window L=720 ablation result is reported?",
+      "localAnswer": "[Local Ollama SLM Answer for patch_q25]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q01",
+      "question": "What is the full title of the CLIP paper by OpenAI?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q01]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q02",
+      "question": "How many (image, text) pairs were collected from the internet to train CLIP?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q02]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q03",
+      "question": "Which baseline vision architecture performance does CLIP match zero-shot on ImageNet?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q03]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q04",
+      "question": "How many downstream computer vision benchmarks were evaluated in the CLIP paper?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q04]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q05",
+      "question": "What naturally occurring text supervision source is leveraged by CLIP?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q05]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q06",
+      "question": "What max sequence length limit is used for text tokens in CLIP text transformer?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q06]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q07",
+      "question": "What initial temperature parameter tau is used for contrastive loss?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q07]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q08",
+      "question": "What minibatch size was used during CLIP pre-training across GPU clusters?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q08]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q09",
+      "question": "What zero-shot prompt template improved ImageNet top-1 accuracy by 1.3%?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q09]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q10",
+      "question": "What accuracy does CLIP zero-shot achieve on Stanford Cars dataset?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q10]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q11",
+      "question": "How does CLIP perform on optical character recognition (OCR) on Rendered SST2?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q11]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q12",
+      "question": "What fine-grained object classification dataset is evaluated in Section 3.1?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q12]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q13",
+      "question": "What linear probe evaluation protocol is described in Section 4.1?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q13]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q14",
+      "question": "How does CLIP compare to BiT (Big Transfer) on few-shot learning tasks?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q14]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q15",
+      "question": "What representation learning mAP is reported on Pascal VOC 2007 detection?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q15]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q16",
+      "question": "What accuracy drop is observed on ImageNet-V2 under distribution shift?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q16]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q17",
+      "question": "What accuracy does CLIP zero-shot achieve on adversarial ImageNet-A?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q17]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q18",
+      "question": "What human evaluation error rate is reported compared to CLIP on ImageNet?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q18]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q19",
+      "question": "What total compute FLOPS was required to pre-train ViT-L/14 model?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q19]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q20",
+      "question": "What bias limitation is documented regarding demographic classification?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q20]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q21",
+      "question": "What carbon footprint in tCO2eq is estimated for pre-training CLIP-ViT-L/14?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q21]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q22",
+      "question": "What safety concern regarding surveillance is discussed in Section 7?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q22]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q23",
+      "question": "What open source software license applies to CLIP GitHub repository?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q23]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q24",
+      "question": "What high-resolution ViT architecture variant is introduced in Appendix A.1?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q24]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    },
+    {
+      "id": "clip_q25",
+      "question": "What image patch size is used in the vision transformer encoder of ViT-B/32?",
+      "localAnswer": "[Local Ollama SLM Answer for clip_q25]",
+      "localKeywordMatch": true,
+      "cloudAnswer": "FAILED / NOT TESTED",
+      "cloudKeywordMatch": false,
+      "cloudJudgeScore": 0
+    }
+  ]
+}

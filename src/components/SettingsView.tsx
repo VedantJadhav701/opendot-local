@@ -52,6 +52,10 @@ export default function SettingsView() {
           </dl>
         </Section>
 
+        <Section eyebrow="Cloud Boost" title="Optional Cloud Provider" description="Optionally paste an API key for NVIDIA API Catalog or OpenAI-compatible endpoints. Stored encrypted in OS Vault. Local Ollama remains default.">
+          <CloudBoostCard />
+        </Section>
+
         <Section
           eyebrow="Security & Secrets"
           title="Saved Logins"
@@ -269,6 +273,80 @@ function AppsList() {
         </div>
       )}
       {error && <p className="text-caption text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+function CloudBoostCard() {
+  const [apiKey, setApiKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState("https://integrate.api.nvidia.com/v1");
+  const [modelId, setModelId] = useState("meta/llama-3.1-70b-instruct");
+  const [saved, setSaved] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  const handleSaveKey = () => {
+    startTransition(async () => {
+      const { saveCloudBoostKeyAction, setCloudBoostConfigAction } = await import("@/app/actions");
+      await saveCloudBoostKeyAction(apiKey);
+      await setCloudBoostConfigAction({ baseUrl, modelId });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    });
+  };
+
+  return (
+    <div className="surface mb-6 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <div className="text-[14px] font-medium">Cloud Boost (Optional)</div>
+          <div className="text-body-sm text-foreground/55">
+            Connect an optional OpenAI-compatible API endpoint (NVIDIA API Catalog / OpenAI) for cloud escalation. Key is encrypted in native OS Vault (DPAPI/Keychain). Off by default per dot.
+          </div>
+        </div>
+      </div>
+      <div className="space-y-3 pt-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="eyebrow block mb-1">Base URL</label>
+            <input
+              type="text"
+              className="w-full rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://integrate.api.nvidia.com/v1"
+            />
+          </div>
+          <div>
+            <label className="eyebrow block mb-1">Model ID</label>
+            <input
+              type="text"
+              className="w-full rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
+              value={modelId}
+              onChange={(e) => setModelId(e.target.value)}
+              placeholder="meta/llama-3.1-70b-instruct"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="eyebrow block mb-1">API Key</label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              className="flex-1 rounded border border-black/10 px-3 py-1.5 text-body-sm font-mono"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="nvapi-... or sk-..."
+            />
+            <button
+              onClick={handleSaveKey}
+              disabled={pending || !apiKey.trim()}
+              className="rounded bg-accent px-4 py-1.5 text-body-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+            >
+              {pending ? "Saving..." : saved ? "Saved!" : "Save Key"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

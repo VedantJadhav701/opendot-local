@@ -18,3 +18,27 @@ export function credentialFor(site: string): { site: string; username: string; p
   const row = sealedPasswordFor(site);
   return row ? { site: row.site, username: row.username, password: unseal(row.sealed) } : null;
 }
+
+export function saveCloudBoostKey(key: string): void {
+  const { setSetting } = require("./db");
+  if (!key.trim()) {
+    setSetting("cloud_boost_key", null);
+    return;
+  }
+  setSetting("cloud_boost_key", seal(key.trim()));
+}
+
+export function getCloudBoostKey(): string | null {
+  const { getSetting } = require("./db");
+  const sealed = getSetting("cloud_boost_key");
+  if (!sealed) return process.env.NVIDIA_API_KEY || null;
+  try {
+    return unseal(sealed);
+  } catch {
+    return null;
+  }
+}
+
+export function hasCloudBoostKey(): boolean {
+  return Boolean(getCloudBoostKey());
+}

@@ -257,6 +257,20 @@ export async function setCloudKey(_key: string): Promise<string | null> {
   return null;
 }
 
+export async function saveCloudBoostKeyAction(key: string): Promise<{ success: boolean; hasKey: boolean }> {
+  const { saveCloudBoostKey, hasCloudBoostKey } = await import("@/server/vault");
+  saveCloudBoostKey(key);
+  emit({ type: "computer", data: computerInfo() });
+  return { success: true, hasKey: hasCloudBoostKey() };
+}
+
+export async function setCloudBoostConfigAction(config: { baseUrl?: string; modelId?: string }): Promise<void> {
+  const { setSetting } = await import("@/server/db");
+  if (config.baseUrl !== undefined) setSetting("cloud_boost_url", config.baseUrl);
+  if (config.modelId !== undefined) setSetting("cloud_boost_model", config.modelId);
+  emit({ type: "computer", data: computerInfo() });
+}
+
 export async function setDefaultModel(model: string | null) {
   setSetting("default_model", model);
   emit({ type: "computer", data: computerInfo() });
