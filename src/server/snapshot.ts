@@ -4,9 +4,6 @@ import { dockerAvailable, BOX_IMAGE } from "./computer/shell";
 import { defaultMode } from "./computer";
 import { knownModels, hasKey, keySource } from "./agent/client";
 import { COMPUTER_ENABLED } from "./agent/tools";
-import { skyInstalled } from "./computer/sky";
-import { cloudKeySource } from "./computer/cloud";
-import { openRouterSource } from "./agent/openrouter";
 import { triggersKeySource } from "./triggers";
 import { apps, signedIn } from "./composio";
 import type { ComputerInfo, Snapshot } from "@/lib/types";
@@ -22,10 +19,10 @@ export function computerInfo(): ComputerInfo {
     computerTool: COMPUTER_ENABLED ? "computer" : "off",
     hasKey: hasKey(),
     keySource: keySource(),
-    cloudKey: cloudKeySource(),
-    openRouter: openRouterSource(),
+    cloudKey: null,
+    openRouter: null,
     triggersKey: triggersKeySource(),
-    sky: skyInstalled(),
+    sky: false,
     composio: signedIn(),
   };
 }

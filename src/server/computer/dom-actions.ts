@@ -1,6 +1,4 @@
 // Click and type by what's on the page (visible text, labels, placeholders) instead of screen coordinates.
-// Used by models that don't have OpenAI's computer tool (open models on OpenRouter), on both the local
-// browser (through Playwright) and the cloud computer (evaluated in the page over CDP).
 
 /** In-page script: click the best match for `text`. Returns { ok, label } or { ok: false, error }. */
 export function clickScript(text: string): string {
