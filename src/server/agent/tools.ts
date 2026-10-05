@@ -200,11 +200,23 @@ export const TOOLS: ToolDef[] = [
   {
     name: "product_search",
     label: "Searching products",
-    description: "Search for e-commerce products, prices, ratings, and specifications under target constraints.",
-    parameters: obj({ category: str("Product category e.g. headphones"), maxPrice: str("Optional maximum price e.g. 2000") }),
+    description: "Search for e-commerce products, prices, ratings, and specifications under target budget constraints.",
+    parameters: obj({ category: str("Product category e.g. headphones"), maxPrice: str("Maximum budget e.g. 2000") }),
     execute: async (a) => {
-      const query = `best ${s(a.category)} under ${s(a.maxPrice || "2000")} rs`;
-      return executeWebSearch(query);
+      const cat = s(a.category) || "headphones";
+      const maxP = parseInt(s(a.maxPrice || "2000"), 10) || 2000;
+      const query = `best ${cat} under ${maxP} rs India price rating`;
+      const searchRes = await executeWebSearch(query);
+      try {
+        const parsed = JSON.parse(searchRes);
+        return JSON.stringify({
+          constraint: { category: cat, maxPrice: maxP, currency: "INR" },
+          query,
+          results: parsed.results || [],
+        }, null, 2);
+      } catch {
+        return searchRes;
+      }
     },
   },
   {
