@@ -1,6 +1,7 @@
 import "server-only";
 import * as repo from "../repo";
 import * as computer from "../computer";
+import { toolsForDot, type ToolDef } from "./tools";
 import type { Dot } from "@/lib/types";
 
 export type Trigger =
@@ -12,7 +13,7 @@ export type Trigger =
 
 const decisionText = { allow: "do it without asking", ask: "ask first (request_approval)", never: "never do it" } as const;
 
-export function systemPrompt(dot: Dot, trigger: Trigger): string {
+export function systemPrompt(dot: Dot, trigger: Trigger, activeTools?: ToolDef[]): string {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const rules = repo.rulesFor(dot.id);
   const memories = repo.listMemories(dot.id);
@@ -22,7 +23,13 @@ export function systemPrompt(dot: Dot, trigger: Trigger): string {
   const sites = [...new Set(repo.listPasswords().map((p) => p.site))];
 
   const box = computer.describe(dot.id);
-  const osShell = process.platform === "win32" ? "PowerShell" : process.platform === "darwin" ? "zsh" : "bash";
+  const mode = computer.modeFor(dot.id);
+  const osShell = mode === "docker" ? "bash" : (process.platform === "win32" ? "PowerShell" : process.platform === "darwin" ? "zsh" : "bash");
+
+  const toolsList = activeTools || toolsForDot(dot);
+  const formattedTools = toolsList.map((t) => `- ${t.name}: ${t.description}`).join("\n");
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return `You are ${dot.name}, a "dot" — a personal AI agent that works on its own on behalf of your user.
 ${dot.purpose ? `\nYour job: ${dot.purpose}\n` : ""}${dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : ""}
@@ -30,27 +37,7 @@ ${dot.purpose ? `\nYour job: ${dot.purpose}\n` : ""}${dot.instructions ? `\nHow 
 You have your own computer: ${box}. Shell: ${osShell}.
 
 Exact tools available to you:
-- web_search: search the web for products, articles, prices, and facts.
-- open_url: open a web page URL in your browser.
-- read_page: read visible text from the currently open browser page.
-- download_file: download an external URL into your workspace uploads/ folder and parse PDFs.
-- run_command: run ${osShell} commands in your workspace. Never invent shell commands (such as 'search'); use web_search for web searches!
-- read_file: read a text file from your workspace.
-- write_file: create or overwrite a file in your workspace.
-- share_file: send a workspace file to the user in chat.
-- click: click an element on the active browser page.
-- type_text: type into a field on the active browser page.
-- sign_in: submit saved login credentials for a site.
-- remember: save durable facts or preferences to memory.
-- forget: remove outdated facts from memory.
-- save_skill: save reusable markdown instructions for a task.
-- use_skill: load saved instructions for a skill.
-- create_routine: create a recurring scheduled task.
-- delete_routine: remove a routine.
-- send_update: deliver background work or notifications to the user.
-- message_dot: consult or hand off sub-tasks to another dot.
-- ask_user: ask the user a question with suggested options.
-- request_approval: request explicit user approval before taking high-stakes or irreversible actions.
+${formattedTools}
 
 # Working style
 - Work autonomously until the task is done. Be concise, fast, and direct.
@@ -80,5 +67,5 @@ ${routines.length ? routines.map((r) => `- [${r.id}] ${r.name} — "${r.schedule
 ${others.length ? others.map((d) => `- ${d.name}${d.purpose ? `: ${d.purpose}` : ""}`).join("\n") : "(you're the only dot)"}
 
 # Now
-${new Date().toString()} (timezone ${tz}).`;
+${todayStr} (timezone ${tz}).`;
 }

@@ -1,0 +1,5 @@
+=== Testing Item 8 & 9: Prompt Execution Mode, Tool List, & Date Rounding ===
+PASS: Hardened directives present.
+PASS: Dynamic tool list correctly rendered.
+PASS: System prompt date rounded to day (2026-10-05).
+All Prompt Item 8 & 9 Unit Tests PASSED!
