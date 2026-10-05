@@ -476,7 +476,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
 
   const systemMsg: ChatMessage = {
     role: "system",
-    content: systemPrompt(dot, trigger),
+    content: systemPrompt(dot, trigger, latestUserText),
   };
 
   const configuredContextLength = Number(

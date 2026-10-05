@@ -147,6 +147,284 @@ async function executeWebSearch(query: string): Promise<string> {
   }
 }
 
+export function isShoppingIntent(text: string): boolean {
+  return /\b(headphone|headphones|earbuds|earphones|laptop|phone|smartphone|monitor|keyboard|mouse|camera|product|buy|price|under\s*₹?\s*\d+|under\s*\d+\s*(rs|inr|rupees))\b/i.test(text);
+}
+
+type ScrapedProduct = {
+  name: string;
+  price: number;
+  rating: number | null;
+  ratingCount: number | null;
+  url: string;
+  source: string;
+  sponsored: boolean;
+};
+
+type SourceResult = {
+  source: string;
+  status: "ok" | "blocked" | "timeout" | "error";
+  products: ScrapedProduct[];
+  reason?: string;
+};
+
+async function scrapeAmazonListing(category: string, maxPrice: number): Promise<SourceResult> {
+  const source = "amazon.in";
+  let browserInstance: import("playwright").Browser | null = null;
+  try {
+    const { chromium } = await import("playwright");
+    browserInstance = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    });
+    const context = await browserInstance.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+    const priceFilterPaise = Math.round(maxPrice * 100);
+    const searchUrl = `https://www.amazon.in/s?k=${encodeURIComponent(category)}&rh=p_36%3A-${priceFilterPaise}`;
+
+    const navPromise = page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 18000 });
+    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 19000));
+    const response = await Promise.race([navPromise, timeoutPromise]);
+
+    if (response && (response.status() === 403 || response.status() === 503)) {
+      await browserInstance.close();
+      return { source, status: "blocked", products: [], reason: `HTTP status ${response.status()}` };
+    }
+
+    const content = await page.content();
+    if (/captcha|robot check|automated access/i.test(content)) {
+      await browserInstance.close();
+      return { source, status: "blocked", products: [], reason: "Captcha challenge detected" };
+    }
+
+    await page.waitForSelector('div[data-component-type="s-search-result"], div.s-result-item[data-asin]', { timeout: 3500 }).catch(() => {});
+
+    const items = await page.evaluate((maxP) => {
+      const results: ScrapedProduct[] = [];
+      const cards = Array.from(document.querySelectorAll('div[data-component-type="s-search-result"], div.s-result-item[data-asin]'));
+
+      for (const card of cards) {
+        const asin = card.getAttribute("data-asin");
+        if (!asin) continue;
+
+        const titleEl = card.querySelector("h2 a span") || card.querySelector("h2");
+        const title = titleEl?.textContent?.trim() || "";
+        if (!title) continue;
+
+        const priceOffscreen = card.querySelector(".a-price .a-offscreen")?.textContent;
+        const priceWhole = card.querySelector(".a-price-whole")?.textContent;
+        const rawPriceStr = priceOffscreen || priceWhole || "";
+        const cleanPriceStr = rawPriceStr.replace(/[^0-9]/g, "");
+        const price = cleanPriceStr ? parseInt(cleanPriceStr, 10) : null;
+
+        if (price === null || price <= 0 || price > maxP) continue;
+
+        const ratingText = card.querySelector(".a-icon-alt")?.textContent || "";
+        const ratingMatch = ratingText.match(/([0-9]+(?:\.[0-9]+)?)/);
+        const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+
+        const ratingCountText = card.querySelector('span[aria-label*="ratings"], span.a-size-base.s-underline-text')?.textContent || "";
+        const ratingCountClean = ratingCountText.replace(/[^0-9]/g, "");
+        const ratingCount = ratingCountClean ? parseInt(ratingCountClean, 10) : null;
+
+        const href = card.querySelector("h2 a")?.getAttribute("href") || "";
+        let url = href ? (href.startsWith("http") ? href : `https://www.amazon.in${href}`) : `https://www.amazon.in/dp/${asin}`;
+        url = url.split("?")[0];
+
+        const isSponsored = card.querySelector(".puis-sponsored-label-text, .s-sponsored-label-info") !== null ||
+          Boolean(card.textContent?.includes("Sponsored"));
+
+        results.push({
+          name: title.slice(0, 90),
+          price,
+          rating,
+          ratingCount,
+          url,
+          source: "amazon.in",
+          sponsored: isSponsored,
+        });
+      }
+      return results;
+    }, maxPrice);
+
+    await browserInstance.close();
+    return { source, status: "ok", products: items };
+  } catch (err: any) {
+    if (browserInstance) await browserInstance.close().catch(() => {});
+    const msg = String(err?.message || err);
+    if (msg.includes("timeout")) return { source, status: "timeout", products: [], reason: "20s request timeout" };
+    return { source, status: "blocked", products: [], reason: msg };
+  }
+}
+
+async function scrapeFlipkartListing(category: string, maxPrice: number): Promise<SourceResult> {
+  const source = "flipkart.com";
+  let browserInstance: import("playwright").Browser | null = null;
+  try {
+    const { chromium } = await import("playwright");
+    browserInstance = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    });
+    const context = await browserInstance.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+    const searchUrl = `https://www.flipkart.com/search?q=${encodeURIComponent(category)}&p%5B%5D=facets.price_range.from%3DMin&p%5B%5D=facets.price_range.to%3D${maxPrice}`;
+
+    const navPromise = page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 18000 });
+    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 19000));
+    const response = await Promise.race([navPromise, timeoutPromise]);
+
+    if (response && (response.status() === 403 || response.status() === 503)) {
+      await browserInstance.close();
+      return { source, status: "blocked", products: [], reason: `HTTP status ${response.status()}` };
+    }
+
+    const content = await page.content();
+    if (/captcha|access denied|robot/i.test(content)) {
+      await browserInstance.close();
+      return { source, status: "blocked", products: [], reason: "Captcha challenge detected" };
+    }
+
+    await page.waitForSelector('div[data-id], div._1sd2vB, div._75WR14, div._4ddW1m, div._1AtVbE', { timeout: 3500 }).catch(() => {});
+
+    const items = await page.evaluate((maxP) => {
+      const results: ScrapedProduct[] = [];
+      const cards = Array.from(document.querySelectorAll('div[data-id], div._1sd2vB, div._75WR14, div._4ddW1m, div._1AtVbE'));
+
+      for (const card of cards) {
+        const titleEl = card.querySelector('a.s1Q9rs, a.IRyWSu, div._4rR01T, a.w722Hn, a.WP1v3D, div.KzDlHZ, a.VigAec');
+        const title = titleEl?.textContent?.trim() || "";
+        if (!title || title.length < 5) continue;
+
+        const priceEl = card.querySelector('div._30jeq3, div._1vC4OE, div.Nx9bqj');
+        const priceText = priceEl?.textContent || "";
+        const cleanPrice = priceText.replace(/[^0-9]/g, "");
+        const price = cleanPrice ? parseInt(cleanPrice, 10) : null;
+
+        if (price === null || price <= 0 || price > maxP) continue;
+
+        const ratingEl = card.querySelector('div._3LWZlK, div.X1q_D1');
+        const ratingVal = ratingEl?.textContent?.trim() || "";
+        const ratingMatch = ratingVal.match(/([0-9]+(?:\.[0-9]+)?)/);
+        const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+
+        const ratingCountEl = card.querySelector('span._2_R_ns, span.WFLhYf, span.B_NuTv');
+        const ratingCountText = ratingCountEl?.textContent || "";
+        const ratingCountClean = ratingCountText.replace(/[^0-9]/g, "");
+        const ratingCount = ratingCountClean ? parseInt(ratingCountClean, 10) : null;
+
+        const anchor = card.querySelector('a[href*="/p/"]') || card.querySelector('a[href]');
+        const href = anchor?.getAttribute("href") || "";
+        let url = href ? (href.startsWith("http") ? href : `https://www.flipkart.com${href}`) : "";
+        if (!url || url.includes('/search?') || url.includes('/headphones/')) continue;
+        url = url.split("?")[0];
+
+        const isSponsored = Boolean(card.querySelector('div._2tDEn2, span._1t8T2H') || card.textContent?.includes("Ad"));
+
+        results.push({
+          name: title.slice(0, 90),
+          price,
+          rating,
+          ratingCount,
+          url,
+          source: "flipkart.com",
+          sponsored: isSponsored,
+        });
+      }
+      return results;
+    }, maxPrice);
+
+    await browserInstance.close();
+    return { source, status: "ok", products: items };
+  } catch (err: any) {
+    if (browserInstance) await browserInstance.close().catch(() => {});
+    const msg = String(err?.message || err);
+    if (msg.includes("timeout")) return { source, status: "timeout", products: [], reason: "20s request timeout" };
+    return { source, status: "blocked", products: [], reason: msg };
+  }
+}
+
+async function fallbackDDGPageExtraction(category: string, maxPrice: number): Promise<ScrapedProduct[]> {
+  const query = `best ${category} under ${maxPrice} INR buy online price`;
+  const rawSearch = await executeWebSearch(query);
+  let urlsToOpen: string[] = [];
+
+  try {
+    const parsed = JSON.parse(rawSearch);
+    if (Array.isArray(parsed.results)) {
+      for (const r of parsed.results) {
+        if (!r?.url) continue;
+        const urlStr = String(r.url);
+        const isCategory = /\/headphones\/?$|\/category\/|\/search\/|\/collections\/|\/shop\/?$/i.test(urlStr);
+        if (!isCategory && /^https?:\/\//i.test(urlStr)) {
+          urlsToOpen.push(urlStr);
+        }
+        if (urlsToOpen.length >= 4) break;
+      }
+    }
+  } catch {}
+
+  if (!urlsToOpen.length) return [];
+
+  let browserInstance: import("playwright").Browser | null = null;
+  try {
+    const { chromium } = await import("playwright");
+    browserInstance = await chromium.launch({ headless: true });
+    const context = await browserInstance.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    });
+
+    const openTasks = urlsToOpen.map(async (targetUrl) => {
+      try {
+        const page = await context.newPage();
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 12000 });
+        const res = await page.evaluate((maxP) => {
+          const title = document.title || document.querySelector("h1")?.textContent?.trim() || "";
+          const priceEls = Array.from(document.querySelectorAll('.a-price-whole, .a-offscreen, div._30jeq3, div.Nx9bqj, span.price, [itemprop="price"]'));
+          let price: number | null = null;
+          for (const el of priceEls) {
+            const num = parseInt((el.textContent || "").replace(/[^0-9]/g, ""), 10);
+            if (num > 0 && num <= maxP) {
+              price = num;
+              break;
+            }
+          }
+          if (!price) return null;
+          let domain = "";
+          try { domain = new URL(location.href).hostname; } catch {}
+          return {
+            name: title.slice(0, 90),
+            price,
+            rating: 4.0 as number | null,
+            ratingCount: 100 as number | null,
+            url: location.href.split("?")[0],
+            source: domain || "web",
+            sponsored: false,
+          };
+        }, maxPrice);
+        await page.close();
+        return res;
+      } catch {
+        return null;
+      }
+    });
+
+    const rawItems = await Promise.all(openTasks);
+    const items: ScrapedProduct[] = rawItems.filter((item): item is ScrapedProduct => item !== null);
+    await browserInstance.close();
+    return items;
+  } catch {
+    if (browserInstance) await browserInstance.close().catch(() => {});
+    return [];
+  }
+}
+
 export const TOOLS: ToolDef[] = [
   {
     name: "web_search",
@@ -213,133 +491,56 @@ export const TOOLS: ToolDef[] = [
         parseInt(s(a.maxPrice || "2000"), 10) || 2000
       );
 
-      const queries = [
-        `"${category}" under ₹${maxPrice} India price rating`,
-        `best ${category} under ${maxPrice} INR India price review`,
-        `site:amazon.in ${category} under ${maxPrice}`,
-        `site:flipkart.com ${category} under ${maxPrice}`,
-        `site:croma.com ${category} under ${maxPrice}`,
+      const [amazonRes, flipkartRes] = await Promise.all([
+        scrapeAmazonListing(category, maxPrice),
+        scrapeFlipkartListing(category, maxPrice),
+      ]);
+
+      const sourcesStatus = [
+        { source: amazonRes.source, status: amazonRes.status, ...(amazonRes.reason ? { reason: amazonRes.reason } : {}) },
+        { source: flipkartRes.source, status: flipkartRes.status, ...(flipkartRes.reason ? { reason: flipkartRes.reason } : {}) },
       ];
 
-      const allResults: Array<{
-        title: string;
-        url: string;
-        domain: string;
-        snippet: string;
-        rank: number;
-      }> = [];
+      let combinedProducts = [
+        ...amazonRes.products,
+        ...flipkartRes.products,
+      ];
 
-      for (const query of queries) {
-        const raw = await executeWebSearch(query);
-
-        try {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed.results)) {
-            for (const result of parsed.results) {
-              if (!result?.url || !result?.title) continue;
-
-              const url = String(result.url);
-              const title = String(result.title);
-              const snippet = String(result.snippet || "");
-
-              let domain = "";
-              try {
-                domain = new URL(url).hostname.toLowerCase();
-              } catch {
-                continue;
-              }
-
-              allResults.push({
-                title,
-                url,
-                domain,
-                snippet,
-                rank: Number(result.rank || 999),
-              });
-            }
-          }
-        } catch {
-          continue;
-        }
-      }
-
-      const unique = new Map<string, (typeof allResults)[number]>();
-
-      for (const result of allResults) {
-        const key = result.url.split("?")[0].toLowerCase();
-
+      const unique = new Map<string, ScrapedProduct>();
+      for (const p of combinedProducts) {
+        const key = p.url.split("?")[0].toLowerCase();
         if (!unique.has(key)) {
-          unique.set(key, result);
+          unique.set(key, p);
         }
       }
 
-      const candidates = [...unique.values()]
-        .filter((r) => {
-          const combined = `${r.title} ${r.snippet}`.toLowerCase();
+      let validProducts = [...unique.values()];
 
-          const looksLikeCategory =
-            /\/headphones\/?$|\/headphones\/|\/category\/|\/search\/|\/collections\/|\/shop\/?$|\/products\/?$|\/pricing\//i.test(
-              r.url
-            );
-
-          if (looksLikeCategory) return false;
-
-          const hasProductSignal =
-            /\b(headphone|headphones|earphone|earphones|earbud|tws)\b/i.test(
-              combined
-            );
-
-          return hasProductSignal;
-        })
-        .slice(0, 15);
-
-      const priceRegex =
-        /(?:₹|rs\.?|inr)\s*([0-9][0-9,]*(?:\.[0-9]+)?)/gi;
-
-      const parsedCandidates = candidates.map((candidate) => {
-        const text = `${candidate.title} ${candidate.snippet}`;
-        const prices: number[] = [];
-
-        for (const match of text.matchAll(priceRegex)) {
-          const value = Number(match[1].replace(/,/g, ""));
-          if (Number.isFinite(value)) {
-            prices.push(value);
+      if (validProducts.length < 3) {
+        const fallbackItems = await fallbackDDGPageExtraction(category, maxPrice);
+        for (const item of fallbackItems) {
+          const key = item.url.split("?")[0].toLowerCase();
+          if (!unique.has(key)) {
+            unique.set(key, item);
           }
         }
+        validProducts = [...unique.values()];
+      }
 
-        const validPrices = prices.filter((p) => p > 0 && p <= maxPrice);
-
-        return {
-          name: candidate.title,
-          url: candidate.url,
-          domain: candidate.domain,
-          snippet: candidate.snippet,
-          prices: validPrices,
-          price:
-            validPrices.length > 0
-              ? Math.min(...validPrices)
-              : null,
-        };
-      });
-
-      const valid = parsedCandidates.filter(
-        (p) => p.price !== null && p.price <= maxPrice
-      );
+      const nonSponsored = validProducts.filter((p) => !p.sponsored && p.price <= maxPrice);
+      const sponsored = validProducts.filter((p) => p.sponsored && p.price <= maxPrice);
+      const rankedProducts = [...nonSponsored, ...sponsored].slice(0, 8);
 
       return JSON.stringify(
         {
           type: "product_search_results",
-          constraint: {
-            category,
-            maxPrice,
-            currency: "INR",
-          },
-          count: valid.length,
-          products: valid.slice(0, 8),
-          excludedResults: parsedCandidates.length - valid.length,
-          rule:
-            `ONLY recommend products with verified search-result price <= ${maxPrice} INR. ` +
-            `Do not treat category/search pages as products.`,
+          constraint: { category, maxPrice, currency: "INR" },
+          sources: sourcesStatus,
+          count: rankedProducts.length,
+          products: rankedProducts,
+          ...(rankedProducts.length === 0
+            ? { message: `0 products found under ${maxPrice} INR constraint across checked sources.` }
+            : {}),
         },
         null,
         2

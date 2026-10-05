@@ -1,6 +1,7 @@
 import "server-only";
 import * as repo from "../repo";
 import * as computer from "../computer";
+import { isShoppingIntent } from "./tools";
 import type { Dot } from "@/lib/types";
 
 export type Trigger =
@@ -12,7 +13,7 @@ export type Trigger =
 
 const decisionText = { allow: "do it without asking", ask: "ask first (request_approval)", never: "never do it" } as const;
 
-export function systemPrompt(dot: Dot, trigger: Trigger): string {
+export function systemPrompt(dot: Dot, trigger: Trigger, requestText = ""): string {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const rules = repo.rulesFor(dot.id);
   const allMemories = repo.listMemories(dot.id);
@@ -74,6 +75,10 @@ export function systemPrompt(dot: Dot, trigger: Trigger): string {
   const purposeBlock = dot.purpose ? `\nYour job: ${dot.purpose}\n` : "";
   const instructionsBlock = dot.instructions ? `\nHow the user wants you to work:\n${dot.instructions}\n` : "";
 
+  const shoppingBlock = isShoppingIntent(requestText)
+    ? `\n# Shopping Instructions\n- Use product_search results to answer shopping requests.\n- Only recommend products with verified price <= requested max budget.\n- Include product name, price, rating, rating count, link, and sponsored flag.\n- Never recommend category or search pages as products.\n- Require user approval before making purchases or external transactions.\n`
+    : "";
+
   return `You are ${dot.name}, a "dot" — a personal AI agent that works on its own on behalf of your user.
 ${purposeBlock}${instructionsBlock}
 # Your computer & tools
@@ -91,27 +96,14 @@ Tool schemas are provided separately for this request. Use only exposed tools.
 - For browser/research answers, cite the exact source URL(s) you used. If you already read a page in the previous turn, reuse those public facts before searching again.
 - Use inspect_page_links when a site likely has GitHub, LinkedIn, docs, pricing, contact, or social links that answer the user's question.
 - On a failed tool call, report the exact error. Do not guess causes.
-- For open research/shopping requests (e.g., "find best headphone under 2000 rs"): DO NOT ask clarification questions (such as "which brand or model?"). Immediately use product_search, web_search, open_url, or read_page to search, compare options, and present top recommendations.
-- Shopping workflow is deterministic: product_search MUST be used first for product-research requests.
-- Never open Amazon, Flipkart, Croma, or other store category/search URLs as if they were products.
-- Only open exact product URLs returned by product_search.
-- If product_search returns fewer than 3 valid products, run another product_search query. Do not invent products.
-- Never recommend a product unless its price is <= requested budget.
 - Task Router & Approval Gates:
   * Research tasks ("find", "compare", "search"): Execute tool search -> compare candidates -> deliver concise recommendations. No user approval required.
   * Purchase / External action tasks ("buy this headphone", "delete file", "send email"): Perform search -> select -> prepare checkout -> ASK USER FOR APPROVAL before final transaction or mutation.
-- Hard Budget Constraint (e.g. maxPrice = ₹2000 INR):
-  * Treat specified price limits as a strict HARD constraint. Discard any product exceeding the requested budget.
-  * STRICT NEGATIVE BUDGET RULE: NEVER list, suggest, or hallucinate high-end expensive products (such as Sony WH-1000XM4 ₹15,000, Bose QuietComfort ₹18,000, or AirPods Pro ₹12,000) when the user requested items under a budget (e.g. under ₹2,000). Every single item must be <= budget (e.g. boAt, Noise, Boult, Realme, JBL under ₹2,000).
-  * Multi-source recovery sequence: If Flipkart or Amazon blocks access or fails to load, do not stop or ask the user for brand/model input. Immediately fall back to product_search, web_search snippets, Croma, Vijay Sales, or store page snippets to collect 3-5 valid candidates under budget.
-  * Rank candidates using: Price (<= Budget) + Rating + Review Count + Features + Source Reliability.
-- If a required tool (e.g. web search) is unavailable or fails, explicitly state tool unavailability instead of asking the user for missing product details.
-- For shopping/search tasks: list at least 3 candidate products taken only from tool results. For each product include: Name, Price, Rating & Rating Count (or explicitly state if missing), and Link. Mark sponsored items if visible ([Sponsored]). State what "best" criteria is based on.
-- Answer style: No emoji. No closing offers or polite follow-ups (such as "Let menu know if...", "Feel free to...", "Hope this helps"). Keep answers short and direct.
+- Answer style: No emoji. No closing offers or polite follow-ups (such as "Let me know if...", "Feel free to...", "Hope this helps"). Keep answers short and direct.
 - When asked to browse or explain a URL, read page content and provide a clear summary immediately.
 - When asked to play a video or song on YouTube: search or navigate directly using open_url or click on the video thumbnail to start playback in the browser. Never claim you cannot play media.
 - Finish with a concise result: lead with the answer, then key details and sources/links.
-${rulesBlock}
+${shoppingBlock}${rulesBlock}
 # Passwords
 ${siteBlock} Never ask the user to paste passwords in chat.
 
