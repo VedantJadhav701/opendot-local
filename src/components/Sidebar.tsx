@@ -19,7 +19,7 @@ export function Wordmark() {
         <span className="size-3 rounded-full bg-brand ring-2 ring-card" />
         <span className="size-3 rounded-full bg-highlight ring-2 ring-card" />
       </span>
-      <span className="text-[15px] font-medium tracking-tight">open dot local</span>
+      <span className="text-[15px] font-medium tracking-tight">OpenDot-local</span>
     </span>
   );
 }

@@ -27,7 +27,7 @@ export default function SettingsView() {
       <div className="rails mx-auto min-h-full max-w-[1080px] px-4 sm:px-8 pb-16">
         <PageHeader eyebrow="Settings" title="Settings" description="Local AI engine, local computer sandbox, security, passwords, and dot rules." />
 
-        <Section eyebrow="Engine" title="Local AI & Models" description="Open Dot Local runs fully on your machine using Ollama. No paid cloud inference required.">
+        <Section eyebrow="Engine" title="Local AI & Models" description="OpenDot-local runs fully on your machine using Ollama. No paid cloud inference required.">
           <OllamaCard />
           <div className="surface mb-3 flex items-center gap-3 p-4">
             <div className="flex-1">
