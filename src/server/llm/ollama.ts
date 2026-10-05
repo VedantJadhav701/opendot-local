@@ -216,6 +216,34 @@ export class OllamaProvider implements LLMProvider {
     }
   }
 
+  public async pullModel(model: string, onProgress?: (completed: number, total: number) => void): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/pull`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: model, stream: true }),
+    });
+    if (!response.ok) throw new Error(`Ollama could not download ${model} (${response.status}).`);
+    if (!response.body) return;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+      for (const line of buffer.split("\n").slice(0, -1)) {
+        try {
+          const item = JSON.parse(line) as { completed?: number; total?: number; error?: string };
+          if (item.error) throw new Error(item.error);
+          if (item.completed !== undefined && item.total) onProgress?.(item.completed, item.total);
+        } catch (error) {
+          if (error instanceof Error && error.message !== "Unexpected end of JSON input") throw error;
+        }
+      }
+      buffer = buffer.split("\n").pop() ?? "";
+      if (done) break;
+    }
+  }
+
   public async chat(req: ChatRequest, signal?: AbortSignal): Promise<{ message: ChatMessage; finishReason: string }> {
     let fullText = "";
     let toolCalls: FunctionToolCall[] = [];
@@ -299,7 +327,7 @@ export class OllamaProvider implements LLMProvider {
       let targetNumCtx = req.context_length || Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
       const optionsObj: Record<string, unknown> = {
         num_ctx: targetNumCtx,
-        num_predict: Number(process.env.DOTS_NUM_PREDICT || 600),
+        num_predict: req.num_predict ?? Number(process.env.DOTS_NUM_PREDICT || 600),
       };
       if (typeof req.temperature === "number") {
         optionsObj.temperature = req.temperature;

@@ -2,6 +2,7 @@ import "server-only";
 import { activeModel, activeReviewModel, getResolvedSync, isOllamaConnected, resolveModels, setDefaultModel } from "../llm";
 import { getSetting } from "../db";
 import { getCloudBoostKey, hasCloudBoostKey, saveCloudBoostKey } from "../vault";
+import { DEFAULT_MODEL } from "../models/types";
 
 let cachedHasKey = true;
 let cachedKeySource: "env" | "settings" | "ollama" | null = "ollama";
@@ -55,7 +56,7 @@ export function knownModels(): { main: string; review: string; available: string
   const defaultSaved = getSetting("default_model");
   return {
     ...r,
-    defaultModel: defaultSaved || r.main,
+    defaultModel: defaultSaved || DEFAULT_MODEL,
   };
 }
 

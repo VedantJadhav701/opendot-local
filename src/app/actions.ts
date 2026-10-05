@@ -13,6 +13,7 @@ import * as composio from "@/server/composio";
 import * as voice from "@/server/voice";
 import { autoTitle } from "@/server/titles";
 import type { Attachment, Dot, Look, RuleDecision, TriggerApp, TriggerType } from "@/lib/types";
+import { DEFAULT_MODEL } from "@/server/models/types";
 
 // All mutations go through here; the UI updates from the event stream, not from return values.
 
@@ -281,6 +282,51 @@ export async function setDefaultModel(model: string | null) {
   setSetting("default_model", model);
   await resolveModels();
   emit({ type: "computer", data: computerInfo() });
+}
+
+export async function getModelManagerState() {
+  const { modelManagerState } = await import("@/server/models/manager");
+  return modelManagerState();
+}
+
+export async function downloadModel(model = DEFAULT_MODEL) {
+  const { downloadModel: pull } = await import("@/server/models/downloader");
+  await pull(model);
+  await (await import("@/server/llm")).resolveModels();
+  emit({ type: "computer", data: computerInfo() });
+}
+
+export async function startDockerDesktop(): Promise<string | null> {
+  const { spawn } = await import("node:child_process");
+  try {
+    if (process.platform === "win32") {
+      const child = spawn("cmd.exe", ["/c", "start", "", "Docker Desktop"], { detached: true, stdio: "ignore", windowsHide: true });
+      child.unref();
+      return null;
+    }
+    if (process.platform === "darwin") {
+      const child = spawn("open", ["-a", "Docker"], { detached: true, stdio: "ignore" });
+      child.unref();
+      return null;
+    }
+    return "Start Docker Desktop manually, then click Check again.";
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+}
+
+export async function installBrowserEngine(): Promise<string | null> {
+  const { spawn } = await import("node:child_process");
+  const path = await import("node:path");
+  const cli = path.join(process.cwd(), "node_modules", "playwright", "cli.js");
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [cli, "install", "chromium"], { cwd: process.cwd(), windowsHide: true });
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += String(chunk)));
+    child.stderr.on("data", (chunk) => (output += String(chunk)));
+    child.on("close", (code) => resolve(code === 0 ? null : output.trim().slice(-800) || `Playwright install failed with exit ${code}.`));
+    child.on("error", (err) => resolve(err.message));
+  });
 }
 
 // ---------- Composio For You (the user's apps) ----------

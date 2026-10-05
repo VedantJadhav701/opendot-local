@@ -158,6 +158,17 @@ export type ComputerInfo = {
   triggersKey: "env" | "settings" | null; // Composio API key for triggers
   sky: boolean; // OpenAI's Sky computer-use runtime is installed on this Mac
   composio: boolean; // COMPOSIO_API_KEY is set
+  capabilities?: {
+    os: string;
+    cpu: string;
+    ramGB: number;
+    gpu: string | null;
+    vramGB: number | null;
+    ollama: boolean;
+    docker: boolean;
+    diskFreeGB: number | null;
+  };
+  defaultModelInstalled?: boolean;
 };
 
 export type ServerEvent =

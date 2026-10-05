@@ -7,6 +7,7 @@ import { COMPUTER_ENABLED } from "./agent/tools";
 import { triggersKeySource } from "./triggers";
 import { apps, signedIn } from "./composio";
 import type { ComputerInfo, Snapshot } from "@/lib/types";
+import { DEFAULT_MODEL } from "./models/types";
 
 export function computerInfo(): ComputerInfo {
   const m = knownModels();
@@ -14,7 +15,7 @@ export function computerInfo(): ComputerInfo {
     mode: defaultMode(),
     docker: dockerAvailable(),
     image: BOX_IMAGE,
-    model: m.defaultModel,
+    model: DEFAULT_MODEL,
     models: m.available,
     computerTool: COMPUTER_ENABLED ? "computer" : "off",
     hasKey: hasKey(),

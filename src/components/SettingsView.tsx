@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { Bell, Cpu, KeyRound, Lock, LogOut, Plus, RefreshCw, Server, ShieldCheck } from "lucide-react";
-import { connectApp, deletePassword, refreshApps, savePassword, setDefaultModel, signInComposio, signOutComposio } from "@/app/actions";
+import { connectApp, deletePassword, downloadModel, getModelManagerState, installBrowserEngine, refreshApps, savePassword, setDefaultModel, signInComposio, signOutComposio, startDockerDesktop } from "@/app/actions";
 import { useStore } from "@/lib/store";
 import { openAfter } from "@/lib/popup";
 import { Empty, PageHeader, RemoveButton, RuleEditor, Section } from "./SettingsKit";
@@ -29,6 +29,7 @@ export default function SettingsView() {
 
         <Section eyebrow="Engine" title="Local AI & Models" description="OpenDot-local runs fully on your machine using Ollama. No paid cloud inference required.">
           <OllamaCard />
+          <ModelManagerCard />
           <div className="surface mb-3 flex items-center gap-3 p-4">
             <div className="flex-1">
               <div className="text-[14px] font-medium">Default Model</div>
@@ -172,6 +173,129 @@ function OllamaCard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ModelManagerCard() {
+  const [state, setState] = useState<Awaited<ReturnType<typeof getModelManagerState>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const refresh = () => {
+    start(async () => {
+      try {
+        setState(await getModelManagerState());
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    });
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const connected = state?.connected ?? false;
+  const installed = state?.installed ?? [];
+  const defaultInstalled = state?.defaultInstalled ?? false;
+  const profile = state?.profile;
+  const browser = state?.browser;
+  const statusRows = [
+    ["Ollama", connected ? "Running" : "Missing or stopped", connected],
+    ["Default model", defaultInstalled ? "Installed" : "Not installed", defaultInstalled],
+    ["Docker", profile?.docker ? "Running" : "Not running", Boolean(profile?.docker)],
+    ["GPU / VRAM", profile?.gpu ? `${profile.gpu}${profile.vramGB ? ` · ${profile.vramGB.toFixed(1)} GB` : ""}` : "No dedicated GPU detected", Boolean(profile?.gpu)],
+    ["RAM", profile ? `${profile.ramGB.toFixed(1)} GB` : "Checking", Boolean(profile?.ramGB && profile.ramGB >= 8)],
+    ["Disk", profile?.diskFreeGB ? `${profile.diskFreeGB.toFixed(1)} GB free` : "Unknown", Boolean(profile?.diskFreeGB && profile.diskFreeGB >= 8)],
+    ["Browser", browser?.ok ? `${browser.channel} ready` : "Browser engine missing", Boolean(browser?.ok)],
+  ] as const;
+
+  return (
+    <div className="surface mb-3 overflow-hidden">
+      <div className="flex items-start gap-3 border-b border-black/[0.06] p-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 text-[14px] font-medium">
+            Product default
+            <span className="rounded-xs bg-brand/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-brand-readable uppercase">Balanced</span>
+          </div>
+          <div className="mt-1 text-body-sm text-foreground/55">Open Dot Local always starts with this model. Auto routing can use smaller or larger installed models when useful.</div>
+          <code className="mt-2 block text-mono-sm text-foreground/75">qwen3:4b-instruct-2507</code>
+        </div>
+        <button className="btn-quiet" onClick={refresh} disabled={pending} title="Refresh Ollama status">
+          <RefreshCw className={`size-3.5 ${pending ? "animate-spin" : ""}`} strokeWidth={1.75} />
+        </button>
+      </div>
+
+      {!connected ? (
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <div className="flex-1 text-body-sm text-warning">Ollama is not installed or is not running. Open Dot requires Ollama for local AI inference.</div>
+          <a className="btn-primary h-8 px-3 text-[13px]" href="https://ollama.com/download" target="_blank" rel="noreferrer">Install Ollama</a>
+          <button className="btn-secondary h-8 px-3 text-[13px]" onClick={refresh} disabled={pending}>Check again</button>
+        </div>
+      ) : !defaultInstalled ? (
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <div className="flex-1 min-w-56">
+            <div className="text-[13px] font-medium">Default model is ready to download</div>
+            <div className="text-caption text-foreground/50">Download through Ollama. Once it finishes, the normal chat flow can start.</div>
+          </div>
+          <button className="btn-primary h-8 px-3 text-[13px]" onClick={() => start(async () => { try { setError(null); await downloadModel(); refresh(); } catch (err) { setError(err instanceof Error ? err.message : String(err)); } })} disabled={pending}>
+            {pending ? "Downloading…" : "Download & start"}
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 p-4">
+          <span className="size-2 rounded-full bg-success" />
+          <span className="flex-1 text-body-sm">Default model installed. Open Dot is ready for chat.</span>
+          <span className="font-mono text-caption text-foreground/45">{installed.length} installed</span>
+        </div>
+      )}
+
+      {installed.length > 0 && (
+        <div className="border-t border-black/[0.06] px-4 py-3">
+          <div className="eyebrow mb-2">Installed models</div>
+          <div className="flex flex-wrap gap-2">
+            {installed.map((model) => <span key={model.id} className="rounded-md border border-black/10 bg-background px-2.5 py-1 font-mono text-[11px]">{model.id}</span>)}
+          </div>
+        </div>
+      )}
+      <div className="border-t border-black/[0.06] px-4 py-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="eyebrow">First-run health</div>
+          <button className="btn-quiet h-7 px-2 text-[12px]" onClick={refresh} disabled={pending}>
+            <RefreshCw className={`size-3 ${pending ? "animate-spin" : ""}`} strokeWidth={1.75} /> Check again
+          </button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {statusRows.map(([label, value, ok]) => (
+            <div key={label} className="flex items-center gap-2 rounded-md border border-black/[0.08] bg-background px-3 py-2">
+              <span className={`size-1.5 rounded-full ${ok ? "bg-success" : "bg-warning"}`} />
+              <span className="w-24 shrink-0 text-caption text-foreground/45">{label}</span>
+              <span className="min-w-0 flex-1 truncate text-body-sm">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {!connected && <a className="btn-secondary h-8 px-3 text-[13px]" href="https://ollama.com/download" target="_blank" rel="noreferrer">Install Ollama</a>}
+          {connected && !defaultInstalled && (
+            <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => start(async () => { try { setError(null); await downloadModel(); refresh(); } catch (err) { setError(err instanceof Error ? err.message : String(err)); } })} disabled={pending}>
+              Download default
+            </button>
+          )}
+          {profile && !profile.docker && (
+            <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => start(async () => { const err = await startDockerDesktop(); setError(err); refresh(); })} disabled={pending}>
+              Start Docker
+            </button>
+          )}
+          {browser && !browser.ok && (
+            <button className="btn-secondary h-8 px-3 text-[13px]" onClick={() => start(async () => { const err = await installBrowserEngine(); setError(err); refresh(); })} disabled={pending}>
+              Install browser engine
+            </button>
+          )}
+        </div>
+      </div>
+      {error && <div className="border-t border-black/[0.06] px-4 py-2.5 text-caption text-destructive">{error}</div>}
     </div>
   );
 }
