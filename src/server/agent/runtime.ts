@@ -26,7 +26,7 @@ type Pending = {
 type InboxItem = { text: string; trigger: Trigger; conversationId: string; attachments?: Attachment[] };
 type RunState = { running: boolean; abort: AbortController | null; inbox: InboxItem[]; after: (() => void)[] };
 
-const MAX_STEPS = 15;
+export const MAX_STEPS = Number(process.env.DOTS_MAX_STEPS || 6);
 const g = globalThis as unknown as { __dotsRuns?: Map<string, RunState> };
 const runs = (g.__dotsRuns ??= new Map());
 const state = (dotId: string): RunState => {
@@ -324,9 +324,14 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnTotalTimeMs += m.totalTimeMs;
       turnPromptTokens += m.promptTokens;
       turnCompletionTokens += m.completionTokens;
+      const numCtx = 8192;
+      const pct = Math.round((m.promptTokens / numCtx) * 100);
       console.log(
-        `[dots] Turn Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Queue Wait: ${m.queueWaitMs ?? 0}ms | TTFT: ${m.ttftMs}ms | Total: ${m.totalTimeMs}ms | Prompt Tokens: ${m.promptTokens} | Completion Tokens: ${m.completionTokens}`
+        `[dots] Turn Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Prompt Tokens: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Total: ${m.totalTimeMs}ms | Completion Tokens: ${m.completionTokens}`
       );
+      if (pct >= 85) {
+        console.warn(`[dots] WARNING: Prompt token budget usage at ${pct}% of context (${m.promptTokens}/${numCtx})`);
+      }
     }
 
     messages.push(assistantMessage);
@@ -530,21 +535,33 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
   }
 }
 
-function rebuildContextMessages(dotId: string, exclude: string): ChatMessage[] {
-  return repo
-    .conversationMessages(repo.currentConversation(dotId), 10)
-    .filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude)
-    .map((m) => {
-      if (m.role === "user") {
-        return { role: "user" as const, content: m.text.slice(0, 1000) };
-      }
-      const summaryText = m.text
-        .replace(/\[Pre-fetched URL Content[\s\S]*?\]/g, "")
-        .replace(/\[Attached PDF Content[\s\S]*?\]/g, "")
-        .trim();
-      const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
-      return { role: "assistant" as const, content: `[Prior turn summary]: ${shortSummary}` };
-    });
+export function rebuildContextMessages(dotId: string, exclude: string, maxTokens = 3000): ChatMessage[] {
+  const rawMsgs = repo.conversationMessages(repo.currentConversation(dotId), 50);
+  const eligible = rawMsgs.filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude);
+
+  let currentTokens = 0;
+  const selected: typeof eligible = [];
+  for (let i = eligible.length - 1; i >= 0; i--) {
+    const m = eligible[i];
+    const tok = Math.ceil(m.text.length / 4);
+    if (currentTokens + tok > maxTokens && selected.length > 0) {
+      break;
+    }
+    selected.unshift(m);
+    currentTokens += tok;
+  }
+
+  return selected.map((m) => {
+    if (m.role === "user") {
+      return { role: "user" as const, content: m.text.slice(0, 1000) };
+    }
+    const summaryText = m.text
+      .replace(/\[Pre-fetched URL Content[\s\S]*?\]/g, "")
+      .replace(/\[Attached PDF Content[\s\S]*?\]/g, "")
+      .trim();
+    const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
+    return { role: "assistant" as const, content: `[Prior turn summary]: ${shortSummary}` };
+  });
 }
 
 // ---------------------------------------------------------------- dot-to-dot

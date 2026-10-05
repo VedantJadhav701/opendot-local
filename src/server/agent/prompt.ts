@@ -16,8 +16,28 @@ const decisionText = { allow: "do it without asking", ask: "ask first (request_a
 export function systemPrompt(dot: Dot, trigger: Trigger, activeTools?: ToolDef[]): string {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const rules = repo.rulesFor(dot.id);
-  const memories = repo.listMemories(dot.id);
-  const skills = repo.listSkills(dot.id);
+  const allMemories = repo.listMemories(dot.id);
+  const maxMemoryTokens = 800;
+  let memTokens = 0;
+  const memories = [];
+  for (const m of allMemories.slice().reverse()) {
+    const tok = Math.ceil(m.text.length / 4);
+    if (memTokens + tok > maxMemoryTokens && memories.length > 0) break;
+    memories.unshift(m);
+    memTokens += tok;
+  }
+
+  const allSkills = repo.listSkills(dot.id);
+  const maxSkillTokens = 800;
+  let skillTokens = 0;
+  const skills = [];
+  for (const k of allSkills.slice().reverse()) {
+    const tok = Math.ceil(`${k.name}: ${k.description}`.length / 4);
+    if (skillTokens + tok > maxSkillTokens && skills.length > 0) break;
+    skills.unshift(k);
+    skillTokens += tok;
+  }
+
   const routines = repo.listRoutines(dot.id);
   const others = repo.listDots().filter((d) => d.id !== dot.id);
   const sites = [...new Set(repo.listPasswords().map((p) => p.site))];

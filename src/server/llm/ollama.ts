@@ -239,8 +239,8 @@ export class OllamaProvider implements LLMProvider {
       }
 
       const optionsObj: Record<string, unknown> = {
-        num_ctx: req.context_length || 4096,
-        num_predict: 2048,
+        num_ctx: req.context_length || 8192,
+        num_predict: Number(process.env.DOTS_NUM_PREDICT || 600),
       };
       if (typeof req.temperature === "number") {
         optionsObj.temperature = req.temperature;

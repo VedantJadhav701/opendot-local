@@ -1,0 +1,6 @@
+=== Testing Item 10 & 11: Context Budget, MAX_STEPS, & Token Trimming ===
+Test 1: MAX_STEPS default value = 6
+PASS: MAX_STEPS defaults to 6.
+PASS: systemPrompt executed cleanly with capped memory & skill budgets.
+Test 3: rebuildContextMessages returned 0 messages under 100 token cap.
+All Context Budget & MAX_STEPS Tests PASSED!
