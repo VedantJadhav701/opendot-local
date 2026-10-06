@@ -1,0 +1,332 @@
+diff -ruN a/src/server/agent/runtime.ts b/src/server/agent/runtime.ts
+--- a/src/server/agent/runtime.ts	2026-10-06 09:43:43.377245079 +0000
++++ b/src/server/agent/runtime.ts	2026-10-06 09:43:43.378682875 +0000
+@@ -42,6 +42,28 @@
+   );
+ }
+ 
++const REFUSAL_RE =
++  /\b(?:i\s+(?:cannot|can't|can not|am unable|'m unable|don't have access|do not have access)|unable to (?:access|run|open|play|browse|check)|not widely recognized)\b/i;
++
++function isRefusalText(text: string): boolean {
++  return REFUSAL_RE.test((text || "").slice(0, 240));
++}
++
++const NOT_BRANDS = new Set([
++  "best", "good", "great", "top", "cheap", "cheapest", "new", "latest", "the", "a", "an", "some", "any", "my",
++  "for", "under", "nice", "better", "find", "buy", "wireless", "wired", "bluetooth", "gaming", "budget",
++  "premium", "decent", "affordable", "in", "ear", "over", "on", "with", "and", "or", "of", "me", "show",
++]);
++
++// "best OnePlus headphones under 3000" -> "OnePlus". The brand must reach product_search, or other brands fill the list.
++function extractBrand(text: string): string {
++  const m = text.match(
++    /\b([A-Za-z][A-Za-z0-9+-]{1,19})\s+(?:(?:wireless|wired|bluetooth|gaming|true|noise|cancelling|canceling|anc)\s+)*(?:headphones?|earphones?|earbuds?|tws|laptops?|phones?|smartphones?|monitors?|keyboards?|mice|mouse|cameras?|tablets?|speakers?|watch(?:es)?)\b/i
++  );
++  const word = m?.[1] ?? "";
++  return NOT_BRANDS.has(word.toLowerCase()) ? "" : word;
++}
++
+ function shoppingToolNames(): Set<string> {
+   return new Set([
+     "product_search",
+@@ -49,7 +71,12 @@
+     "price_compare",
+     "review_search",
+     "compare_sources",
++    "web_search",
++    "open_url",
++    "read_page",
++    "inspect_page_links",
+     "ask_user",
++    "request_approval",
+   ]);
+ }
+ const g = globalThis as unknown as { __dotsRuns?: Map<string, RunState> };
+@@ -337,7 +364,9 @@
+   let turnCompletionTokens = 0;
+   let totalSteps = 0;
+   const seenCalls = new Map<string, string>();
+-
++  let usedTools = false;
++  let refusalRetried = false;
++  let wideTools = false;
+   for (let step = 0; step < MAX_STEPS; step++) {
+     totalSteps = step + 1;
+     signal.throwIfAborted();
+@@ -369,6 +398,7 @@
+           const productResult = await productTool.execute(
+             {
+               category,
++              brand: extractBrand(userText),
+               maxPrice,
+             },
+             {
+@@ -391,7 +421,7 @@
+     let assistantMessage: ChatMessage;
+     try {
+       const omitTools = step === MAX_STEPS - 1;
+-      assistantMessage = await respond(dot, messages, trigger, signal, omitTools);
++      assistantMessage = await respond(dot, messages, trigger, signal, omitTools, wideTools, !usedTools && !refusalRetried);
+     } catch (err) {
+       if (signal.aborted) throw err;
+       throw err;
+@@ -402,7 +432,7 @@
+       turnTotalTimeMs += m.totalTimeMs;
+       turnPromptTokens += m.promptTokens;
+       turnCompletionTokens += m.completionTokens;
+-      const numCtx = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
++      const numCtx = Math.min(Math.max(4096, Number(process.env.DOTS_CONTEXT_LENGTH || 8192)), 8192);
+       const pct = Math.round((m.promptTokens / numCtx) * 100);
+       const genTokPerSec = m.totalTimeMs > m.ttftMs && m.completionTokens > 0 ? Math.round((m.completionTokens / ((m.totalTimeMs - m.ttftMs) / 1000)) * 10) / 10 : 0;
+       console.log(
+@@ -413,9 +443,28 @@
+       }
+     }
+ 
++    if (
++      !(assistantMessage.tool_calls && assistantMessage.tool_calls.length) &&
++      !usedTools &&
++      !refusalRetried &&
++      step < MAX_STEPS - 1 &&
++      isRefusalText(assistantMessage.content || "")
++    ) {
++      // Small models refuse before trying. One retry with every tool exposed and a firm nudge.
++      refusalRetried = true;
++      wideTools = true;
++      messages.push({
++        role: "user",
++        content:
++          "Do not refuse. You can act on this computer with tools: run_command (shell), open_url, read_page, web_search, read_file, write_file. Pick one and do the task now. If it fails, report the exact tool error.",
++      });
++      continue;
++    }
++
+     messages.push(assistantMessage);
+ 
+     const calls = assistantMessage.tool_calls || [];
++    if (calls.length) usedTools = true;
+     if (!calls.length) {
+       console.log(
+         `[dots] Turn Summary | Total Time: ${turnTotalTimeMs}ms | Steps: ${totalSteps} | Total Prompt Tokens: ${turnPromptTokens}`
+@@ -438,7 +487,7 @@
+   repo.addMessage({ dotId: dot.id, role: "system", text: `Stopped after ${MAX_STEPS} steps. Say "continue" to keep going.` });
+ }
+ 
+-async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false): Promise<ChatMessage> {
++async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false, wideTools = false, hideRefusal = false): Promise<ChatMessage> {
+   const resolved = getResolvedSync();
+   const latestUserText = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+   const routed = dot.model
+@@ -461,6 +510,8 @@
+ 
+   const selectedTools = omitTools
+     ? []
++    : wideTools
++    ? availableTools
+     : shopping
+     ? availableTools.filter((t: ToolDef) => shoppingToolNames().has(t.name))
+     : toolsForRequest(dot, latestUserText);
+@@ -534,7 +585,8 @@
+     const { sanitizeAnswerStyle } = await import("./answer-style");
+     let cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
+     cleanText = sanitizeAnswerStyle(cleanText);
+-    repo.updateMessage(draftMessageId, { text: cleanText || "…" });
++    const refused = hideRefusal && !(responseMsg.tool_calls && responseMsg.tool_calls.length) && isRefusalText(cleanText);
++    repo.updateMessage(draftMessageId, { text: refused ? "Retrying with tools…" : cleanText || "…" });
+     responseMsg.content = cleanText;
+   }
+ 
+@@ -663,7 +715,13 @@
+   maxTokens = 1800
+ ): ChatMessage[] {
+   const rawMsgs = repo.conversationMessages(repo.currentConversation(dotId), 50);
+-  const eligible = rawMsgs.filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude);
++  const eligible = rawMsgs.filter(
++    (m) =>
++      (m.role === "user" || m.role === "dot") &&
++      m.text &&
++      m.text !== exclude &&
++      !(m.role === "dot" && (isRefusalText(m.text) || m.text.startsWith("Retrying with tools")))
++  );
+ 
+   let currentTokens = 0;
+   const selected: typeof eligible = [];
+@@ -687,7 +745,7 @@
+       .trim();
+     const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
+     const expandedSummary = summaryText.length > 700 ? `${summaryText.slice(0, 697)}...` : shortSummary;
+-    return { role: "assistant" as const, content: `[Prior turn summary]: ${expandedSummary}` };
++    return { role: "assistant" as const, content: expandedSummary };
+   });
+ }
+ 
+diff -ruN a/src/server/agent/tools.ts b/src/server/agent/tools.ts
+--- a/src/server/agent/tools.ts	2026-10-06 09:43:43.380146909 +0000
++++ b/src/server/agent/tools.ts	2026-10-06 09:43:43.381774311 +0000
+@@ -561,19 +561,21 @@
+       let nonSponsored = validProducts.filter((p) => !p.sponsored && p.price <= maxPrice);
+       let sponsored = validProducts.filter((p) => p.sponsored && p.price <= maxPrice);
+ 
++      const allOk = [...nonSponsored, ...sponsored];
++      let rankedProducts: ScrapedProduct[] = allOk.slice(0, 8);
++      let alternatives: ScrapedProduct[] = [];
++      let brandNote = "";
++
+       if (targetBrand) {
++        // Brand asked = brand only. Other brands never pose as the answer.
+         const brandMatch = (p: ScrapedProduct) => p.name.toLowerCase().includes(targetBrand.toLowerCase());
+-        const brandNonSponsored = nonSponsored.filter(brandMatch);
+-        const otherNonSponsored = nonSponsored.filter((p) => !brandMatch(p));
+-        const brandSponsored = sponsored.filter(brandMatch);
+-        const otherSponsored = sponsored.filter((p) => !brandMatch(p));
+-
+-        nonSponsored = [...brandNonSponsored, ...otherNonSponsored];
+-        sponsored = [...brandSponsored, ...otherSponsored];
++        rankedProducts = allOk.filter(brandMatch).slice(0, 8);
++        alternatives = allOk.filter((p) => !brandMatch(p)).slice(0, 5);
++        if (rankedProducts.length === 0) {
++          brandNote = `No ${targetBrand} products found at or under ${maxPrice} INR on the checked sources. Say this first. "alternatives" are OTHER brands: show them only if useful and label them as other brands.`;
++        }
+       }
+ 
+-      const rankedProducts = [...nonSponsored, ...sponsored].slice(0, 8);
+-
+       return JSON.stringify(
+         {
+           type: "product_search_results",
+@@ -581,8 +583,11 @@
+           sources: sourcesStatus,
+           count: rankedProducts.length,
+           products: rankedProducts,
+-          ...(rankedProducts.length === 0
+-            ? { message: `0 products found under ${maxPrice} INR constraint for "${searchQuery}" across checked sources.` }
++          ...(alternatives.length ? { alternatives } : {}),
++          ...(brandNote
++            ? { message: brandNote }
++            : rankedProducts.length === 0
++            ? { message: `0 products found under ${maxPrice} INR for "${searchQuery}" across checked sources.` }
+             : {}),
+         },
+         null,
+@@ -1112,6 +1117,7 @@
+ 
+ const TOOL_GROUPS = {
+   general: [
++    "run_command",
+     "web_search",
+     "open_url",
+     "read_page",
+diff -ruN a/src/server/agent/url-validator.ts b/src/server/agent/url-validator.ts
+--- a/src/server/agent/url-validator.ts	2026-10-06 09:43:43.383146941 +0000
++++ b/src/server/agent/url-validator.ts	2026-10-06 09:43:43.384577764 +0000
+@@ -1,34 +1,43 @@
+ import type { ChatMessage } from "../llm/types";
+ 
++// URL ends at whitespace, quotes, brackets, angle brackets or backticks.
++// Old regex only stopped at whitespace, ")" and "]", so URLs inside tool-result JSON
++// ("url": "https://x.com/a",) were stored WITH the closing quote and never matched
++// the clean URL the model wrote. Result: every real link got stripped.
++const URL_RE = /https?:\/\/[^\s)\]"'<>`\\]+/gi;
++const TRAIL_RE = /[.,;:!?]+$/;
++
++function norm(u: string): string {
++  let s = u.replace(TRAIL_RE, "").toLowerCase();
++  s = s.replace(/&amp;/g, "&").replace(/\\u0026/g, "&");
++  return s;
++}
++
++function variants(u: string): string[] {
++  const n = norm(u);
++  const noSlash = n.replace(/\/$/, "");
++  return [n, noSlash, `${noSlash}/`];
++}
++
+ /**
+- * Validates that every URL in an assistant response appeared in either
+- * the user message or a tool result of the turn. Strips hallucinated URLs.
++ * Every URL in an assistant answer must appear in the user message or in a
++ * tool result of this turn. Hallucinated URLs are removed.
+  */
+ export function sanitizeResponseUrls(text: string, contextMessages: ChatMessage[]): string {
+   if (!text) return text;
+ 
+-  const allowedUrls = new Set<string>();
+-  const urlRegex = /https?:\/\/[^\s)\]]+/gi;
+-
++  const allowed = new Set<string>();
+   for (const m of contextMessages) {
+-    const rawContent = typeof m.content === "string" ? m.content : JSON.stringify(m);
+-    const matches = rawContent.match(urlRegex) || [];
+-    for (const url of matches) {
+-      const clean = url.replace(/[.,;:]+$/, "").toLowerCase();
+-      allowedUrls.add(clean);
+-      allowedUrls.add(clean.replace(/\/$/, ""));
++    const raw = typeof m.content === "string" ? m.content : JSON.stringify(m);
++    for (const url of raw.match(URL_RE) || []) {
++      for (const v of variants(url)) allowed.add(v);
+     }
+   }
+ 
+-  return text.replace(urlRegex, (matched) => {
+-    const trailingPunctuation = matched.match(/[.,;:]+$/)?.[0] || "";
+-    const cleanMatched = matched.replace(/[.,;:]+$/, "");
+-    const lowerClean = cleanMatched.toLowerCase();
+-    const lowerCleanNoSlash = lowerClean.replace(/\/$/, "");
+-
+-    if (allowedUrls.has(lowerClean) || allowedUrls.has(lowerCleanNoSlash)) {
+-      return matched;
+-    }
+-    return `[unverified URL removed]${trailingPunctuation}`;
++  return text.replace(URL_RE, (matched) => {
++    const trailing = matched.match(TRAIL_RE)?.[0] || "";
++    const core = trailing ? matched.slice(0, -trailing.length) : matched;
++    if (variants(core).some((v) => allowed.has(v))) return matched;
++    return `[unverified URL removed]${trailing}`;
+   });
+ }
+diff -ruN a/src/server/computer/browser.ts b/src/server/computer/browser.ts
+--- a/src/server/computer/browser.ts	2026-10-06 09:43:43.385873566 +0000
++++ b/src/server/computer/browser.ts	2026-10-06 09:43:43.387212697 +0000
+@@ -177,7 +177,9 @@
+   return s ? (await s).lastShot : null;
+ }
+ 
+-const visitedUrls = new Map<string, Map<string, string>>();
++// Cache is short-lived: a new question about the same page must not get a stale answer.
++const VISIT_TTL_MS = 2 * 60_000;
++const visitedUrls = new Map<string, Map<string, { text: string; at: number }>>();
+ 
+ export async function openUrl(dotId: string, url: string): Promise<string> {
+   const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+@@ -193,9 +195,9 @@
+     visitedUrls.set(dotId, dotVisited);
+   }
+ 
+-  if (dotVisited.has(target)) {
+-    const cached = dotVisited.get(target);
+-    return `Already visited ${target}. Cached summary:\n${cached}\n\nDo not re-visit this URL. Provide your final response now.`;
++  const hit = dotVisited.get(target);
++  if (hit && Date.now() - hit.at < VISIT_TTL_MS) {
++    return `Already read ${target} in the last 2 minutes. Content:\n${hit.text}`;
+   }
+ 
+   const p = await page(dotId, false);
+@@ -225,13 +227,13 @@
+     const filterRes = filterChunks("", chunks, { maxEvidenceTokens: 2500 });
+     const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
+     const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
+-    dotVisited.set(target, evidenceText);
+-    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}\n\nYou have read the page. Provide your final response now.`;
++    dotVisited.set(target, { text: evidenceText, at: Date.now() });
++    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}`;
+   }
+ 
+   const truncatedText = cleanText.length > 3500 ? cleanText.slice(0, 3500) + "\n...[content truncated]" : cleanText;
+-  dotVisited.set(target, truncatedText);
+-  return `Opened ${p.url()} — "${title}". Page Content:\n${truncatedText}\n\nYou have read the page. Provide your final response now.`;
++  dotVisited.set(target, { text: truncatedText, at: Date.now() });
++  return `Opened ${p.url()} — "${title}". Page Content:\n${truncatedText}`;
+ }
+ 
+ export async function readPage(dotId: string, userQuery = ""): Promise<string> {

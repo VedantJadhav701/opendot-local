@@ -50,4 +50,5 @@ next-env.d.ts
 /dist
 /.desktop
 /videos
+*.mp4
 .gstack/
