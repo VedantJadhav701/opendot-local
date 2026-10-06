@@ -561,18 +561,20 @@ export const TOOLS: ToolDef[] = [
       let nonSponsored = validProducts.filter((p) => !p.sponsored && p.price <= maxPrice);
       let sponsored = validProducts.filter((p) => p.sponsored && p.price <= maxPrice);
 
+      const allOk = [...nonSponsored, ...sponsored];
+      let rankedProducts: ScrapedProduct[] = allOk.slice(0, 8);
+      let alternatives: ScrapedProduct[] = [];
+      let brandNote = "";
+
       if (targetBrand) {
+        // Brand asked = brand only. Other brands never pose as the answer.
         const brandMatch = (p: ScrapedProduct) => p.name.toLowerCase().includes(targetBrand.toLowerCase());
-        const brandNonSponsored = nonSponsored.filter(brandMatch);
-        const otherNonSponsored = nonSponsored.filter((p) => !brandMatch(p));
-        const brandSponsored = sponsored.filter(brandMatch);
-        const otherSponsored = sponsored.filter((p) => !brandMatch(p));
-
-        nonSponsored = [...brandNonSponsored, ...otherNonSponsored];
-        sponsored = [...brandSponsored, ...otherSponsored];
+        rankedProducts = allOk.filter(brandMatch).slice(0, 8);
+        alternatives = allOk.filter((p) => !brandMatch(p)).slice(0, 5);
+        if (rankedProducts.length === 0) {
+          brandNote = `No ${targetBrand} products found at or under ${maxPrice} INR on the checked sources. Say this first. "alternatives" are OTHER brands: show them only if useful and label them as other brands.`;
+        }
       }
-
-      const rankedProducts = [...nonSponsored, ...sponsored].slice(0, 8);
 
       return JSON.stringify(
         {
@@ -581,8 +583,11 @@ export const TOOLS: ToolDef[] = [
           sources: sourcesStatus,
           count: rankedProducts.length,
           products: rankedProducts,
-          ...(rankedProducts.length === 0
-            ? { message: `0 products found under ${maxPrice} INR constraint for "${searchQuery}" across checked sources.` }
+          ...(alternatives.length ? { alternatives } : {}),
+          ...(brandNote
+            ? { message: brandNote }
+            : rankedProducts.length === 0
+            ? { message: `0 products found under ${maxPrice} INR for "${searchQuery}" across checked sources.` }
             : {}),
         },
         null,
@@ -1112,6 +1117,7 @@ export function toolsForDot(dot: Dot): ToolDef[] {
 
 const TOOL_GROUPS = {
   general: [
+    "run_command",
     "web_search",
     "open_url",
     "read_page",

@@ -42,6 +42,28 @@ function isShoppingRequest(text: string): boolean {
   );
 }
 
+const REFUSAL_RE =
+  /\b(?:i\s+(?:cannot|can't|can not|am unable|'m unable|don't have access|do not have access)|unable to (?:access|run|open|play|browse|check)|not widely recognized)\b/i;
+
+function isRefusalText(text: string): boolean {
+  return REFUSAL_RE.test((text || "").slice(0, 240));
+}
+
+const NOT_BRANDS = new Set([
+  "best", "good", "great", "top", "cheap", "cheapest", "new", "latest", "the", "a", "an", "some", "any", "my",
+  "for", "under", "nice", "better", "find", "buy", "wireless", "wired", "bluetooth", "gaming", "budget",
+  "premium", "decent", "affordable", "in", "ear", "over", "on", "with", "and", "or", "of", "me", "show",
+]);
+
+// "best OnePlus headphones under 3000" -> "OnePlus". The brand must reach product_search, or other brands fill the list.
+function extractBrand(text: string): string {
+  const m = text.match(
+    /\b([A-Za-z][A-Za-z0-9+-]{1,19})\s+(?:(?:wireless|wired|bluetooth|gaming|true|noise|cancelling|canceling|anc)\s+)*(?:headphones?|earphones?|earbuds?|tws|laptops?|phones?|smartphones?|monitors?|keyboards?|mice|mouse|cameras?|tablets?|speakers?|watch(?:es)?)\b/i
+  );
+  const word = m?.[1] ?? "";
+  return NOT_BRANDS.has(word.toLowerCase()) ? "" : word;
+}
+
 function shoppingToolNames(): Set<string> {
   return new Set([
     "product_search",
@@ -49,7 +71,12 @@ function shoppingToolNames(): Set<string> {
     "price_compare",
     "review_search",
     "compare_sources",
+    "web_search",
+    "open_url",
+    "read_page",
+    "inspect_page_links",
     "ask_user",
+    "request_approval",
   ]);
 }
 const g = globalThis as unknown as { __dotsRuns?: Map<string, RunState> };
@@ -337,7 +364,9 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
   let turnCompletionTokens = 0;
   let totalSteps = 0;
   const seenCalls = new Map<string, string>();
-
+  let usedTools = false;
+  let refusalRetried = false;
+  let wideTools = false;
   for (let step = 0; step < MAX_STEPS; step++) {
     totalSteps = step + 1;
     signal.throwIfAborted();
@@ -369,6 +398,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
           const productResult = await productTool.execute(
             {
               category,
+              brand: extractBrand(userText),
               maxPrice,
             },
             {
@@ -391,7 +421,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
     let assistantMessage: ChatMessage;
     try {
       const omitTools = step === MAX_STEPS - 1;
-      assistantMessage = await respond(dot, messages, trigger, signal, omitTools);
+      assistantMessage = await respond(dot, messages, trigger, signal, omitTools, wideTools, !usedTools && !refusalRetried);
     } catch (err) {
       if (signal.aborted) throw err;
       throw err;
@@ -402,7 +432,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnTotalTimeMs += m.totalTimeMs;
       turnPromptTokens += m.promptTokens;
       turnCompletionTokens += m.completionTokens;
-      const numCtx = Number(process.env.DOTS_CONTEXT_LENGTH || 16384);
+      const numCtx = Math.min(Math.max(4096, Number(process.env.DOTS_CONTEXT_LENGTH || 8192)), 8192);
       const pct = Math.round((m.promptTokens / numCtx) * 100);
       const genTokPerSec = m.totalTimeMs > m.ttftMs && m.completionTokens > 0 ? Math.round((m.completionTokens / ((m.totalTimeMs - m.ttftMs) / 1000)) * 10) / 10 : 0;
       console.log(
@@ -413,9 +443,28 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       }
     }
 
+    if (
+      !(assistantMessage.tool_calls && assistantMessage.tool_calls.length) &&
+      !usedTools &&
+      !refusalRetried &&
+      step < MAX_STEPS - 1 &&
+      isRefusalText(assistantMessage.content || "")
+    ) {
+      // Small models refuse before trying. One retry with every tool exposed and a firm nudge.
+      refusalRetried = true;
+      wideTools = true;
+      messages.push({
+        role: "user",
+        content:
+          "Do not refuse. You can act on this computer with tools: run_command (shell), open_url, read_page, web_search, read_file, write_file. Pick one and do the task now. If it fails, report the exact tool error.",
+      });
+      continue;
+    }
+
     messages.push(assistantMessage);
 
     const calls = assistantMessage.tool_calls || [];
+    if (calls.length) usedTools = true;
     if (!calls.length) {
       console.log(
         `[dots] Turn Summary | Total Time: ${turnTotalTimeMs}ms | Steps: ${totalSteps} | Total Prompt Tokens: ${turnPromptTokens}`
@@ -438,7 +487,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
   repo.addMessage({ dotId: dot.id, role: "system", text: `Stopped after ${MAX_STEPS} steps. Say "continue" to keep going.` });
 }
 
-async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false): Promise<ChatMessage> {
+async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false, wideTools = false, hideRefusal = false): Promise<ChatMessage> {
   const resolved = getResolvedSync();
   const latestUserText = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
   const routed = dot.model
@@ -461,6 +510,8 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
 
   const selectedTools = omitTools
     ? []
+    : wideTools
+    ? availableTools
     : shopping
     ? availableTools.filter((t: ToolDef) => shoppingToolNames().has(t.name))
     : toolsForRequest(dot, latestUserText);
@@ -534,7 +585,8 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     const { sanitizeAnswerStyle } = await import("./answer-style");
     let cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
     cleanText = sanitizeAnswerStyle(cleanText);
-    repo.updateMessage(draftMessageId, { text: cleanText || "…" });
+    const refused = hideRefusal && !(responseMsg.tool_calls && responseMsg.tool_calls.length) && isRefusalText(cleanText);
+    repo.updateMessage(draftMessageId, { text: refused ? "Retrying with tools…" : cleanText || "…" });
     responseMsg.content = cleanText;
   }
 
@@ -663,7 +715,13 @@ export function rebuildContextMessages(
   maxTokens = 1800
 ): ChatMessage[] {
   const rawMsgs = repo.conversationMessages(repo.currentConversation(dotId), 50);
-  const eligible = rawMsgs.filter((m) => (m.role === "user" || m.role === "dot") && m.text && m.text !== exclude);
+  const eligible = rawMsgs.filter(
+    (m) =>
+      (m.role === "user" || m.role === "dot") &&
+      m.text &&
+      m.text !== exclude &&
+      !(m.role === "dot" && (isRefusalText(m.text) || m.text.startsWith("Retrying with tools")))
+  );
 
   let currentTokens = 0;
   const selected: typeof eligible = [];
@@ -687,7 +745,7 @@ export function rebuildContextMessages(
       .trim();
     const shortSummary = summaryText.length > 200 ? `${summaryText.slice(0, 197)}…` : summaryText;
     const expandedSummary = summaryText.length > 700 ? `${summaryText.slice(0, 697)}...` : shortSummary;
-    return { role: "assistant" as const, content: `[Prior turn summary]: ${expandedSummary}` };
+    return { role: "assistant" as const, content: expandedSummary };
   });
 }
 

@@ -177,7 +177,9 @@ export async function lastScreenshot(dotId: string): Promise<Buffer | null> {
   return s ? (await s).lastShot : null;
 }
 
-const visitedUrls = new Map<string, Map<string, string>>();
+// Cache is short-lived: a new question about the same page must not get a stale answer.
+const VISIT_TTL_MS = 2 * 60_000;
+const visitedUrls = new Map<string, Map<string, { text: string; at: number }>>();
 
 export async function openUrl(dotId: string, url: string): Promise<string> {
   const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
@@ -193,9 +195,9 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
     visitedUrls.set(dotId, dotVisited);
   }
 
-  if (dotVisited.has(target)) {
-    const cached = dotVisited.get(target);
-    return `Already visited ${target}. Cached summary:\n${cached}\n\nDo not re-visit this URL. Provide your final response now.`;
+  const hit = dotVisited.get(target);
+  if (hit && Date.now() - hit.at < VISIT_TTL_MS) {
+    return `Already read ${target} in the last 2 minutes. Content:\n${hit.text}`;
   }
 
   const p = await page(dotId, false);
@@ -225,13 +227,13 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
     const filterRes = filterChunks("", chunks, { maxEvidenceTokens: 2500 });
     const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
     const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
-    dotVisited.set(target, evidenceText);
-    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}\n\nYou have read the page. Provide your final response now.`;
+    dotVisited.set(target, { text: evidenceText, at: Date.now() });
+    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}`;
   }
 
   const truncatedText = cleanText.length > 3500 ? cleanText.slice(0, 3500) + "\n...[content truncated]" : cleanText;
-  dotVisited.set(target, truncatedText);
-  return `Opened ${p.url()} — "${title}". Page Content:\n${truncatedText}\n\nYou have read the page. Provide your final response now.`;
+  dotVisited.set(target, { text: truncatedText, at: Date.now() });
+  return `Opened ${p.url()} — "${title}". Page Content:\n${truncatedText}`;
 }
 
 export async function readPage(dotId: string, userQuery = ""): Promise<string> {
