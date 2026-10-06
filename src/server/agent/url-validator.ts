@@ -1,11 +1,8 @@
 import type { ChatMessage } from "../llm/types";
 
 // URL ends at whitespace, quotes, brackets, angle brackets or backticks.
-// Old regex only stopped at whitespace, ")" and "]", so URLs inside tool-result JSON
-// ("url": "https://x.com/a",) were stored WITH the closing quote and never matched
-// the clean URL the model wrote. Result: every real link got stripped.
 const URL_RE = /https?:\/\/[^\s)\]"'<>`\\]+/gi;
-const TRAIL_RE = /[.,;:!?]+$/;
+const TRAIL_RE = /[.,;:!?)\s\]"*_]+$/;
 
 function norm(u: string): string {
   let s = u.replace(TRAIL_RE, "").toLowerCase();
@@ -16,7 +13,8 @@ function norm(u: string): string {
 function variants(u: string): string[] {
   const n = norm(u);
   const noSlash = n.replace(/\/$/, "");
-  return [n, noSlash, `${noSlash}/`];
+  const baseNoQuery = noSlash.split("?")[0].split("#")[0];
+  return [n, noSlash, `${noSlash}/`, baseNoQuery, `${baseNoQuery}/`];
 }
 
 /**

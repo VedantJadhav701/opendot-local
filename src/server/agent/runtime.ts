@@ -432,7 +432,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnTotalTimeMs += m.totalTimeMs;
       turnPromptTokens += m.promptTokens;
       turnCompletionTokens += m.completionTokens;
-      const numCtx = Math.min(Math.max(4096, Number(process.env.DOTS_CONTEXT_LENGTH || 8192)), 8192);
+      const numCtx = Math.min(Math.max(4096, Number(process.env.DOTS_CONTEXT_LENGTH || 16384)), 32768);
       const pct = Math.round((m.promptTokens / numCtx) * 100);
       const genTokPerSec = m.totalTimeMs > m.ttftMs && m.completionTokens > 0 ? Math.round((m.completionTokens / ((m.totalTimeMs - m.ttftMs) / 1000)) * 10) / 10 : 0;
       console.log(
@@ -531,12 +531,12 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
   };
 
   const configuredContextLength = Number(
-    process.env.DOTS_CONTEXT_LENGTH || 8192
+    process.env.DOTS_CONTEXT_LENGTH || 16384
   );
 
   const defaultContextLength = Math.min(
     Math.max(4096, configuredContextLength),
-    8192
+    32768
   );
   const fullMessages = pruneMessagesForContext([systemMsg, ...messages], toolDefs, defaultContextLength);
 

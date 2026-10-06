@@ -93,8 +93,8 @@ export type QueueTask<T> = {
 const gQueue = globalThis as unknown as { __llmQueue?: QueueTask<any>[]; __isProcessingLLMQueue?: boolean };
 export const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
 
-const DEFAULT_CONTEXT_LENGTH = 8192;
-const MAX_CONTEXT_LENGTH = 8192;
+const DEFAULT_CONTEXT_LENGTH = 16384;
+const MAX_CONTEXT_LENGTH = 32768;
 const DEFAULT_NUM_PREDICT = 1024;
 
 export function enqueueLLMRequest<T>(
