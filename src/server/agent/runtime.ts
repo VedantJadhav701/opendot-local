@@ -488,21 +488,8 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
 }
 
 async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal: AbortSignal, omitTools = false, wideTools = false, hideRefusal = false): Promise<ChatMessage> {
-  const resolved = getResolvedSync();
   const latestUserText = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
-  const routed = dot.model
-    ? null
-    : selectModel({ text: latestUserText, toolCount: messages.filter((message) => message.role === "tool").length, multiStep: messages.length > 8 }, resolved.available, {
-        os: process.platform,
-        cpu: os.cpus()[0]?.model || os.arch(),
-        ramGB: os.totalmem() / 1024 ** 3,
-        gpu: null,
-        vramGB: null,
-        ollama: true,
-        docker: false,
-        diskFreeGB: null,
-      });
-  const modelName = await activeModel(dot.model || routed?.selected);
+  const modelName = await activeModel(dot.model);
   const provider = getProvider(modelName);
 
   const shopping = isShoppingRequest(latestUserText);

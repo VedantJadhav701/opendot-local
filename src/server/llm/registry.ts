@@ -5,7 +5,7 @@ import { getSetting, setSetting } from "../db";
 import { DEFAULT_MODEL } from "../models/types";
 
 const DEFAULT_MAIN_MODELS = [DEFAULT_MODEL];
-const DEFAULT_REVIEW_MODELS = [DEFAULT_MODEL, "qwen3:4b-instruct-2507", "qwen3:8b"];
+const DEFAULT_REVIEW_MODELS = [DEFAULT_MODEL];
 
 let activeProvider: LLMProvider = new OllamaProvider();
 
@@ -101,8 +101,6 @@ export async function resolveModels(): Promise<{ main: string; review: string; a
   const review =
     envReview ||
     getSetting("review_model") ||
-    DEFAULT_REVIEW_MODELS.find((m) => modelIds.includes(m)) ||
-    modelIds[0] ||
     main;
 
   lastResolved = { main, review, available: modelIds };

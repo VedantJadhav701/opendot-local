@@ -30,20 +30,15 @@ export function classifyTask(signals: TaskSignals): { score: number; complexity:
 
 export function selectModel(signals: TaskSignals, installed: string[], profile: CapabilityProfile): ModelDecision {
   const { score, complexity } = classifyTask(signals);
-  const has = (id: string) => installed.includes(id);
-
-  // Always stick to DEFAULT_MODEL (4B) or quality models (8B+). Do not down-route to 1.7B/2B fast models to preserve answer quality.
-  const quality = QUALITY_MODELS.find((id) => has(id) && profile.ramGB >= 12) ?? QUALITY_MODELS.find((id) => has(id));
-  const preferred = complexity === "hard" && quality ? quality : DEFAULT_MODEL;
-  const selected = has(preferred) ? preferred : has(DEFAULT_MODEL) ? DEFAULT_MODEL : installed[0] ?? DEFAULT_MODEL;
+  const target = installed.includes(DEFAULT_MODEL) ? DEFAULT_MODEL : installed[0] ?? DEFAULT_MODEL;
 
   return {
     complexity,
     score,
-    preferred,
-    selected,
-    installed: has(preferred) || has(DEFAULT_MODEL),
+    preferred: target,
+    selected: target,
+    installed: installed.includes(target),
     usedAlias: false,
-    reason: complexity === "hard" ? "Hard tasks prefer an installed Qwen3 8B+ model." : "Always stay on 4B default model or higher for response quality.",
+    reason: "Dynamic model routing disabled. Always uses default 4B model or user dropdown selection.",
   };
 }
