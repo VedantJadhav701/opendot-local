@@ -7,7 +7,8 @@
 ## 🎬 Live Demo & Interface Preview
 
 <p align="center">
-  <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-Local Live Demo Preview" />
+  <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-Local Live Demo Preview" /><br/>
+  <a href="app-images/app-demo-web.mp4">▶ <b>Click here to watch / download the Full 1080p HD Demo Video (app-demo-web.mp4)</b></a>
 </p>
 
 ### 📸 App Showcase
