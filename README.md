@@ -4,7 +4,11 @@
 
 ---
 
-## 📸 Interface Preview
+## 🎬 Live Demo & Interface Preview
+
+<p align="center">
+  <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-Local Live Demo Preview" />
+</p>
 
 ![OpenDot-Local Overview](public/screenshots/app-overview.png)
 
