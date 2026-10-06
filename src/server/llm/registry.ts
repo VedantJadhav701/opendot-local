@@ -5,7 +5,7 @@ import { getSetting, setSetting } from "../db";
 import { DEFAULT_MODEL } from "../models/types";
 
 const DEFAULT_MAIN_MODELS = [DEFAULT_MODEL];
-const DEFAULT_REVIEW_MODELS = ["qwen3:0.6b", "qwen3:1.7b", "llama3.2:1b", "qwen2.5:0.5b", "qwen3:4b-instruct-2507"];
+const DEFAULT_REVIEW_MODELS = [DEFAULT_MODEL, "qwen3:4b-instruct-2507", "qwen3:8b"];
 
 let activeProvider: LLMProvider = new OllamaProvider();
 
@@ -66,7 +66,7 @@ export async function listAvailableModels(): Promise<ModelInfo[]> {
 
 let lastResolved: { main: string; review: string; available: string[] } = {
   main: DEFAULT_MODEL,
-  review: "qwen3:0.6b",
+  review: DEFAULT_MODEL,
   available: [],
 };
 

@@ -1,8 +1,8 @@
 import type { ModelInfo } from "../llm/types";
 
 export const DEFAULT_MODEL = "qwen3:4b-instruct-2507";
-export const FAST_MODEL = "qwen3:1.7b";
-export const FAST_MODEL_ALIASES = ["vidya-1.7b:latest", "llama3.2:1b", "gemma2:2b", "qwen2.5:3b"] as const;
+export const FAST_MODEL = "qwen3:4b-instruct-2507";
+export const FAST_MODEL_ALIASES = ["qwen3:4b-instruct-2507"] as const;
 export const QUALITY_MODELS = ["qwen3:8b", "qwen3:14b", "qwen3:32b"] as const;
 
 export type CapabilityProfile = {
