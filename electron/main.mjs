@@ -40,7 +40,14 @@ function loginPath() {
 }
 
 function startServer() {
-  const dir = app.isPackaged ? path.join(process.resourcesPath, "server") : path.join(import.meta.dirname, "..", ".next", "standalone");
+  const desktopServerDir = path.join(import.meta.dirname, "..", ".desktop", "server");
+  const standaloneServerDir = path.join(import.meta.dirname, "..", ".next", "standalone");
+  const dir = app.isPackaged
+    ? path.join(process.resourcesPath, "server")
+    : fs.existsSync(path.join(desktopServerDir, "server.js"))
+    ? desktopServerDir
+    : standaloneServerDir;
+
   if (!fs.existsSync(path.join(dir, "server.js"))) {
     dialog.showErrorBox("Open Dot Local", `The app server is missing (${dir}). Run \`pnpm desktop:prepare\` first.`);
     app.exit(1);
@@ -76,7 +83,19 @@ function waitForServer(timeoutMs = 60_000) {
   const started = Date.now();
   return new Promise((resolve, reject) => {
     const tick = () => {
-      const req = http.get(`${APP_URL}/globe.svg`, (res) => (res.resume(), resolve()));
+      const req = http.get(`${APP_URL}/api/health`, (res) => {
+        if (res.statusCode === 200) {
+          res.resume();
+          resolve();
+        } else {
+          res.resume();
+          if (Date.now() - started > timeoutMs) {
+            reject(new Error(`The app server returned status ${res.statusCode}.`));
+          } else {
+            setTimeout(tick, 250);
+          }
+        }
+      });
       req.on("error", () => (Date.now() - started > timeoutMs ? reject(new Error("The app server didn't start.")) : setTimeout(tick, 250)));
       req.setTimeout(2000, () => req.destroy());
     };
