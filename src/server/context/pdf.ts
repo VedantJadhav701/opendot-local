@@ -1,4 +1,24 @@
-import { PDFParse } from "pdf-parse";
+if (typeof globalThis.DOMMatrix === "undefined") {
+  (globalThis as any).DOMMatrix = class DOMMatrix {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+    constructor(_init?: any) {}
+  };
+}
+if (typeof globalThis.ImageData === "undefined") {
+  (globalThis as any).ImageData = class ImageData {
+    data: Uint8ClampedArray;
+    width: number;
+    height: number;
+    constructor(width: number, height: number) {
+      this.width = width;
+      this.height = height;
+      this.data = new Uint8ClampedArray(width * height * 4);
+    }
+  };
+}
+if (typeof globalThis.Path2D === "undefined") {
+  (globalThis as any).Path2D = class Path2D {};
+}
 
 export type PdfPage = {
   pageNumber: number;
@@ -33,6 +53,7 @@ export async function extractPdf(dataBuffer: Buffer): Promise<PdfExtractResult> 
   }
 
   try {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(dataBuffer) });
     const textResult = await parser.getText();
     await parser.destroy();
