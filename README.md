@@ -10,11 +10,21 @@
   <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-Local Live Demo Preview" />
 </p>
 
-![OpenDot-Local Overview](public/screenshots/app-overview.png)
+### 📸 App Showcase
 
 <p align="center">
-  <img src="public/screenshots/chat-automation.png" width="48%" alt="AI Agent Chat & Automation" />
-  <img src="public/screenshots/cloud-boost-settings.png" width="48%" alt="Settings & Cloud Boost" />
+  <img src="app-images/dashboard.png" width="48%" alt="Main Dashboard & Agent Handoff" />
+  <img src="app-images/agent-fleet.png" width="48%" alt="Autonomous Agent Fleet" />
+</p>
+
+<p align="center">
+  <img src="app-images/shopping-research.png" width="48%" alt="Real-time Web Search & Comparison" />
+  <img src="app-images/web-summarizer.png" width="48%" alt="Web Page & Document Reader" />
+</p>
+
+<p align="center">
+  <img src="app-images/code-analysis.png" width="48%" alt="Workspace Code & Tech Stack Analysis" />
+  <img src="app-images/settings-ollama.png" width="48%" alt="Local Ollama AI Engine Settings" />
 </p>
 
 ---
