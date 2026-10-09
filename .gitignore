@@ -55,5 +55,8 @@ next-env.d.ts
 !landing-page/assets/*.mp4
 !landing-page/demo.mp4
 !public/assets/*.mp4
+!landing-page/public/*.mp4
+!landing-page/public/assets/*.mp4
+!landing-page/public/assets/videos/app-demo-web.mp4
 .gstack/
 
