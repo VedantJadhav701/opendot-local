@@ -1,5 +1,7 @@
 # OpenDot-Local
 
+🌐 **Live Landing Page & Demo**: [https://opendot-local.vercel.app/](https://opendot-local.vercel.app/)
+
 **OpenDot-Local** is a free, 100% private, local-first, cross-platform (Windows & macOS) personal AI desktop agent runtime powered by local Ollama models and optional cloud acceleration.
 
 ---
