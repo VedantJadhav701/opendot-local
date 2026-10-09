@@ -51,4 +51,8 @@ next-env.d.ts
 /.desktop
 /videos
 *.mp4
+!landing-page/assets/demo.mp4
+!landing-page/assets/*.mp4
+!public/assets/*.mp4
 .gstack/
+

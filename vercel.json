@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/landing-page/assets/$1" },
+    { "source": "/images/(.*)", "destination": "/landing-page/assets/images/$1" }
+  ]
+}
