@@ -29,10 +29,10 @@
     /* =====================================================================
        1. CORE ARCHITECTURE — HERO STAGE & SCALED CANVAS
        ===================================================================== */
-    .hero-wrapper { position: relative; width: 100vw; height: 100vh; min-height: 657px; overflow: hidden; background: #020204; }
+    .hero-wrapper { position: relative; width: 100vw; height: 100vh; min-height: 720px; overflow: hidden; background: #020204; }
     .stage { position: absolute; inset: 0; overflow: hidden; background: #020204; }
     .canvas {
-      position: absolute; left: 50%; top: 0; width: 1172px; height: 657px;
+      position: absolute; left: 50%; top: 0; width: 1172px; height: 720px;
       transform: translateX(-50%) scale(var(--k, 1)); transform-origin: 50% 0;
     }
     .canvas > * { position: absolute; }
@@ -246,21 +246,21 @@
     .t-serif { font-family: "Playfair Display", serif; line-height: 1.02; letter-spacing: .01em; white-space: nowrap; }
 
     /* =====================================================================
-       9. THE BROWSER MOCK (in FRONT of the ring)
+       9. THE BROWSER MOCK (PROMINENTLY DISPLAYED IN HERO)
        ===================================================================== */
     .browser {
-      position: absolute; left: 165px; top: 558px; width: 842px;
-      height: calc(99px + var(--fill, 0px));
-      border-radius: 28px 28px 0 0; overflow: hidden; z-index: 100;
-      box-shadow: 0 -14px 44px rgba(0,0,0,.55);
+      position: absolute; left: 165px; top: 430px; width: 842px;
+      height: 275px;
+      border-radius: 20px 20px 0 0; overflow: hidden; z-index: 100;
+      box-shadow: 0 -14px 44px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.15);
     }
     .browser::before {
       content: ""; position: absolute; left: 0; right: 0; top: 42px; bottom: 0;
-      background: rgba(20,20,26,.82); z-index: 0;
+      background: rgba(20,20,26,.95); z-index: 0;
     }
     .bar {
       position: absolute; left: 0; top: 0; width: 100%; height: 42px; z-index: 10;
-      background: linear-gradient(180deg, rgba(20,24,48,.48), rgba(15,19,38,.58));
+      background: linear-gradient(180deg, rgba(20,24,48,.85), rgba(15,19,38,.95));
       -webkit-backdrop-filter: blur(6px) saturate(112%); backdrop-filter: blur(6px) saturate(112%);
     }
     .dots { position: absolute; left: 27px; top: 16px; display: flex; gap: 2.6px; }
@@ -271,55 +271,43 @@
       display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
     }
     .omni svg { width: 9px; height: 9px; opacity: .72; }
-    .omni span { font-size: 9.5px; color: rgba(255,255,255,.72); letter-spacing: .005em; }
+    .omni span { font-size: 9.5px; color: rgba(255,255,255,.9); letter-spacing: .005em; font-weight: 600; }
     .tools { position: absolute; right: 27px; top: 14px; display: flex; align-items: center; gap: 8px; opacity: .9; }
     .tools svg { width: 11px; height: 12px; cursor: pointer; }
 
     .page {
-      position: absolute; left: 7px; right: 6px; top: 42px; bottom: 0; background: #fff;
-      color: #111; overflow-y: auto; border-radius: 10px 10px 0 0; z-index: 1;
+      position: absolute; left: 7px; right: 6px; top: 42px; bottom: 0; background: #0b0f19;
+      color: #fff; overflow-y: hidden; border-radius: 10px 10px 0 0; z-index: 1;
     }
     .ann {
-      position: absolute; left: 0; top: 0; width: 100%; height: 16px; background: #101210;
-      display: grid; place-items: center; border-radius: 10px 10px 0 0; z-index: 2;
+      position: absolute; left: 0; top: 0; width: 100%; height: 20px; background: #101726;
+      display: grid; place-items: center; border-radius: 10px 10px 0 0; z-index: 2; border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .ann span { font-size: 5px; letter-spacing: .06em; color: #cfcfcf; }
-    .ann u { position: absolute; font-size: 6px; color: #9a9a9a; text-decoration: none; }
+    .ann span { font-size: 7.5px; letter-spacing: .08em; color: #38bdf8; font-weight: 700; }
+    .ann u { position: absolute; font-size: 8px; color: #94a3b8; text-decoration: none; }
 
-    .pagebody { position: absolute; left: 0; right: 0; top: 16px; bottom: 0; background: #fff; }
+    .pagebody { position: absolute; left: 0; right: 0; top: 20px; bottom: 0; background: #0b0f19; }
 
     /* Open-Dot Hero GIF Banner */
     .pghero {
-      position: relative; margin: 8px 18px 0; height: 210px; border-radius: 8px; overflow: hidden;
-      background: #090c15; box-shadow: 0 4px 12px rgba(0,0,0,.15); border: 1px solid #1f293d;
+      position: relative; margin: 6px 12px 0; height: 200px; border-radius: 8px; overflow: hidden;
+      background: #090c15; box-shadow: 0 4px 12px rgba(0,0,0,.3); border: 1px solid #1f293d;
     }
     .pghero img.demo-gif { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .pghero .scrim {
       position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(9,12,21,.35) 0%, rgba(9,12,21,0) 40%, rgba(9,12,21,.85) 100%);
+      background: linear-gradient(180deg, rgba(9,12,21,.2) 0%, rgba(9,12,21,0) 40%, rgba(9,12,21,.85) 100%);
       pointer-events: none;
     }
     .pghero .demo-badge {
-      position: absolute; left: 12px; top: 10px; padding: 3px 8px; border-radius: 12px;
-      background: rgba(14,165,233,.9); color: #fff; font-size: 6px; font-weight: 700; letter-spacing: .08em;
-      box-shadow: 0 2px 6px rgba(0,0,0,.3); display: flex; align-items: center; gap: 4px; z-index: 3;
+      position: absolute; left: 12px; top: 10px; padding: 4px 10px; border-radius: 12px;
+      background: rgba(14,165,233,.95); color: #fff; font-size: 7.5px; font-weight: 800; letter-spacing: .08em;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4); display: flex; align-items: center; gap: 5px; z-index: 3;
     }
-    .pghero .demo-badge .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: pulse 1.5s infinite; }
+    .pghero .demo-badge .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.5s infinite; }
     .pghero .copy { position: absolute; left: 14px; bottom: 12px; color: #fff; z-index: 3; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
-    .pghero .copy u { font-size: 5px; letter-spacing: .2em; text-transform: uppercase; color: #38bdf8; font-weight: 700; text-decoration: none; display: block; }
-    .pghero .copy em { font-family: Poppins, sans-serif; font-style: normal; font-weight: 800; font-size: 13px; line-height: 1.15; margin-top: 2px; display: block; color: #fff; }
-
-    .pgsec { display: flex; align-items: baseline; justify-content: space-between; margin: 12px 18px 6px; }
-    .pgsec b { font-family: Poppins, sans-serif; font-weight: 700; font-size: 9px; color: #0f172a; }
-    .pgsec u { font-size: 4.6px; letter-spacing: .14em; color: #64748b; text-transform: uppercase; text-decoration: none; }
-    .pggrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 18px 12px; }
-    .pgcard { background: #f8fafc; border-radius: 6px; padding: 4px; border: 1px solid #e2e8f0; }
-    .pgcard .ph { position: relative; height: 0; padding-bottom: 70%; border-radius: 4px; overflow: hidden; background: #0f172a; }
-    .pgcard .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .pgcard .tag { position: absolute; left: 4px; top: 4px; padding: 2px 4px; border-radius: 3px; background: #0ea5e9; color: #fff; font-size: 3.8px; font-weight: 700; letter-spacing: .08em; }
-    .pgcard b { display: block; margin-top: 4px; font-size: 5.4px; font-weight: 700; color: #0f172a; letter-spacing: .01em; }
-    .pgcard i { display: block; font-style: normal; margin-top: 1px; font-size: 4.6px; color: #64748b; }
-    .pgcard s { display: block; margin-top: 2px; font-size: 5.6px; font-weight: 700; color: #0284c7; text-decoration: none; }
+    .pghero .copy u { font-size: 6.5px; letter-spacing: .2em; text-transform: uppercase; color: #38bdf8; font-weight: 700; text-decoration: none; display: block; }
+    .pghero .copy em { font-family: Poppins, sans-serif; font-style: normal; font-weight: 800; font-size: 15px; line-height: 1.15; margin-top: 2px; display: block; color: #fff; }
 
     /* =====================================================================
        FULL LANDING PAGE SCROLLING SECTIONS
@@ -542,7 +530,7 @@
       }
       .browser {
         position: relative; left: auto; transform: none; top: 0; margin-top: 180px;
-        width: 100%; height: auto; min-height: 480px; border-radius: 22px 22px 0 0;
+        width: 100%; height: auto; min-height: 380px; border-radius: 22px 22px 0 0;
       }
       .browser .bar { height: 36px; }
       .omni { left: 50%; transform: translateX(-50%); width: 58%; height: 24px; top: 6px; }
@@ -551,21 +539,12 @@
       .tools { display: none; }
       .ann { height: 15px; }
       .ann span { font-size: 6px; }
-      .page { top: 36px; height: auto; min-height: 440px; }
+      .page { top: 36px; height: auto; min-height: 340px; }
       .pagebody { top: 16px; position: relative; }
       .pghero { margin: 0 14px; height: 160px; border-radius: 10px; }
       .pghero .copy { left: 14px; bottom: 10px; }
       .pghero .copy u { font-size: 7.5px; letter-spacing: .2em; }
       .pghero .copy em { font-size: 14px; margin-top: 3px; }
-      .pgsec { margin: 16px 14px 10px; }
-      .pgsec b { font-size: 12px; }
-      .pgsec u { font-size: 8px; }
-      .pggrid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 14px; }
-      .pgcard .ph { border-radius: 6px; }
-      .pgcard .tag { font-size: 6px; padding: 2px 5px; }
-      .pgcard b { font-size: 9.5px; margin-top: 5px; }
-      .pgcard i { font-size: 7.5px; }
-      .pgcard s { font-size: 9.5px; margin-top: 3px; }
 
       .features-grid { grid-template-columns: 1fr; }
       .section-title { font-size: 28px; }
@@ -651,53 +630,6 @@
                   <em>Watch Open-Dot Execute<br>Multi-Step Tasks Live</em>
                 </div>
               </div>
-
-              <!-- Open-Dot Capabilities Showcase Grid -->
-              <div class="pgsec">
-                <b>Agent Capabilities & Tooling</b>
-                <u>4 Active Modules</u>
-              </div>
-              <div class="pggrid">
-                <div class="pgcard">
-                  <div class="ph">
-                    <img src="assets/images/agent-fleet.png" alt="Agent Fleet Dashboard">
-                    <span class="tag">FLEET</span>
-                  </div>
-                  <b>Multi-Agent Orchestrator</b>
-                  <i>Parallel Subagent Dispatch</i>
-                  <s>ACTIVE <span>v2.4</span></s>
-                </div>
-
-                <div class="pgcard">
-                  <div class="ph">
-                    <img src="assets/images/code-analysis.png" alt="Code Analysis Engine">
-                    <span class="tag">CODE</span>
-                  </div>
-                  <b>Automated Code Inspection</b>
-                  <i>AST & Refactoring Suite</i>
-                  <s>READY <span>100%</span></s>
-                </div>
-
-                <div class="pgcard">
-                  <div class="ph">
-                    <img src="assets/images/web-summarizer.png" alt="Web Research Agent">
-                    <span class="tag">RESEARCH</span>
-                  </div>
-                  <b>Deep Web Research</b>
-                  <i>Live Web Scraping & Synthesis</i>
-                  <s>CONNECTED <span>API</span></s>
-                </div>
-
-                <div class="pgcard">
-                  <div class="ph">
-                    <img src="assets/images/settings-ollama.png" alt="Ollama Local LLM Integration">
-                    <span class="tag">LOCAL</span>
-                  </div>
-                  <b>Ollama Local Models</b>
-                  <i>100% Private Offline Inference</i>
-                  <s>ENABLED <span>0ms</span></s>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -711,18 +643,18 @@
                 <path d="M13.9 1.6 5.5 13.6a.7.7 0 0 0 .6 1.1h4.2l-1 7.7a.7.7 0 0 0 1.25.55l8.3-12.1a.7.7 0 0 0-.6-1.1h-4.2l1-7.7a.7.7 0 0 0-1.25-.55Z"/>
               </svg>
             </i>
-            <b id="badgeTxt">Professionals at store startup</b>
+            <b id="badgeTxt">Autonomous Local AI Workflows</b>
           </div>
 
           <!-- HERO TYPE -->
-          <div class="h1 l1" id="h1a">Streamline the shop</div>
-          <div class="h1" id="h1b">Process</div>
+          <div class="h1 l1" id="h1a">Streamline AI Agent</div>
+          <div class="h1" id="h1b">Workflows</div>
 
-          <div class="sub s1" id="sub1"><b>Restructuring store systems / <span class="nb">E-commerce</span></b> orchestrated with</div>
-          <div class="sub" id="sub2">checkouts, performance, a sustainable expansion.</div>
+          <div class="sub s1" id="sub1"><b>Local-First AI Agents / <span class="nb">Multi-Agent Fleet</span></b> orchestrated with</div>
+          <div class="sub" id="sub2">Ollama, deep code analysis, and privacy-first web research.</div>
 
           <!-- PIXEL CONTRACT B — HERO CTA (.cta2) -->
-          <a class="btn cta2" href="#full-demo" id="watchDemoCta"><span id="vpLabel">See prices</span></a>
+          <a class="btn cta2" href="#full-demo" id="watchDemoCta"><span id="vpLabel">Watch Demo</span></a>
 
           <!-- NAV PILL -->
           <div class="nav" id="navPill">
@@ -751,21 +683,21 @@
 
             <!-- Wordmark -->
             <div class="wm">
-              <span class="kick">SHOPS</span>
-              <span class="name" id="wmName">VERTEX</span>
+              <span class="kick">AUTONOMOUS</span>
+              <span class="name" id="wmName">OPEN-DOT</span>
             </div>
 
             <!-- Links -->
             <div class="links" id="links">
-              <a href="#showcase">Origin</a>
-              <a href="#workflows">Learn how</a>
-              <a href="#core">Core Vertex</a>
-              <a href="#full-demo">Prices</a>
-              <a href="#faq">Support</a>
+              <a href="#showcase">Features</a>
+              <a href="#workflows">Workflows</a>
+              <a href="#core">Code Analysis</a>
+              <a href="#full-demo">Video Demo</a>
+              <a href="#faq">FAQ</a>
             </div>
 
             <!-- PIXEL CONTRACT B — NAV CTA -->
-            <a class="btn" href="#full-demo" id="navCta"><span id="ctaLabel">Build new shop</span></a>
+            <a class="btn" href="#full-demo" id="navCta"><span id="ctaLabel">Try Open-Dot</span></a>
 
             <!-- Mobile Burger Toggle Button -->
             <button class="burger" id="burgerBtn" type="button" aria-label="Opens menu" aria-expanded="false" aria-controls="navmenu">
@@ -1085,20 +1017,20 @@
       generateStars('stB', 18, 1.2, 1.2, 0.35, 0.70);
 
       /* =====================================================================
-         §8: CAROUSEL CLOUDFRONT SHOTS & CREATIVES
+         §8: CAROUSEL SHOTS (CloudFront + Open-Dot Screenshots Mix)
          ===================================================================== */
       var BASE_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/';
       var SHOTS = [
+        { v: 'plain', t: 'OPEN-DOT DASHBOARD', url: 'assets/images/dashboard.png' },
+        { v: 'plain', t: 'MULTI-AGENT FLEET', url: 'assets/images/agent-fleet.png' },
+        { v: 'plain', t: 'AST CODE ANALYSIS', url: 'assets/images/code-analysis.png' },
+        { v: 'plain', t: 'WEB SUMMARIZER', url: 'assets/images/web-summarizer.png' },
+        { v: 'plain', t: 'OLLAMA LOCAL LLM', url: 'assets/images/settings-ollama.png' },
         { v: 'pay', url: BASE_URL + 'hf_20260912_110422_0fc34393-7417-41b0-a200-43fd2b08a37f.png' },
         { v: 'launch', url: BASE_URL + 'hf_20260912_110423_ba46182e-43bc-43a8-9007-a8234acf442d.png' },
         { v: 'shop', url: BASE_URL + 'hf_20260912_110423_06cfbb84-6f96-48f6-be45-e03516510e48.png' },
         { v: 'brand', url: BASE_URL + 'hf_20260912_110422_634bf390-f171-4f5d-9151-0d2c86c26e7b.png' },
-        { v: 'frete', url: BASE_URL + 'hf_20260912_110423_0cfe058d-db0e-4ee6-9708-7a297cc11a7a.png' },
-        { v: 'plain', t: 'RITUAL REGIME', url: BASE_URL + 'hf_20260912_110422_a90a35d7-ae20-4ce3-86d7-e3f6f658a6bc.png' },
-        { v: 'power', url: BASE_URL + 'hf_20260912_110422_de267714-7647-4d9a-a0a9-55325683b2a2.png' },
-        { v: 'plain', t: 'JUST ARRIVED', url: BASE_URL + 'hf_20260912_110504_80eda275-e380-4ccb-b51f-332f25337079.png' },
-        { v: 'off', url: BASE_URL + 'hf_20260912_110422_d6ba08f5-4ff8-4f09-8abe-93ee6bb0e34e.png' },
-        { v: 'plain', t: 'STREETWEAR', url: BASE_URL + 'hf_20260912_110423_87ec2115-3157-47ef-ac98-973f8ad6532d.png' }
+        { v: 'frete', url: BASE_URL + 'hf_20260912_110423_0cfe058d-db0e-4ee6-9708-7a297cc11a7a.png' }
       ];
 
       function creative(d) {
@@ -1126,31 +1058,20 @@
           return '<div class="fill" style="background:linear-gradient(180deg,#0a2a4a,#0d3a63 50%,#08192b)"></div>' +
             '<div class="ph" style="top:92px;bottom:0">' + im + '<div class="fill" style="background:linear-gradient(180deg,rgba(10,42,74,.98),rgba(10,42,74,0) 36%)"></div></div>' +
             '<div class="cv" style="top:16px;font-size:4.2px;line-height:1.7;color:rgba(255,255,255,.82);width:74px">Formulas light, assessed hypoallergenically n designed with a new ritual — revealing since a starting moment.</div>' +
-            '<div style="position:absolute;right:10px;top:16px;font-size:5.4px;font-weight:600;color:#fff;opacity:.92">Vertex</div>';
+            '<div style="position:absolute;right:10px;top:16px;font-size:5.4px;font-weight:600;color:#fff;opacity:.92">Open-Dot</div>';
         } else if (d.v === 'frete') {
           return '<div class="fill" style="background:linear-gradient(158deg,#4a0c80 0%,#7a16a6 40%,#a81fc6 66%,#5c0e90 100%)"></div>' +
             '<div class="ph" style="top:140px;bottom:0;opacity:.45;mix-blend-mode:screen">' + im + '</div>' +
             '<div class="fill" style="background:radial-gradient(44% 16% at 50% 62%, rgba(255,255,255,.92), rgba(255,255,255,0) 72%)"></div>' +
             '<div style="position:absolute;left:-6px;right:-6px;top:44px;height:13px;background:#ff2d8a;transform:rotate(-2.6deg);box-shadow:0 4px 12px rgba(255,45,138,.5)"></div>' +
-            '<div style="position:absolute;left:0;right:0;top:45.5px;transform:rotate(-2.6deg);text-align:center;font-size:5.6px;font-weight:700;letter-spacing:.05em;color:#fff">OBTAIN AT HOME AND</div>' +
-            '<div class="cv t-big" style="top:64px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Ships</div>' +
-            '<div class="cv t-big" style="top:87px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Gratis</div>' +
+            '<div style="position:absolute;left:0;right:0;top:45.5px;transform:rotate(-2.6deg);text-align:center;font-size:5.6px;font-weight:700;letter-spacing:.05em;color:#fff">AUTONOMOUS WORKFLOWS</div>' +
+            '<div class="cv t-big" style="top:64px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Open</div>' +
+            '<div class="cv t-big" style="top:87px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Dot</div>' +
             '<div class="cv t-big" style="top:113px;font-size:19px;color:#fff">+</div>';
-        } else if (d.v === 'power') {
-          return '<div class="ph phf">' + im + '</div>' +
-            '<div class="fill" style="background:linear-gradient(180deg,rgba(6,5,10,0) 34%,rgba(6,5,10,.55) 52%,rgba(6,5,10,.92) 72%)"></div>' +
-            '<div class="cv t-serif" style="top:132px;font-size:16px;color:#fff">A POWER</div>' +
-            '<div class="cv t-serif" style="top:150px;font-size:16px;color:#fff">FEMININE</div>' +
-            '<div class="cv" style="top:171px;font-size:4.4px;letter-spacing:.07em;color:rgba(255,255,255,.85)">is echoing in all we acquire</div>';
-        } else if (d.v === 'off') {
-          return '<div class="ph phf">' + im + '</div>' +
-            '<div class="fill" style="background:linear-gradient(180deg,rgba(3,9,20,0) 30%,rgba(3,9,20,.6) 48%,rgba(3,9,20,.95) 70%)"></div>' +
-            '<div class="cv t-big" style="top:126px;font-size:10px;color:#fff;opacity:.9">On sale til</div>' +
-            '<div class="cv t-big" style="top:139px;font-size:22px;color:#3fe3ff;text-shadow:0 0 16px rgba(63,227,255,.5)">50% off</div>';
         } else {
           return '<div class="ph phf">' + im + '</div>' +
             '<div class="fill" style="background:linear-gradient(180deg,rgba(4,8,16,0) 38%,rgba(4,8,16,.85) 68%)"></div>' +
-            '<div class="cv" style="top:150px;font-size:5.4px;font-weight:600;letter-spacing:.2em;color:#fff">' + (d.t || 'VERTEX') + '</div>';
+            '<div class="cv" style="top:150px;font-size:5.4px;font-weight:600;letter-spacing:.2em;color:#fff">' + (d.t || 'OPEN-DOT') + '</div>';
         }
       }
 
