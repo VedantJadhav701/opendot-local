@@ -19,16 +19,18 @@
   </script>
 
   <style>
-    /* Reset */
+    /* Reset & Page Scroll Setup */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #020204; } /* page never scrolls on desktop stage */
+    html { scroll-behavior: smooth; }
+    html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; background: #020204; }
     body { font-family: Poppins, Inter, system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
     a { text-decoration: none; color: inherit; } /* REQUIRED - button labels must never underline */
 
     /* =====================================================================
-       1. CORE ARCHITECTURE — FIXED DESIGN CANVAS THAT IS SCALED
+       1. CORE ARCHITECTURE — HERO STAGE & SCALED CANVAS
        ===================================================================== */
-    .stage { position: fixed; inset: 0; overflow: hidden; background: #020204; }
+    .hero-wrapper { position: relative; width: 100vw; height: 100vh; min-height: 657px; overflow: hidden; background: #020204; }
+    .stage { position: absolute; inset: 0; overflow: hidden; background: #020204; }
     .canvas {
       position: absolute; left: 50%; top: 0; width: 1172px; height: 657px;
       transform: translateX(-50%) scale(var(--k, 1)); transform-origin: 50% 0;
@@ -51,13 +53,13 @@
     /* Starfield */
     .stars { position: absolute; left: 0; top: 0; width: 1px; height: 1px; border-radius: 50%; background: #fff; pointer-events: none; }
 
-    /* Floating WhatsApp Button (outside .canvas, inside .stage) */
+    /* Floating WhatsApp Button */
     .wa {
-      position: absolute; right: 16px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%;
-      background: #25d366; display: grid; place-items: center; z-index: 300;
+      position: fixed; right: 20px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%;
+      background: #25d366; display: grid; place-items: center; z-index: 900;
       box-shadow: 0 8px 20px rgba(0,0,0,.5); cursor: pointer; transition: transform .2s ease;
     }
-    .wa:hover { transform: scale(1.06); }
+    .wa:hover { transform: scale(1.08); }
     .wa svg { width: 31px; height: 31px; fill: #fff; }
     .wa::after {
       content: ""; position: absolute; inset: 0; border-radius: 50%;
@@ -244,7 +246,7 @@
     .t-serif { font-family: "Playfair Display", serif; line-height: 1.02; letter-spacing: .01em; white-space: nowrap; }
 
     /* =====================================================================
-       9. THE BROWSER MOCK (in FRONT of the ring, bleeding off bottom)
+       9. THE BROWSER MOCK (in FRONT of the ring)
        ===================================================================== */
     .browser {
       position: absolute; left: 165px; top: 558px; width: 842px;
@@ -272,12 +274,6 @@
     .omni span { font-size: 9.5px; color: rgba(255,255,255,.72); letter-spacing: .005em; }
     .tools { position: absolute; right: 27px; top: 14px; display: flex; align-items: center; gap: 8px; opacity: .9; }
     .tools svg { width: 11px; height: 12px; cursor: pointer; }
-    .tab-btn {
-      font-size: 8px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
-      background: rgba(255,255,255,.1); color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,.15);
-      transition: all .2s ease;
-    }
-    .tab-btn.active { background: #35abc7; color: #fff; border-color: #79e0f1; }
 
     .page {
       position: absolute; left: 7px; right: 6px; top: 42px; bottom: 0; background: #fff;
@@ -292,13 +288,12 @@
 
     .pagebody { position: absolute; left: 0; right: 0; top: 16px; bottom: 0; background: #fff; }
 
-    /* Open-Dot Integrated Demo Hero Container (GIF Demo) */
+    /* Open-Dot Hero GIF Banner */
     .pghero {
       position: relative; margin: 8px 18px 0; height: 210px; border-radius: 8px; overflow: hidden;
       background: #090c15; box-shadow: 0 4px 12px rgba(0,0,0,.15); border: 1px solid #1f293d;
     }
     .pghero img.demo-gif { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .pghero video.demo-mp4 { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
     .pghero .scrim {
       position: absolute; inset: 0;
       background: linear-gradient(180deg, rgba(9,12,21,.35) 0%, rgba(9,12,21,0) 40%, rgba(9,12,21,.85) 100%);
@@ -313,12 +308,6 @@
     .pghero .copy { position: absolute; left: 14px; bottom: 12px; color: #fff; z-index: 3; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
     .pghero .copy u { font-size: 5px; letter-spacing: .2em; text-transform: uppercase; color: #38bdf8; font-weight: 700; text-decoration: none; display: block; }
     .pghero .copy em { font-family: Poppins, sans-serif; font-style: normal; font-weight: 800; font-size: 13px; line-height: 1.15; margin-top: 2px; display: block; color: #fff; }
-    .pghero .copy i {
-      display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 10px;
-      border-radius: 14px; background: #0284c7; color: #fff; font-size: 5.5px; font-weight: 600; font-style: normal;
-      letter-spacing: .05em; cursor: pointer; box-shadow: 0 2px 8px rgba(2,132,199,.4); transition: transform .15s;
-    }
-    .pghero .copy i:hover { transform: scale(1.04); }
 
     .pgsec { display: flex; align-items: baseline; justify-content: space-between; margin: 12px 18px 6px; }
     .pgsec b { font-family: Poppins, sans-serif; font-weight: 700; font-size: 9px; color: #0f172a; }
@@ -332,32 +321,114 @@
     .pgcard i { display: block; font-style: normal; margin-top: 1px; font-size: 4.6px; color: #64748b; }
     .pgcard s { display: block; margin-top: 2px; font-size: 5.6px; font-weight: 700; color: #0284c7; text-decoration: none; }
 
-    /* Full HD Video Section Modal / Overlay */
-    .video-modal {
-      position: fixed; inset: 0; z-index: 9999; background: rgba(2,2,4,.92);
-      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .3s ease; padding: 20px;
+    /* =====================================================================
+       FULL LANDING PAGE SCROLLING SECTIONS
+       ===================================================================== */
+    .landing-content {
+      position: relative; z-index: 400; background: #020204;
+      padding: 60px 0 100px; color: #fff; border-top: 1px solid rgba(255,255,255,.08);
     }
-    .video-modal.active { opacity: 1; pointer-events: auto; }
-    .video-modal-content {
-      position: relative; width: 100%; max-width: 960px; background: #090d16;
-      border-radius: 16px; border: 1px solid rgba(120,225,255,.2); overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,.8);
+    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-tag {
+      display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 11px;
+      font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      background: rgba(56,189,248,.1); color: #38bdf8; border: 1px solid rgba(56,189,248,.25); margin-bottom: 14px;
     }
-    .video-modal-header {
-      padding: 12px 20px; background: rgba(15,23,42,.8); display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid rgba(255,255,255,.1);
+    .section-title { font-size: 38px; font-weight: 800; letter-spacing: -.02em; color: #fff; line-height: 1.2; margin-bottom: 16px; }
+    .section-subtitle { font-size: 16px; color: #94a3b8; max-width: 680px; margin: 0 auto; line-height: 1.6; }
+
+    /* Interactive Scrolling App Showcase Gallery */
+    .showcase-gallery { display: flex; flex-direction: column; gap: 80px; margin-top: 40px; }
+    .showcase-item {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+      background: rgba(15,23,42,.6); border: 1px solid rgba(255,255,255,.08); border-radius: 24px;
+      padding: 32px; backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,.4);
+      transition: transform .3s ease, border-color .3s ease;
     }
-    .video-modal-header h3 { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .video-modal-close {
-      width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.1);
-      border: 0; color: #fff; font-size: 16px; cursor: pointer; display: grid; place-items: center;
-      transition: background .2s;
+    .showcase-item:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.3); }
+    .showcase-item.reverse { grid-template-columns: 1fr 1fr; }
+    .showcase-item.reverse .showcase-img-box { order: 2; }
+    .showcase-item.reverse .showcase-text-box { order: 1; }
+
+    .showcase-img-box {
+      position: relative; width: 100%; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 30px rgba(0,0,0,.6);
+      background: #090d16;
     }
-    .video-modal-close:hover { background: rgba(255,45,138,.6); }
-    .video-modal-body { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; }
-    .video-modal-body video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .showcase-img-box img { width: 100%; height: auto; display: block; object-fit: cover; transition: transform .4s ease; }
+    .showcase-item:hover .showcase-img-box img { transform: scale(1.02); }
+
+    .showcase-text-box h3 { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.3; }
+    .showcase-text-box p { font-size: 15px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px; }
+    .showcase-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .showcase-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #e2e8f0; }
+    .showcase-features li svg { width: 18px; height: 18px; color: #38bdf8; flex-shrink: 0; }
+
+    /* CONTINUOUS GIF & FULL HD VIDEO SECTION (#full-demo) */
+    .full-demo-section {
+      scroll-margin-top: 40px; margin-top: 100px; padding: 60px 32px;
+      background: linear-gradient(180deg, rgba(14,165,233,.05) 0%, rgba(9,12,21,.95) 100%);
+      border-radius: 32px; border: 1px solid rgba(56,189,248,.2); box-shadow: 0 30px 60px rgba(0,0,0,.7);
+    }
+
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 40px; }
+    .demo-card {
+      background: #090d16; border: 1px solid rgba(255,255,255,.1); border-radius: 20px;
+      padding: 24px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .demo-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .demo-card-title { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .demo-status-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px;
+      background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); font-size: 11px; font-weight: 600;
+    }
+    .demo-status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite; }
+
+    .continuous-gif-container {
+      position: relative; width: 100%; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(56,189,248,.3); box-shadow: 0 8px 24px rgba(0,0,0,.6); background: #000;
+    }
+    .continuous-gif-container img { width: 100%; height: auto; display: block; object-fit: cover; }
+
+    .video-player-container {
+      position: relative; width: 100%; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(56,189,248,.3); box-shadow: 0 8px 24px rgba(0,0,0,.6); background: #000;
+    }
+    .video-player-container video { width: 100%; height: auto; display: block; object-fit: cover; }
+
+    /* Features Grid */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+    .feature-card {
+      background: rgba(15,23,42,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 20px;
+      padding: 28px; transition: transform .25s ease, border-color .25s ease;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.3); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px; background: rgba(56,189,248,.1);
+      border: 1px solid rgba(56,189,248,.2); display: grid; place-items: center; color: #38bdf8; margin-bottom: 18px;
+    }
+    .feature-card h4 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .feature-card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+
+    /* FAQ & CTA Footer */
+    .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    .faq-card {
+      background: rgba(15,23,42,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 24px;
+    }
+    .faq-card h5 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .faq-card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+
+    .cta-banner {
+      margin-top: 100px; text-align: center; padding: 60px 32px; border-radius: 28px;
+      background: linear-gradient(135deg, rgba(14,165,233,.2) 0%, rgba(3,105,161,.4) 100%);
+      border: 1px solid rgba(56,189,248,.4); box-shadow: 0 20px 50px rgba(14,165,233,.15);
+    }
+    .cta-banner h2 { font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 14px; }
+    .cta-banner p { font-size: 16px; color: #e0f2fe; margin-bottom: 28px; max-width: 540px; margin-left: auto; margin-right: auto; }
+
+    footer { margin-top: 80px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,.08); text-align: center; color: #64748b; font-size: 13px; }
 
     /* =====================================================================
        10. RESPONSIVE BREAKPOINTS
@@ -403,8 +474,13 @@
       .stack { transform: translateY(var(--stshift, 0px)); }
       .showcase { transform: translateY(var(--sshift, 0px)); }
       .ring { transform: scale(var(--rs, 1)); transform-origin: 586px 595px; }
-      .wa { width: 58px; height: 58px; right: 22px; bottom: 26px; }
-      .wa svg { width: 32px; height: 32px; }
+
+      .showcase-item, .showcase-item.reverse { grid-template-columns: 1fr; gap: 24px; }
+      .showcase-item.reverse .showcase-img-box { order: 1; }
+      .showcase-item.reverse .showcase-text-box { order: 2; }
+      .demo-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .faq-grid { grid-template-columns: 1fr; }
     }
 
     @media (hover: hover) and (max-width: 1080px) {
@@ -412,10 +488,10 @@
       .links a:hover { background: rgba(255,255,255,.055); color: #fff; opacity: 1; }
     }
 
-    /* PHONE <=700px : A GENUINE FLOW COLUMN */
+    /* PHONE <=700px : FLOW COLUMN */
     @media (max-width: 700px) {
-      html, body { overflow-y: auto; height: auto; }
-      .stage { position: relative; inset: auto; width: 100%; min-height: 100vh; overflow-y: auto; }
+      .hero-wrapper { height: auto; min-height: 100vh; overflow: visible; }
+      .stage { position: relative; inset: auto; width: 100%; min-height: 100vh; overflow: visible; }
       .canvas {
         position: relative; left: auto; top: auto; width: 100%; height: auto; transform: none!important;
         display: flex; flex-direction: column; align-items: center; padding: 0 20px 60px;
@@ -481,7 +557,6 @@
       .pghero .copy { left: 14px; bottom: 10px; }
       .pghero .copy u { font-size: 7.5px; letter-spacing: .2em; }
       .pghero .copy em { font-size: 14px; margin-top: 3px; }
-      .pghero .copy i { font-size: 8px; padding: 5px 12px; margin-top: 6px; }
       .pgsec { margin: 16px 14px 10px; }
       .pgsec b { font-size: 12px; }
       .pgsec u { font-size: 8px; }
@@ -492,8 +567,8 @@
       .pgcard i { font-size: 7.5px; }
       .pgcard s { font-size: 9.5px; margin-top: 3px; }
 
-      .wa { width: 54px; height: 54px; right: 14px; bottom: 16px; }
-      .wa svg { width: 29px; height: 29px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .section-title { font-size: 28px; }
     }
 
     /* Accessibility reduced motion */
@@ -520,222 +595,471 @@
 </head>
 <body>
 
-  <div class="stage">
-    <!-- Stage background -->
-    <div class="bg"></div>
-    <div class="stars" id="stA"></div>
-    <div class="stars" id="stB"></div>
+  <!-- HERO VIEWPORT WRAPPER -->
+  <div class="hero-wrapper">
+    <div class="stage">
+      <!-- Stage background -->
+      <div class="bg"></div>
+      <div class="stars" id="stA"></div>
+      <div class="stars" id="stB"></div>
 
-    <!-- Scaled Fixed Design Canvas -->
-    <div class="canvas" id="canvas">
+      <!-- Scaled Fixed Design Canvas -->
+      <div class="canvas" id="canvas">
 
-      <!-- 3D Perspective Carousel Ring -->
-      <div class="showcase">
-        <div class="ring" id="ring"></div>
-      </div>
-
-      <!-- Browser Mock Overlapping Ring -->
-      <div class="browser" id="browser">
-        <!-- Chrome Bar -->
-        <div class="bar">
-          <div class="dots">
-            <i style="background:#ee5c62"></i>
-            <i style="background:#f6b719"></i>
-            <i style="background:#12c02f"></i>
-          </div>
-          <div class="omni" id="omniBar" title="Click to view full video demo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
-            <span>Open-Dot AI Agent — Interactive Demo</span>
-          </div>
-          <div class="tools">
-            <button class="tab-btn active" id="tabGif" title="GIF Demo Preview">GIF Demo</button>
-            <button class="tab-btn" id="tabMp4" title="Watch Full HD Video Demo">HD Video (MP4)</button>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v5h16v-5"/></svg>
-          </div>
+        <!-- 3D Perspective Carousel Ring -->
+        <div class="showcase">
+          <div class="ring" id="ring"></div>
         </div>
 
-        <!-- Inner Web Page Surface -->
-        <div class="page">
-          <div class="ann">
-            <u>&#8249;</u>
-            <span>OPEN-DOT • AUTONOMOUS AGENT SUITE PREVIEW</span>
-            <u>&#8250;</u>
+        <!-- Browser Mock Overlapping Ring -->
+        <div class="browser" id="browser">
+          <!-- Chrome Bar -->
+          <div class="bar">
+            <div class="dots">
+              <i style="background:#ee5c62"></i>
+              <i style="background:#f6b719"></i>
+              <i style="background:#12c02f"></i>
+            </div>
+            <div class="omni" onclick="location.href='#full-demo'" title="Click to go to full demo section">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+              <span>Open-Dot AI Agent — Local Workspace</span>
+            </div>
+            <div class="tools">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v5h16v-5"/></svg>
+            </div>
           </div>
 
-          <div class="pagebody">
-            <!-- Open-Dot Demo Section (GIF & MP4 player) -->
-            <div class="pghero" id="demoHero">
-              <img src="assets/images/app-demo.gif" alt="Open-Dot AI Agent Demo GIF" class="demo-gif" id="demoGifImg">
-              <video src="assets/videos/app-demo.mp4" controls loop muted playsinline class="demo-mp4" id="demoMp4Vid" style="display:none"></video>
-              <div class="scrim"></div>
-              <div class="demo-badge">
-                <span class="live-dot"></span>
-                <span>OPEN-DOT LIVE PREVIEW</span>
-              </div>
-              <div class="copy">
-                <u>Autonomous Workflows</u>
-                <em>Watch Open-Dot Execute<br>Multi-Step Tasks Live</em>
-                <i id="openModalBtn">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  WATCH FULL HD VIDEO DEMO
-                </i>
-              </div>
+          <!-- Inner Web Page Surface -->
+          <div class="page">
+            <div class="ann">
+              <u>&#8249;</u>
+              <span>OPEN-DOT • AUTONOMOUS AGENT SUITE PREVIEW</span>
+              <u>&#8250;</u>
             </div>
 
-            <!-- Open-Dot Capabilities Showcase Grid -->
-            <div class="pgsec">
-              <b>Agent Capabilities & Tooling</b>
-              <u>4 Active Modules</u>
-            </div>
-            <div class="pggrid">
-              <div class="pgcard">
-                <div class="ph">
-                  <img src="assets/images/agent-fleet.png" alt="Agent Fleet Dashboard">
-                  <span class="tag">FLEET</span>
+            <div class="pagebody">
+              <!-- Open-Dot Demo GIF Banner -->
+              <div class="pghero">
+                <img src="assets/images/app-demo.gif" alt="Open-Dot AI Agent Continuous Demo GIF" class="demo-gif">
+                <div class="scrim"></div>
+                <div class="demo-badge">
+                  <span class="live-dot"></span>
+                  <span>CONTINUOUS LIVE DEMO</span>
                 </div>
-                <b>Multi-Agent Orchestrator</b>
-                <i>Parallel Subagent Dispatch</i>
-                <s>ACTIVE <span>v2.4</span></s>
+                <div class="copy">
+                  <u>Autonomous Workflows</u>
+                  <em>Watch Open-Dot Execute<br>Multi-Step Tasks Live</em>
+                </div>
               </div>
 
-              <div class="pgcard">
-                <div class="ph">
-                  <img src="assets/images/code-analysis.png" alt="Code Analysis Engine">
-                  <span class="tag">CODE</span>
-                </div>
-                <b>Automated Code Inspection</b>
-                <i>AST & Refactoring Suite</i>
-                <s>READY <span>100%</span></s>
+              <!-- Open-Dot Capabilities Showcase Grid -->
+              <div class="pgsec">
+                <b>Agent Capabilities & Tooling</b>
+                <u>4 Active Modules</u>
               </div>
-
-              <div class="pgcard">
-                <div class="ph">
-                  <img src="assets/images/web-summarizer.png" alt="Web Research Agent">
-                  <span class="tag">RESEARCH</span>
+              <div class="pggrid">
+                <div class="pgcard">
+                  <div class="ph">
+                    <img src="assets/images/agent-fleet.png" alt="Agent Fleet Dashboard">
+                    <span class="tag">FLEET</span>
+                  </div>
+                  <b>Multi-Agent Orchestrator</b>
+                  <i>Parallel Subagent Dispatch</i>
+                  <s>ACTIVE <span>v2.4</span></s>
                 </div>
-                <b>Deep Web Research</b>
-                <i>Live Web Scraping & Synthesis</i>
-                <s>CONNECTED <span>API</span></s>
-              </div>
 
-              <div class="pgcard">
-                <div class="ph">
-                  <img src="assets/images/settings-ollama.png" alt="Ollama Local LLM Integration">
-                  <span class="tag">LOCAL</span>
+                <div class="pgcard">
+                  <div class="ph">
+                    <img src="assets/images/code-analysis.png" alt="Code Analysis Engine">
+                    <span class="tag">CODE</span>
+                  </div>
+                  <b>Automated Code Inspection</b>
+                  <i>AST & Refactoring Suite</i>
+                  <s>READY <span>100%</span></s>
                 </div>
-                <b>Ollama Local Models</b>
-                <i>100% Private Offline Inference</i>
-                <s>ENABLED <span>0ms</span></s>
+
+                <div class="pgcard">
+                  <div class="ph">
+                    <img src="assets/images/web-summarizer.png" alt="Web Research Agent">
+                    <span class="tag">RESEARCH</span>
+                  </div>
+                  <b>Deep Web Research</b>
+                  <i>Live Web Scraping & Synthesis</i>
+                  <s>CONNECTED <span>API</span></s>
+                </div>
+
+                <div class="pgcard">
+                  <div class="ph">
+                    <img src="assets/images/settings-ollama.png" alt="Ollama Local LLM Integration">
+                    <span class="tag">LOCAL</span>
+                  </div>
+                  <b>Ollama Local Models</b>
+                  <i>100% Private Offline Inference</i>
+                  <s>ENABLED <span>0ms</span></s>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Layout Stack containing Nav, Badge, Typography & Hero CTA -->
-      <div class="stack">
-        <!-- PIXEL CONTRACT A — THE BADGE -->
-        <div class="badge">
-          <i>
-            <svg viewBox="5 1 14 22" preserveAspectRatio="none" fill="rgba(16,112,152,.72)" stroke="rgba(190,236,255,.6)" stroke-width="1.6" stroke-linejoin="round">
-              <path d="M13.9 1.6 5.5 13.6a.7.7 0 0 0 .6 1.1h4.2l-1 7.7a.7.7 0 0 0 1.25.55l8.3-12.1a.7.7 0 0 0-.6-1.1h-4.2l1-7.7a.7.7 0 0 0-1.25-.55Z"/>
-            </svg>
-          </i>
-          <b id="badgeTxt">Professionals at store startup</b>
+        <!-- Layout Stack containing Nav, Badge, Typography & Hero CTA -->
+        <div class="stack">
+          <!-- PIXEL CONTRACT A — THE BADGE -->
+          <div class="badge">
+            <i>
+              <svg viewBox="5 1 14 22" preserveAspectRatio="none" fill="rgba(16,112,152,.72)" stroke="rgba(190,236,255,.6)" stroke-width="1.6" stroke-linejoin="round">
+                <path d="M13.9 1.6 5.5 13.6a.7.7 0 0 0 .6 1.1h4.2l-1 7.7a.7.7 0 0 0 1.25.55l8.3-12.1a.7.7 0 0 0-.6-1.1h-4.2l1-7.7a.7.7 0 0 0-1.25-.55Z"/>
+              </svg>
+            </i>
+            <b id="badgeTxt">Professionals at store startup</b>
+          </div>
+
+          <!-- HERO TYPE -->
+          <div class="h1 l1" id="h1a">Streamline the shop</div>
+          <div class="h1" id="h1b">Process</div>
+
+          <div class="sub s1" id="sub1"><b>Restructuring store systems / <span class="nb">E-commerce</span></b> orchestrated with</div>
+          <div class="sub" id="sub2">checkouts, performance, a sustainable expansion.</div>
+
+          <!-- PIXEL CONTRACT B — HERO CTA (.cta2) -->
+          <a class="btn cta2" href="#full-demo" id="watchDemoCta"><span id="vpLabel">See prices</span></a>
+
+          <!-- NAV PILL -->
+          <div class="nav" id="navPill">
+            <!-- Logo Mark -->
+            <div class="mark">
+              <svg viewBox="0 0 48 48" width="24" height="24">
+                <defs>
+                  <linearGradient id="sw" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#8ef4ff"/>
+                    <stop offset="0.5" stop-color="#35d8ff"/>
+                    <stop offset="1" stop-color="#0a86d8"/>
+                  </linearGradient>
+                  <linearGradient id="sw2" x1="40" y1="10" x2="10" y2="40" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#a6f7ff"/>
+                    <stop offset="1" stop-color="#0f9ae0" stop-opacity="0.25"/>
+                  </linearGradient>
+                </defs>
+                <g transform="rotate(-32 24 24)">
+                  <ellipse cx="24" cy="24" rx="18.5" ry="9.6" stroke="url(#sw2)" stroke-width="3.1" stroke-linecap="round" stroke-dasharray="58 30" stroke-dashoffset="14" fill="none"/>
+                  <circle cx="41.4" cy="20.6" r="3.1" fill="#bff6ff"/>
+                </g>
+                <circle cx="24" cy="24" r="6.6" fill="url(#sw)"/>
+                <circle cx="24" cy="24" r="2.6" fill="#fff"/>
+              </svg>
+            </div>
+
+            <!-- Wordmark -->
+            <div class="wm">
+              <span class="kick">SHOPS</span>
+              <span class="name" id="wmName">VERTEX</span>
+            </div>
+
+            <!-- Links -->
+            <div class="links" id="links">
+              <a href="#showcase">Origin</a>
+              <a href="#workflows">Learn how</a>
+              <a href="#core">Core Vertex</a>
+              <a href="#full-demo">Prices</a>
+              <a href="#faq">Support</a>
+            </div>
+
+            <!-- PIXEL CONTRACT B — NAV CTA -->
+            <a class="btn" href="#full-demo" id="navCta"><span id="ctaLabel">Build new shop</span></a>
+
+            <!-- Mobile Burger Toggle Button -->
+            <button class="burger" id="burgerBtn" type="button" aria-label="Opens menu" aria-expanded="false" aria-controls="navmenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+
+            <!-- Mobile Nav Menu Panel -->
+            <div class="navmenu" id="navmenu"></div>
+          </div>
         </div>
 
-        <!-- HERO TYPE -->
-        <div class="h1 l1" id="h1a">Streamline the shop</div>
-        <div class="h1" id="h1b">Process</div>
-
-        <div class="sub s1" id="sub1"><b>Restructuring store systems / <span class="nb">E-commerce</span></b> orchestrated with</div>
-        <div class="sub" id="sub2">checkouts, performance, a sustainable expansion.</div>
-
-        <!-- PIXEL CONTRACT B — HERO CTA (.cta2) -->
-        <a class="btn cta2" href="#full-demo" id="watchDemoCta"><span id="vpLabel">See prices</span></a>
-
-        <!-- NAV PILL -->
-        <div class="nav" id="navPill">
-          <!-- Logo Mark -->
-          <div class="mark">
-            <svg viewBox="0 0 48 48" width="24" height="24">
-              <defs>
-                <linearGradient id="sw" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#8ef4ff"/>
-                  <stop offset="0.5" stop-color="#35d8ff"/>
-                  <stop offset="1" stop-color="#0a86d8"/>
-                </linearGradient>
-                <linearGradient id="sw2" x1="40" y1="10" x2="10" y2="40" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#a6f7ff"/>
-                  <stop offset="1" stop-color="#0f9ae0" stop-opacity="0.25"/>
-                </linearGradient>
-              </defs>
-              <g transform="rotate(-32 24 24)">
-                <ellipse cx="24" cy="24" rx="18.5" ry="9.6" stroke="url(#sw2)" stroke-width="3.1" stroke-linecap="round" stroke-dasharray="58 30" stroke-dashoffset="14" fill="none"/>
-                <circle cx="41.4" cy="20.6" r="3.1" fill="#bff6ff"/>
-              </g>
-              <circle cx="24" cy="24" r="6.6" fill="url(#sw)"/>
-              <circle cx="24" cy="24" r="2.6" fill="#fff"/>
-            </svg>
-          </div>
-
-          <!-- Wordmark -->
-          <div class="wm">
-            <span class="kick">SHOPS</span>
-            <span class="name" id="wmName">VERTEX</span>
-          </div>
-
-          <!-- Links -->
-          <div class="links" id="links">
-            <a href="#features">Origin</a>
-            <a href="#workflows">Learn how</a>
-            <a href="#core">Core Vertex</a>
-            <a href="#demo">Prices</a>
-            <a href="#support">Support</a>
-          </div>
-
-          <!-- PIXEL CONTRACT B — NAV CTA -->
-          <a class="btn" href="#demo" id="navCta"><span id="ctaLabel">Build new shop</span></a>
-
-          <!-- Mobile Burger Toggle Button -->
-          <button class="burger" id="burgerBtn" type="button" aria-label="Opens menu" aria-expanded="false" aria-controls="navmenu">
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-
-          <!-- Mobile Nav Menu Panel -->
-          <div class="navmenu" id="navmenu"></div>
-        </div>
       </div>
-
     </div>
   </div>
 
-  <!-- Floating WhatsApp Button -->
+  <!-- FLOATING WHATSAPP BUTTON -->
   <a class="wa" href="https://whatsapp.com" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
     <svg viewBox="0 0 32 32">
       <path d="M16 2a13.9 13.9 0 0 0-12 21l-1.9 7 7.2-1.9A13.9 13.9 0 1 0 16 2zm0 25.5a11.5 11.5 0 0 1-5.9-1.6l-.4-.2-4.4 1.1 1.2-4.3-.3-.4A11.6 11.6 0 1 1 16 27.5zm6.4-8.6c-.3-.2-2-.9-2.3-1s-.6-.2-.8.2-.9 1.1-1.1 1.3-.4.2-.7 0a9.2 9.2 0 0 1-2.7-1.7 10.1 10.1 0 0 1-1.9-2.3c-.2-.3 0-.5.1-.7s.3-.4.5-.6.2-.4.3-.6 0-.4-.1-.6c-.1-.2-.8-2-.1-2.8.3-.7.6-.6.8-.6h.6c.2 0 .5 0 .8.6.3.7 1 2.4 1.1 2.5s.1.4 0 .6c-.1.2-.2.4-.4.6s-.3.4-.2.7a11.4 11.4 0 0 0 2 2.5 10.4 10.4 0 0 0 3 1.8c.4.2.6.2.8-.1s.9-1.1 1.1-1.4.5-.2.8-.1 2 .9 2.3 1.1.6.3.6.5-.1 1.2-.7 1.8z"/>
     </svg>
   </a>
 
-  <!-- Full HD Video Demo Modal -->
-  <div class="video-modal" id="videoModal">
-    <div class="video-modal-content">
-      <div class="video-modal-header">
-        <h3>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Open-Dot Autonomous AI Agent — Full HD Demo Video
-        </h3>
-        <button class="video-modal-close" id="closeModalBtn" title="Close video">&times;</button>
+  <!-- =====================================================================
+     FULL LANDING PAGE SCROLLING CONTENT
+     ===================================================================== -->
+  <div class="landing-content">
+    <div class="container">
+
+      <!-- SECTION 1: INTERACTIVE APP SHOWCASE SCROLLING GALLERY -->
+      <div id="showcase" style="scroll-margin-top: 40px;">
+        <div class="section-header">
+          <span class="section-tag">INTERFACE SHOWCASE</span>
+          <h2 class="section-title">Designed for Power Developers & Autonomous Workflows</h2>
+          <p class="section-subtitle">Experience a local-first desktop and CLI interface built for multi-agent execution, deep code analysis, and privacy-first AI research.</p>
+        </div>
+
+        <div class="showcase-gallery">
+          <!-- Item 1: Main Dashboard -->
+          <div class="showcase-item">
+            <div class="showcase-img-box">
+              <img src="assets/images/dashboard.png" alt="Open-Dot Main Dashboard">
+            </div>
+            <div class="showcase-text-box">
+              <h3>Unified Command Center & Real-Time Trajectory Monitoring</h3>
+              <p>Monitor your autonomous agent trajectories in real-time with clean step-by-step logs, live tool execution tracking, and instant prompt execution controls.</p>
+              <ul class="showcase-features">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Live trajectory step visualizer with expandable log tracebacks
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Unified CLI and Electron desktop workspace controls
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Instant abort, pause, and step-by-step manual overrides
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Item 2: Multi-Agent Fleet -->
+          <div class="showcase-item reverse" id="workflows">
+            <div class="showcase-img-box">
+              <img src="assets/images/agent-fleet.png" alt="Open-Dot Agent Fleet Dispatcher">
+            </div>
+            <div class="showcase-text-box">
+              <h3>Multi-Agent Fleet Orchestrator & Parallel Subagent Swarm</h3>
+              <p>Dispatch specialized subagents in parallel contexts. Let researcher, code fixer, and test runner subagents work simultaneously without polluting your primary thread.</p>
+              <ul class="showcase-features">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Parallel subagent execution with isolated workspace memory
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Automated agent-to-agent inter-process messaging
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Granular tool permission scoping per subagent task
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Item 3: Code Analysis -->
+          <div class="showcase-item" id="core">
+            <div class="showcase-img-box">
+              <img src="assets/images/code-analysis.png" alt="Open-Dot Code Analysis Engine">
+            </div>
+            <div class="showcase-text-box">
+              <h3>Deep AST Code Analysis & Automated Refactoring</h3>
+              <p>Analyze entire monorepos with intelligent AST parsing, automated lint error resolution, and strict empirical test verification before committing.</p>
+              <ul class="showcase-features">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Empirical traceback diagnosis before making code edits
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Precision line-range replacement to avoid whole-file re-writes
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Integrated test suite execution with zero-hallucination verification
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Item 4: Web Research & Summarizer -->
+          <div class="showcase-item reverse">
+            <div class="showcase-img-box">
+              <img src="assets/images/web-summarizer.png" alt="Open-Dot Web Research & Summarizer">
+            </div>
+            <div class="showcase-text-box">
+              <h3>Autonomous Web Research & Smart Document Synthesis</h3>
+              <p>Fetch web pages, extract markdown text, chunk documents into SQLite vector stores, and summarize key insights with BM25 evidence selection.</p>
+              <ul class="showcase-features">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Headless web scraping with HTML-to-Markdown normalization
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  BM25 chunk ranking for context-budget optimized retrieval
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Secure SSRF & IP-hardening URL validation pipeline
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Item 5: Ollama Local LLM -->
+          <div class="showcase-item">
+            <div class="showcase-img-box">
+              <img src="assets/images/settings-ollama.png" alt="Open-Dot Ollama Settings Integration">
+            </div>
+            <div class="showcase-text-box">
+              <h3>100% Private Offline LLM Inference via Ollama</h3>
+              <p>Run Open-Dot completely offline on your hardware using Ollama models like Llama 3, Qwen 2.5, DeepSeek, and custom GGUFs with zero external API calls.</p>
+              <ul class="showcase-features">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Native Ollama API support with automatic model detection
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Zero telemetry or data collection — 100% local privacy
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Seamless switching between local Ollama and cloud LLM providers
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="video-modal-body">
-        <video id="modalVideoPlayer" controls preload="metadata" playsinline>
-          <source src="assets/videos/app-demo.mp4" type="video/mp4">
-          <source src="assets/videos/app-demo-web.mp4" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
+
+      <!-- SECTION 2: CONTINUOUS GIF & FULL HD VIDEO DEMO SECTION (#full-demo) -->
+      <div class="full-demo-section" id="full-demo">
+        <div class="section-header">
+          <span class="section-tag">LIVE DEMO & VIDEO SHOWCASE</span>
+          <h2 class="section-title">See Open-Dot in Action Live</h2>
+          <p class="section-subtitle">Watch the continuous high-resolution GIF demo or play the full HD video demonstration below.</p>
+        </div>
+
+        <div class="demo-grid">
+          <!-- Continuous GIF Card -->
+          <div class="demo-card">
+            <div class="demo-card-header">
+              <div class="demo-card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Continuously Running GIF Demo
+              </div>
+              <div class="demo-status-pill">
+                <span class="dot"></span>
+                <span>LIVE LOOPING</span>
+              </div>
+            </div>
+            <div class="continuous-gif-container">
+              <img src="assets/images/app-demo.gif" alt="Open-Dot Continuous Live GIF Demo">
+            </div>
+          </div>
+
+          <!-- Full HD MP4 Video Player Card -->
+          <div class="demo-card">
+            <div class="demo-card-header">
+              <div class="demo-card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Original Full HD Video Demo (MP4)
+              </div>
+              <div class="demo-status-pill">
+                <span class="dot" style="background:#38bdf8"></span>
+                <span>HD QUALITY</span>
+              </div>
+            </div>
+            <div class="video-player-container">
+              <video controls loop muted playsinline preload="metadata">
+                <source src="assets/videos/app-demo.mp4" type="video/mp4">
+                <source src="assets/videos/app-demo-web.mp4" type="video/mp4">
+                Your browser does not support the video element.
+              </video>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- SECTION 3: KEY ARCHITECTURE & BENEFITS GRID -->
+      <div style="margin-top: 100px;">
+        <div class="section-header">
+          <span class="section-tag">CORE ARCHITECTURE</span>
+          <h2 class="section-title">Built for Reliability, Speed & Privacy</h2>
+          <p class="section-subtitle">Everything you need to orchestrate autonomous AI coding and research workflows with total control.</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h4>Security Hardened</h4>
+            <p>Built-in SSRF protection, loopback IP filtering, UNC path denials, and command alias blocking for safe script execution.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <h4>Empirical Test Verification</h4>
+            <p>Every code edit is verified by running real build and test suites. No guessing or superficial symptom patches.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h4>Context Budget Optimization</h4>
+            <p>Intelligent token trimming, memory compression, and BM25 document chunking ensure fast model inference times.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: FREQUENTLY ASKED QUESTIONS -->
+      <div id="faq" style="margin-top: 100px; scroll-margin-top: 40px;">
+        <div class="section-header">
+          <span class="section-tag">SUPPORT & FAQ</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-card">
+            <h5>Can I run Open-Dot completely offline without an API key?</h5>
+            <p>Yes! Open-Dot seamlessly integrates with Ollama. Simply launch Ollama locally, and Open-Dot will detect your local models (Llama 3, Qwen, DeepSeek) for 100% private inference.</p>
+          </div>
+
+          <div class="faq-card">
+            <h5>How does Open-Dot handle multi-agent execution?</h5>
+            <p>Open-Dot uses a subagent dispatcher that launches isolated background subagents. Each subagent runs with its own prompt, context budget, and scoped tool permissions.</p>
+          </div>
+
+          <div class="faq-card">
+            <h5>What operating systems are supported?</h5>
+            <p>Open-Dot runs natively on Windows, macOS, and Linux via Node.js CLI and Electron Desktop app packaging.</p>
+          </div>
+
+          <div class="faq-card">
+            <h5>How does Open-Dot verify code edits?</h5>
+            <p>Open-Dot follows a strict zero-hallucination verification rule: after editing files, it automatically executes `tsc --noEmit`, unit tests, or build commands to empirically verify clean success.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: FINAL CALL TO ACTION -->
+      <div class="cta-banner">
+        <h2>Ready to Automate Your Development Workflows?</h2>
+        <p>Get started with Open-Dot today. Connect your local models or cloud APIs and experience next-gen autonomous coding.</p>
+        <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+          <a class="btn" href="#full-demo" style="width: 180px; height: 50px; border-radius: 14px; font-weight: 600;"><span>Try Open-Dot Now</span></a>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <footer>
+        <p>&copy; 2026 Open-Dot AI Agent Suite. Built for autonomous developer productivity & local privacy.</p>
+      </footer>
+
     </div>
   </div>
 
@@ -859,7 +1183,6 @@
       }
 
       function placeCards() {
-        var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         cards.forEach(function(card, idx) {
           var a = ((idx * STEP + phase) % 360 + 540) % 360 - 180; // signed angle -180..180
           if (Math.abs(a) > CULL) {
@@ -919,7 +1242,7 @@
 
         if (vw <= TAB_MAX && vw >= TAB_MIN) {
           W = DW_MIN + (vw - TAB_MIN) * (1172 - DW_MIN) / (TAB_MAX - TAB_MIN);
-          if (vh > vw * 1.15) W = Math.min(W, 900); // portrait tablet tighten
+          if (vh > vw * 1.15) W = Math.min(W, 900);
           var ramp = Math.min(1, (TAB_MAX - vw) / 120);
           tboost = 1 + 0.14 * ramp;
         }
@@ -947,7 +1270,7 @@
       }
 
       /* =====================================================================
-         §11: THE TYPE FITTER (desktop + tablet only)
+         §11: THE TYPE FITTER
          ===================================================================== */
       var measureCanvas = document.createElement('canvas');
       var measureCtx = measureCanvas.getContext('2d');
@@ -1111,58 +1434,6 @@
           burgerBtn.setAttribute('aria-expanded', 'false');
           burgerBtn.focus();
         }
-      });
-
-      /* =====================================================================
-         INTERACTIVE DEMO TAB SWITCHING & VIDEO MODAL CONTROLS
-         ===================================================================== */
-      var tabGif = document.getElementById('tabGif');
-      var tabMp4 = document.getElementById('tabMp4');
-      var demoGifImg = document.getElementById('demoGifImg');
-      var demoMp4Vid = document.getElementById('demoMp4Vid');
-      var videoModal = document.getElementById('videoModal');
-      var openModalBtn = document.getElementById('openModalBtn');
-      var closeModalBtn = document.getElementById('closeModalBtn');
-      var modalVideoPlayer = document.getElementById('modalVideoPlayer');
-      var omniBar = document.getElementById('omniBar');
-      var watchDemoCta = document.getElementById('watchDemoCta');
-
-      tabGif.addEventListener('click', function() {
-        tabGif.classList.add('active');
-        tabMp4.classList.remove('active');
-        demoGifImg.style.display = 'block';
-        demoMp4Vid.style.display = 'none';
-        demoMp4Vid.pause();
-      });
-
-      tabMp4.addEventListener('click', function() {
-        tabMp4.classList.add('active');
-        tabGif.classList.remove('active');
-        demoGifImg.style.display = 'none';
-        demoMp4Vid.style.display = 'block';
-        demoMp4Vid.play();
-      });
-
-      function openModal() {
-        videoModal.classList.add('active');
-        modalVideoPlayer.play();
-      }
-
-      function closeModal() {
-        videoModal.classList.remove('active');
-        modalVideoPlayer.pause();
-      }
-
-      if (openModalBtn) openModalBtn.addEventListener('click', openModal);
-      if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-      if (omniBar) omniBar.addEventListener('click', openModal);
-      if (watchDemoCta) watchDemoCta.addEventListener('click', function(e) {
-        e.preventDefault();
-        openModal();
-      });
-
-      videoModal.addEventListener('click', function(e) {
-        if (e.target === videoModal) closeModal();
       });
 
       /* =====================================================================
