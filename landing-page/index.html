@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open-Dot | 100% Local Privacy-First AI Desktop Agent</title>
+  <meta name="description" content="Open-Dot is a free, local-first, autonomous AI desktop agent powered by Ollama models. Runs 100% on your laptop with zero API keys or tracking." />
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f6ff',
+              100: '#e0edff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#0f172a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen flex flex-col">
+
+  <!-- Background Glow FX -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-600/20 via-indigo-600/10 to-transparent blur-3xl pointer-events-none -z-10"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-display text-xl font-bold tracking-tight text-white">Open-Dot <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-sans font-medium">Local v0.1.0</span></span>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+        <a href="#demo" class="hover:text-blue-400 transition-colors">Demo & Video</a>
+        <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
+        <a href="#showcase" class="hover:text-blue-400 transition-colors">Screenshots</a>
+        <a href="#architecture" class="hover:text-blue-400 transition-colors">Security</a>
+        <a href="#download" class="hover:text-blue-400 transition-colors">Download</a>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <a href="https://github.com/VedantJadhav701/opendot-local" target="_blank" class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-slate-200 transition-all flex items-center space-x-2">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span>GitHub</span>
+        </a>
+        <a href="#download" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white shadow-lg shadow-blue-600/25 transition-all">
+          Get Started
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-grow">
+    
+    <!-- Hero Section -->
+    <section class="relative pt-20 pb-16 md:pt-28 md:pb-24 overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        
+        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-6">
+          <span class="flex h-2 w-2 rounded-full bg-blue-400 animate-ping"></span>
+          <span>100% Private Local AI Agent Runtime</span>
+        </div>
+
+        <h1 class="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-none">
+          Your Personal AI Agent,<br />
+          <span class="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">Running 100% On Your Desktop.</span>
+        </h1>
+
+        <p class="max-w-3xl mx-auto text-lg sm:text-xl text-slate-400 mb-10 leading-relaxed font-light">
+          Open-Dot is an autonomous, open-source AI desktop assistant powered by local Ollama models (<code class="text-blue-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">qwen3:4b</code>). Zero cloud costs, zero API keys required, and full control over your code, browsing, and files.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <a href="#download" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-base shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center space-x-3 group">
+            <i data-lucide="download" class="w-5 h-5 group-hover:translate-y-0.5 transition-transform"></i>
+            <span>Download for Windows (.exe)</span>
+          </a>
+          <a href="#demo" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-base transition-all flex items-center justify-center space-x-3">
+            <i data-lucide="play-circle" class="w-5 h-5 text-blue-400"></i>
+            <span>Watch Live Demo Video</span>
+          </a>
+        </div>
+
+        <!-- Quick Stats Banner -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-slate-800/80">
+          <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
+            <div class="font-display text-2xl font-bold text-white">0 API Keys</div>
+            <div class="text-xs text-slate-400 mt-1">Runs Local Ollama LLM</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
+            <div class="font-display text-2xl font-bold text-white">16k / 32k</div>
+            <div class="text-xs text-slate-400 mt-1">Expanded Context Window</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
+            <div class="font-display text-2xl font-bold text-white">100% Private</div>
+            <div class="text-xs text-slate-400 mt-1">Local SQLite & Vault</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
+            <div class="font-display text-2xl font-bold text-white">Safety Cards</div>
+            <div class="text-xs text-slate-400 mt-1">Human-in-the-Loop Approval</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Demo Section (Integrated GIF & Original MP4 Video) -->
+    <section id="demo" class="py-16 md:py-24 bg-slate-900/30 border-y border-slate-800/60 relative">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-10">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-3">
+            <i data-lucide="video" class="w-3.5 h-3.5"></i>
+            <span>Interactive Demo Player</span>
+          </div>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white">See Open-Dot in Action</h2>
+          <p class="text-slate-400 text-base mt-2 max-w-2xl mx-auto">
+            Switch seamlessly between the lightweight animated preview and the full 1080p HD recording.
+          </p>
+
+          <!-- Video Mode Tabs -->
+          <div class="inline-flex p-1.5 rounded-xl bg-slate-900 border border-slate-800 mt-6 shadow-inner">
+            <button id="tab-gif" onclick="switchDemoMode('gif')" class="px-5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-blue-600 text-white shadow-md">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Animated Preview (GIF)</span>
+            </button>
+            <button id="tab-mp4" onclick="switchDemoMode('mp4')" class="px-5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+              <i data-lucide="film" class="w-3.5 h-3.5"></i>
+              <span>Full HD Video (MP4)</span>
+            </button>
+            <button id="tab-orig" onclick="switchDemoMode('orig')" class="px-5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+              <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+              <span>Original Source (70MB MP4)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Player Card Container -->
+        <div class="relative rounded-2xl bg-slate-900 border border-slate-800/90 overflow-hidden shadow-2xl shadow-blue-950/40">
+          
+          <!-- Top Bar Window Frame -->
+          <div class="px-4 py-3 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+              <span class="ml-2 text-xs font-mono text-slate-400" id="video-filename">app-demo.gif</span>
+            </div>
+            <div class="flex items-center space-x-3 text-xs text-slate-400">
+              <span id="demo-badge" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">GIF Preview</span>
+            </div>
+          </div>
+
+          <!-- Media Display Area -->
+          <div class="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+            
+            <!-- GIF Image View -->
+            <img id="demo-gif-view" src="assets/images/app-demo.gif" alt="Open-Dot Demo Preview" class="w-full h-full object-contain" />
+
+            <!-- MP4 Video Player View -->
+            <video id="demo-mp4-view" class="w-full h-full object-contain hidden" controls preload="metadata">
+              <source id="video-source" src="assets/videos/app-demo-web.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+
+          </div>
+
+          <!-- Player Footer / Controls Bar -->
+          <div class="p-4 bg-slate-950/90 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
+              <span id="demo-description">Showing lightweight auto-playing GIF. Click 'Full HD Video' to stream 1080p audio/video.</span>
+            </div>
+            <div class="flex items-center space-x-4">
+              <a id="download-media-link" href="assets/videos/app-demo-web.mp4" download class="hover:text-blue-400 transition-colors flex items-center space-x-1">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Download Media</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Key Features Grid -->
+    <section id="features" class="py-16 md:py-24">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-4">Built for Privacy, Speed, & Control</h2>
+          <p class="text-slate-400 text-lg font-light">
+            Everything runs locally on your PC. No third-party servers see your prompts, files, or login credentials.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <!-- Feature 1 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="cpu" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Local Ollama Engine</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Locked to your choice of local models like <code class="text-blue-300">qwen3:4b-instruct-2507</code> or custom models. Zero cloud latency or monthly subscriptions.
+            </p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="globe" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Autonomous Web & Shopping</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Researches products, compares prices, parses web pages, and extracts structured comparison tables with verified source links.
+            </p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Human-in-the-Loop Security</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Hardened security rules. Dangerous shell commands or workspace edits require your explicit approval via interactive card controls.
+            </p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="file-code-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Workspace & Code Analysis</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Reads local repositories, inspects dependencies, extracts PDFs, and writes code cleanly inside your local workspace.
+            </p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="lock" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Native Hardware Vault</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Secrets and credentials are encrypted locally with hardware protection (DPAPI on Windows, Keychain on macOS).
+            </p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-blue-500/40 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <i data-lucide="database" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-white mb-2">Local SQLite & BM25 Search</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Full local storage for conversations, memories, and vector evidence using native Node.js SQLite (`node:sqlite`).
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- App Showcase Gallery Section -->
+    <section id="showcase" class="py-16 md:py-24 bg-slate-900/20 border-t border-slate-800/60">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-3">Explore the Interface</h2>
+          <p class="text-slate-400 text-base">Click any screenshot below to inspect the full interface in high resolution.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- Screenshot Card 1 -->
+          <div onclick="openLightbox('assets/images/dashboard.png', 'Main Handoff Dashboard')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/dashboard.png" alt="Main Dashboard" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Main Handoff Dashboard</h4>
+              <p class="text-xs text-slate-400 mt-1">Delegating tasks to autonomous agent dots.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot Card 2 -->
+          <div onclick="openLightbox('assets/images/agent-fleet.png', 'Autonomous Agent Fleet')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/agent-fleet.png" alt="Agent Fleet" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Agent Fleet (Scout, Bix, Pixel)</h4>
+              <p class="text-xs text-slate-400 mt-1">Multi-agent delegation and task history.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot Card 3 -->
+          <div onclick="openLightbox('assets/images/shopping-research.png', 'Shopping & Price Research')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/shopping-research.png" alt="Shopping Research" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Shopping & Price Research</h4>
+              <p class="text-xs text-slate-400 mt-1">Structured price and feature comparison tables.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot Card 4 -->
+          <div onclick="openLightbox('assets/images/web-summarizer.png', 'Web Page Summarizer')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/web-summarizer.png" alt="Web Summarizer" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Web Page Reader</h4>
+              <p class="text-xs text-slate-400 mt-1">Summarizes long articles and documentation URLs.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot Card 5 -->
+          <div onclick="openLightbox('assets/images/code-analysis.png', 'Workspace Code Analysis')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/code-analysis.png" alt="Code Analysis" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Code & Tech Stack Inspection</h4>
+              <p class="text-xs text-slate-400 mt-1">Reads workspace files and package dependencies.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot Card 6 -->
+          <div onclick="openLightbox('assets/images/settings-ollama.png', 'Local Ollama Engine Settings')" class="group relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all">
+            <div class="aspect-video bg-slate-950 overflow-hidden">
+              <img src="assets/images/settings-ollama.png" alt="Ollama Settings" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-white text-sm">Ollama AI Engine Settings</h4>
+              <p class="text-xs text-slate-400 mt-1">Displays active model connection and hardware status.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Download & Quickstart Section -->
+    <section id="download" class="py-16 md:py-24 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-t border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        
+        <h2 class="font-display text-3xl sm:text-5xl font-extrabold text-white mb-6">Get Started with Open-Dot Today</h2>
+        <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10 font-light">
+          Free, open-source, and ready to install on Windows or run directly from source code.
+        </p>
+
+        <!-- Options Container -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+          
+          <!-- Option A: Standalone Windows App -->
+          <div class="p-8 rounded-2xl bg-slate-900 border border-blue-500/30 flex flex-col justify-between shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center mb-4">
+                <i data-lucide="monitor" class="w-5 h-5"></i>
+              </div>
+              <h3 class="font-display text-2xl font-bold text-white mb-2">Windows Desktop Package</h3>
+              <p class="text-slate-400 text-sm mb-6">
+                Download the standalone installer (`.exe`) compiled directly for 64-bit Windows systems.
+              </p>
+            </div>
+            <div>
+              <a href="../dist/Open Dot Local Setup 0.1.0.exe" class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/25">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download Open-Dot Setup (.exe)</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Option B: Run from Source -->
+          <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center mb-4">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+              </div>
+              <h3 class="font-display text-2xl font-bold text-white mb-2">Run from Source (pnpm)</h3>
+              <p class="text-slate-400 text-sm mb-4">
+                Clone the repository and launch the local dev runtime:
+              </p>
+              
+              <!-- Code block -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-1 relative group mb-4">
+                <div class="text-slate-500"># Clone and run local server</div>
+                <div><span class="text-blue-400">git</span> clone https://github.com/VedantJadhav701/opendot-local.git</div>
+                <div><span class="text-blue-400">cd</span> opendot-local</div>
+                <div><span class="text-blue-400">pnpm</span> install && <span class="text-blue-400">pnpm</span> dev</div>
+              </div>
+            </div>
+            <div>
+              <a href="https://github.com/VedantJadhav701/opendot-local" target="_blank" class="w-full py-3.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition-all flex items-center justify-center space-x-2">
+                <i data-lucide="github" class="w-4 h-4"></i>
+                <span>View Repository on GitHub</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-12 text-slate-400 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="bot" class="w-4 h-4 text-blue-400"></i>
+        <span class="font-semibold text-slate-300">Open-Dot Local AI Agent</span>
+        <span>— Free & Open Source</span>
+      </div>
+      <div>
+        <span>Not affiliated with Ollama, OpenAI, or Composio.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Screenshot Lightbox Modal -->
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4" onclick="closeLightbox()">
+    <div class="relative max-w-5xl w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="lightbox-title" class="font-semibold text-white text-sm">Screenshot</h3>
+        <button onclick="closeLightbox()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-2 bg-black flex items-center justify-center max-h-[80vh] overflow-auto">
+        <img id="lightbox-img" src="" alt="Enlarged Screenshot" class="max-h-[75vh] w-auto object-contain rounded" />
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "open-dot-landing-page",
+  "version": "1.0.0",
+  "description": "Official landing page for Open-Dot local AI agent runtime",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["open-dot", "ai-agent", "landing-page"],
+  "author": "Open-Dot Team",
+  "license": "MIT"
+}
