@@ -1,1449 +1,431 @@
 <!doctype html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Open-Dot — Streamline Autonomous AI Agent Workflows</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenDot-local: AI coworkers that run on your own laptop</title>
+<meta name="description" content="Free, open-source AI agents that browse, read PDFs and run tasks on your own machine with Ollama. No API key, no bill, nothing leaves your computer.">
+<meta property="og:title" content="OpenDot-local">
+<meta property="og:description" content="Free, open-source AI coworkers that run on your own laptop with Ollama. No API key.">
+<meta property="og:image" content="assets/poster.jpg">
+<meta name="theme-color" content="#f5f6f8">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f6f8; --white:#fff; --ink:#0c0c0e; --mute:#5b5f68; --line:#dfe2e8;
+  --blue:#4da3ff; --lime:#c6f26b; --lilac:#a99bff; --orange:#ff9a5c;
+  --r-lg:28px; --r-md:14px;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,sans-serif;
+  --code:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:8px}
+.wrap{width:min(1120px,100% - 40px);margin-inline:auto}
+h1,h2,h3{font-family:var(--display);line-height:1.04;letter-spacing:-.025em;font-weight:800}
 
-  <!-- FONTS — exactly these three tags in <head>, in this order -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(245,246,248,.82);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nav.scrolled{border-color:var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.02em}
+.brand img{width:34px;height:34px;border-radius:9px}
+.nav ul{display:flex;gap:26px;list-style:none;margin-left:auto;font-size:15px;font-weight:500;color:var(--mute)}
+.nav ul a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:999px;font-weight:600;font-size:16px;border:1.5px solid var(--ink);transition:transform .15s,background .15s,color .15s;cursor:pointer;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn.solid{background:var(--ink);color:#fff}
+.btn.solid:hover{background:#26262b}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+.btn.sm{height:40px;padding:0 16px;font-size:15px}
+.btn svg{width:18px;height:18px;flex:none}
+.count{font-variant-numeric:tabular-nums;padding-left:10px;border-left:1px solid rgba(255,255,255,.3)}
+.count:empty{display:none}
 
-  <script>
-    /* §12: Master Entrance Timeline Failsafe & Arming */
-    document.documentElement.classList.add('intro');
-    setTimeout(function() {
-      document.documentElement.classList.remove('intro');
-    }, 4000);
-  </script>
+/* hero */
+.hero{position:relative;padding:92px 0 64px;text-align:center;isolation:isolate;overflow:clip}
+.hero .wrap{position:relative;z-index:2}
+.pill{display:inline-flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:7px 16px 7px 8px;font-size:14px;font-weight:500;margin-bottom:28px}
+.pill b{background:var(--lime);border-radius:999px;padding:2px 10px;font-weight:600}
+.hero h1{font-size:clamp(44px,7.4vw,96px);max-width:11.5em;margin-inline:auto}
+.hero p.lead{max-width:36em;margin:26px auto 0;font-size:clamp(18px,2vw,21px);color:var(--mute)}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+.fine{margin-top:18px;font-size:14px;color:var(--mute)}
+.field{position:absolute;inset:0;z-index:1;pointer-events:none}
+.dot{position:absolute;width:var(--s);height:var(--s);left:var(--x);top:var(--y);will-change:transform}
+.dot .px{width:100%;height:100%;animation:bob var(--d) ease-in-out var(--delay) infinite alternate}
+.dot svg{width:100%;height:100%;overflow:visible;color:var(--c);filter:drop-shadow(0 18px 22px rgba(12,12,14,.16))}
+.dot .eyes{transform-origin:50px 46px;animation:blink 5.5s infinite var(--delay)}
+@keyframes bob{from{transform:translateY(-14px) rotate(-4deg)}to{transform:translateY(16px) rotate(5deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 
-  <style>
-    /* Reset & Page Scroll Setup */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; background: #020204; }
-    body { font-family: Poppins, Inter, system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
-    a { text-decoration: none; color: inherit; } /* REQUIRED - button labels must never underline */
+/* demo */
+.demo{padding:12px 0 110px}
+.window{background:var(--ink);border-radius:var(--r-lg);padding:12px;box-shadow:0 40px 90px -30px rgba(12,12,14,.45)}
+.bar{display:flex;gap:7px;padding:4px 8px 12px}
+.bar i{width:11px;height:11px;border-radius:50%}
+.bar i:nth-child(1){background:#fff}.bar i:nth-child(2){background:var(--blue)}.bar i:nth-child(3){background:var(--lime)}
+.window video{display:block;width:100%;aspect-ratio:1920/992;border-radius:16px;background:#111;object-fit:cover}
 
-    /* =====================================================================
-       1. CORE ARCHITECTURE — HERO STAGE & SCALED CANVAS
-       ===================================================================== */
-    .hero-wrapper { position: relative; width: 100vw; height: 100vh; min-height: 720px; overflow: hidden; background: #020204; }
-    .stage { position: absolute; inset: 0; overflow: hidden; background: #020204; }
-    .canvas {
-      position: absolute; left: 50%; top: 0; width: 1172px; height: 720px;
-      transform: translateX(-50%) scale(var(--k, 1)); transform-origin: 50% 0;
-    }
-    .canvas > * { position: absolute; }
-    .stack { position: absolute; inset: 0; z-index: 300; } /* layout shell, no box of its own */
-    .stack > * { position: absolute; }
-    .navmenu { display: contents; } /* shell, invisible on desktop */
-    .burger { display: none; } /* desktop */
+/* sections */
+.sec{padding:100px 0}
+.sec.white{background:var(--white);border-block:1px solid var(--line)}
+.head h2{font-size:clamp(34px,4.6vw,60px);max-width:13em}
+.head p{margin-top:20px;color:var(--mute);font-size:19px;max-width:34em}
 
-    /* Stage background */
-    .bg {
-      position: absolute; inset: 0; z-index: 0;
-      background:
-        linear-gradient(180deg, rgba(25,127,255,0) 38%, rgba(25,127,255,.042) 54%,
-          rgba(25,127,255,.052) 68%, rgba(25,127,255,.030) 100%),
-        #020204;
-    }
+/* chunk field */
+.split{display:grid;grid-template-columns:1.05fr 1fr;gap:72px;align-items:center}
+.chunks{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:7px}
+.grid i{aspect-ratio:1;border-radius:6px;background:#d5d9e1}
+.grid i.k{background:var(--lime);outline:2px solid var(--ink);outline-offset:-2px}
+.legend{display:flex;flex-wrap:wrap;gap:22px;margin-top:22px;font-size:14px;color:var(--mute)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:14px;height:14px;border-radius:4px;background:#d5d9e1}
+.legend i.k{background:var(--lime);outline:2px solid var(--ink);outline-offset:-2px}
+.stats{display:grid;grid-template-columns:repeat(3,auto);gap:34px;margin-top:38px;justify-content:start}
+.stats b{display:block;font-family:var(--display);font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.stats span{font-size:14px;color:var(--mute)}
 
-    /* Starfield */
-    .stars { position: absolute; left: 0; top: 0; width: 1px; height: 1px; border-radius: 50%; background: #fff; pointer-events: none; }
+/* abilities */
+.abilities{display:grid;grid-template-columns:1fr 1fr;gap:0 64px;margin-top:56px}
+.ab{padding:30px 0;border-top:1.5px solid var(--ink)}
+.ab h3{font-size:26px;display:flex;align-items:center;gap:14px}
+.ab h3 u{width:18px;height:18px;border-radius:50%;background:var(--c);text-decoration:none;flex:none}
+.ab p{margin-top:12px;color:var(--mute);max-width:30em}
 
-    /* Floating WhatsApp Button */
-    .wa {
-      position: fixed; right: 20px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%;
-      background: #25d366; display: grid; place-items: center; z-index: 900;
-      box-shadow: 0 8px 20px rgba(0,0,0,.5); cursor: pointer; transition: transform .2s ease;
-    }
-    .wa:hover { transform: scale(1.08); }
-    .wa svg { width: 31px; height: 31px; fill: #fff; }
-    .wa::after {
-      content: ""; position: absolute; inset: 0; border-radius: 50%;
-      border: 2px solid rgba(37,211,102,.5); animation: pulse 2.8s ease-out infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: .75; }
-      70% { transform: scale(1.4); opacity: 0; }
-      100% { opacity: 0; }
-    }
+/* safety */
+.approve{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:0 30px 60px -34px rgba(12,12,14,.3)}
+.approve .who{display:flex;align-items:center;gap:12px;font-weight:600}
+.approve .who i{width:34px;height:34px;border-radius:50%;background:var(--blue);display:block;position:relative}
+.approve .who i::after{content:"";position:absolute;left:9px;top:12px;width:5px;height:8px;border-radius:3px;background:#fff;box-shadow:11px 0 #fff}
+.approve .ask{margin-top:18px;color:var(--mute);font-size:15px}
+.approve code{display:block;margin-top:10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;font-family:var(--code);font-size:15px}
+.approve .row{display:flex;gap:10px;margin-top:20px}
+.approve .row span{flex:1;text-align:center;padding:12px;border-radius:999px;font-weight:600;font-size:15px}
+.approve .yes{background:var(--ink);color:#fff}
+.approve .no{border:1.5px solid var(--line)}
+.approve .also{margin-top:16px;font-size:13px;color:var(--mute);text-align:center}
+.checks{list-style:none;margin-top:30px;display:grid;gap:16px}
+.checks li{padding-left:34px;position:relative;color:var(--mute)}
+.checks li b{color:var(--ink);font-weight:600}
+.checks li::before{content:"";position:absolute;left:0;top:6px;width:18px;height:18px;border-radius:50%;background:var(--lime);box-shadow:inset 0 0 0 2px var(--ink)}
 
-    /* =====================================================================
-       2. PIXEL CONTRACT A — THE BADGE
-       ===================================================================== */
-    .badge {
-      left: 462px; top: 95px; width: 250px; height: 39px; border-radius: 12px; z-index: 300;
-      border: 1px solid rgba(255,255,255,.115);
-      background: linear-gradient(to top,
-        rgba(190,225,255,.175) 0px, rgba(190,225,255,.128) 2px, rgba(190,225,255,.075) 4px,
-        rgba(190,225,255,.026) 6px, rgba(255,255,255,.012) 9px, rgba(255,255,255,.012) 100%);
-      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-    }
-    .badge i {
-      position: absolute; left: 4px; top: 4px; width: 29px; height: 29px; border-radius: 8px;
-      display: grid; place-items: center;
-      background: linear-gradient(to top,
-        #46afc8 0px, #35abc7 2px, #0b859d 4px, #026c84 6px, #004e66 8px,
-        #053f58 10px, #012c3d 12px, #031a2a 14px, #061125 16px, #090f25 19px,
-        #090c1c 23px, #060d16 29px);
-      box-shadow: inset 1px 0 0 rgba(150,220,250,.40),
-        inset -1px 0 0 rgba(150,220,250,.52),
-        0 0 6px rgba(60,190,230,.20), 0 3px 8px -5px rgba(90,220,255,.6);
-    }
-    .badge i svg { width: 14px; height: 16px; position: relative; top: -1px; left: 0px; }
-    .badge b {
-      position: absolute; left: 45px; transform-origin: 0 50%; top: 0; height: 39px;
-      display: flex; align-items: center;
-      font-size: 13px; font-weight: 400; color: rgba(255,255,255,.94); white-space: nowrap;
-      padding-top: 1.5px;
-    }
+/* status */
+.status{margin-top:50px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--white)}
+.status div.r{display:grid;grid-template-columns:1.1fr 2fr 160px;gap:20px;padding:18px 26px;border-top:1px solid var(--line);align-items:center}
+.status div.r:first-child{border-top:0}
+.status .n{font-weight:600}
+.status .d{color:var(--mute);font-size:15px}
+.tag{justify-self:end;font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--lime)}
+.tag.al{background:#d7ecff}
+.tag.pl{background:#ececf1;color:var(--mute)}
 
-    /* =====================================================================
-       3. PIXEL CONTRACT B — THE GLOW BUTTON (.btn)
-       ===================================================================== */
-    .btn {
-      display: grid; place-items: center; color: #fff; position: relative; overflow: hidden;
-      background: linear-gradient(to top,
-        #9ad9ec 1px, #89dff0 2px, #79e0f1 3px, #61daef 4px, #3ec8e4 5px,
-        #14a8c6 6px, #0596b3 7px, #038aa8 8px, #047796 9px, #006180 10px,
-        #025066 12px, #0a4f5e 13px, #04465a 14px, #073746 16px,
-        #0a2a37 18px, #0d212e 20px, #0f1824 24px, #0a111d 30px,
-        #0a111d 34px, #0a111d 100%);
-      box-shadow:
-        inset 0 3px 3px -2px rgba(180,228,255,.10),
-        inset 1px 0 0 rgba(255,255,255,.09),
-        inset -1px 0 0 rgba(255,255,255,.09),
-        var(--hair, 0 1px 0 rgba(152,218,234,.38)),
-        1px 0 0 rgba(152,218,234,.17), -1px 0 0 rgba(152,218,234,.17),
-        0 0 8px rgba(60,190,235,.10),
-        0 2px 5px -3px rgba(90,220,255,.45);
-      transition: transform .25s, box-shadow .25s, filter .25s;
-      cursor: pointer;
-    }
-    .btn::before {
-      content: ""; position: absolute; left: 22%; right: 38%; top: 0.8px; height: 1.9px; z-index: 1;
-      filter: blur(.55px);
-      background: linear-gradient(90deg, rgba(120,225,255,0) 0%, rgba(120,225,255,.58) 34%,
-        rgba(160,240,255,.74) 50%, rgba(120,225,255,.58) 66%, rgba(120,225,255,0) 100%);
-    }
-    .btn::after {
-      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
-      background: linear-gradient(90deg, rgba(200,245,255,.70), rgba(200,245,255,0) 13px),
-                 linear-gradient(270deg, rgba(200,245,255,.70), rgba(200,245,255,0) 13px);
-      -webkit-mask: linear-gradient(to top, #000 0, #000 6px, rgba(0,0,0,.40) 12px,
-        rgba(0,0,0,.15) 18px, rgba(0,0,0,.09) 24px, rgba(0,0,0,.02) 30px, rgba(0,0,0,.02) 100%);
-              mask: linear-gradient(to top, #000 0, #000 6px, rgba(0,0,0,.40) 12px,
-        rgba(0,0,0,.15) 18px, rgba(0,0,0,.09) 24px, rgba(0,0,0,.02) 30px, rgba(0,0,0,.02) 100%);
-    }
-    .btn span { position: relative; z-index: 2; display: block; line-height: 1; text-shadow: 0 1px 2px rgba(0,20,30,.5); }
-    .btn:hover {
-      transform: translateY(-1px); filter: brightness(1.12);
-      box-shadow: inset 0 1px 0 rgba(200,245,255,.6), inset 1px 0 0 rgba(170,225,255,.35),
-                 inset -1px 0 0 rgba(170,225,255,.35), 0 6px 22px rgba(20,180,225,.55);
-    }
+/* start */
+.term{background:var(--ink);color:#e9ebf0;border-radius:var(--r-lg);padding:30px;font-family:var(--code);font-size:15px;line-height:1.9;overflow-x:auto;margin-top:44px}
+.term .c{color:#7e8594}
+.term .p{color:var(--lime)}
+.note{margin-top:20px;color:var(--mute);font-size:15px}
 
-    /* Instance A - nav CTA */
-    .nav .btn {
-      position: absolute; left: 530.7px; top: 10.5px; width: 125.5px; height: 39.5px;
-      border-radius: 14px; font-size: 14px; font-weight: 500; letter-spacing: -.005em;
-    }
-    .nav .btn span { margin-top: 0; }
+/* faq */
+.faq{margin-top:50px;max-width:820px}
+details{border-top:1.5px solid var(--ink);padding:22px 0}
+details:last-child{border-bottom:1.5px solid var(--ink)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-weight:500;font-size:28px;line-height:1;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin-top:14px;color:var(--mute);max-width:40em}
 
-    /* Instance B - hero CTA */
-    .cta2 {
-      position: absolute; left: 526px; top: 349px; width: 121px; height: 54.5px;
-      --hair: 0 0 0 transparent; border-radius: 13px; font-size: 17px; font-weight: 500;
-      letter-spacing: -.01em; z-index: 300;
-    }
-    .cta2::before { display: none; } /* HERO button has no top streak */
-    .cta2 span { margin-top: 0; }
+/* closing */
+.close{position:relative;padding:130px 0 120px;text-align:center;overflow:hidden;isolation:isolate}
+.close h2{font-size:clamp(38px,6vw,80px);max-width:11em;margin-inline:auto}
+.close .wrap{position:relative;z-index:2}
+.close .cta{margin-top:38px}
+footer{border-top:1px solid var(--line);padding:34px 0 50px;font-size:15px;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 36px;align-items:center}
+footer .brand{color:var(--ink);font-size:18px}
+footer .brand img{width:28px;height:28px}
+footer .links{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
+footer a:hover{color:var(--ink);text-decoration:underline}
+footer p.small{flex-basis:100%;font-size:13px}
 
-    /* =====================================================================
-       4. NAV PILL
-       ===================================================================== */
-    .nav {
-      left: 247px; top: 3px; width: 678px; height: 64px; border-radius: 32px; z-index: 400;
-      background: rgba(255,255,255,.008);
-      border: 1px solid rgba(255,255,255,.105);
-      -webkit-backdrop-filter: blur(16px) saturate(140%);
-      backdrop-filter: blur(16px) saturate(140%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-    }
-    .mark { position: absolute; left: 21px; top: 19px; width: 24px; height: 24px; }
-    .mark svg { filter: drop-shadow(0 0 6px rgba(60,224,255,.75)); }
-    .wm { position: absolute; left: 50px; top: 0; white-space: nowrap; }
-    .wm .kick {
-      position: absolute; left: 3px; top: 20px; font-size: 4.4px; font-weight: 600;
-      letter-spacing: .10em; color: #fff; opacity: .92; line-height: 1;
-    }
-    .wm .name {
-      position: absolute; left: 0; top: 26px; transform-origin: 0 50%;
-      font-family: Poppins; font-weight: 900; font-size: 22px; line-height: 1;
-      letter-spacing: -.01em; color: #fff;
-    }
-    .links {
-      position: absolute; left: 156px; top: 0; height: 62px; transform-origin: 0 50%;
-      display: flex; align-items: center; gap: 24px;
-    }
-    .links a {
-      font-size: 12.5px; font-weight: 400; color: rgba(255,255,255,.92);
-      white-space: nowrap; transition: opacity .25s;
-    }
-    .links a:hover { opacity: .65; }
-
-    /* =====================================================================
-       5. HERO TYPE
-       ===================================================================== */
-    .h1 {
-      left: 586px; transform: translateX(-50%); white-space: nowrap; line-height: 1;
-      font-family: Poppins; font-weight: 900; font-size: 54px; letter-spacing: -.004em;
-      word-spacing: .175em; text-transform: uppercase; color: #fff;
-      text-shadow: 0 0 34px rgba(130,180,255,.22); z-index: 300;
-    }
-    .sub {
-      left: 586px; transform: translateX(-50%); white-space: nowrap; line-height: 1;
-      font-size: 13.2px; color: #a9aeb5; z-index: 300;
-    }
-    .sub b { font-weight: 600; color: #fff; }
-    .nb { white-space: nowrap; }
-
-    /* =====================================================================
-       6. THE CAROUSEL — A TRUE 3D PERSPECTIVE RING
-       ===================================================================== */
-    .showcase { position: absolute; left: 0; top: 0; width: 1172px; height: 0; }
-    .ring {
-      position: absolute; left: 0; top: 0; width: 1172px; height: 657px; z-index: 5;
-      perspective: 891px; perspective-origin: 586px 918px; transform-style: preserve-3d;
-      pointer-events: none;
-    }
-    .card {
-      position: absolute; left: 586px; top: 616px; width: 130px; height: 300px;
-      margin: -150px 0 0 -65px; border-radius: 12px; overflow: hidden; background: #0d1117;
-      box-shadow: 0 24px 46px rgba(0,0,0,.6), 0 3px 8px rgba(0,0,0,.5);
-      backface-visibility: hidden; will-change: transform;
-    }
-    .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .card .edge {
-      position: absolute; inset: 0; border-radius: 12px;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.15),
-                 inset 0 16px 30px rgba(255,255,255,.05);
-    }
-    .card.broken img { display: none; }
-
-    /* Shared creative sub-classes */
-    .cv { position: absolute; left: 0; right: 0; padding: 0 10px; }
-    .fill { position: absolute; inset: 0; }
-    .ph { position: absolute; left: 0; right: 0; overflow: hidden; background: linear-gradient(155deg,#2b3b50,#131c28 60%,#1d1526); }
-    .phf { top: 0; bottom: 0; }
-    .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .dot { display: inline-block; width: 4.5px; height: 4.5px; background: #e5202f; margin-right: 4px; transform: rotate(45deg) translateY(-1px); }
-    .dot.sq { transform: none; width: 6.5px; height: 4.5px; border-radius: 1px; }
-    .t-big { font-family: Poppins; font-weight: 900; text-transform: uppercase; line-height: .96; letter-spacing: -.015em; white-space: nowrap; transform: scaleX(.875); transform-origin: left center; }
-    .t-serif { font-family: "Playfair Display", serif; line-height: 1.02; letter-spacing: .01em; white-space: nowrap; }
-
-    /* =====================================================================
-       9. THE BROWSER MOCK (PROMINENTLY DISPLAYED IN HERO)
-       ===================================================================== */
-    .browser {
-      position: absolute; left: 165px; top: 430px; width: 842px;
-      height: 275px;
-      border-radius: 20px 20px 0 0; overflow: hidden; z-index: 100;
-      box-shadow: 0 -14px 44px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.15);
-    }
-    .browser::before {
-      content: ""; position: absolute; left: 0; right: 0; top: 42px; bottom: 0;
-      background: rgba(20,20,26,.95); z-index: 0;
-    }
-    .bar {
-      position: absolute; left: 0; top: 0; width: 100%; height: 42px; z-index: 10;
-      background: linear-gradient(180deg, rgba(20,24,48,.85), rgba(15,19,38,.95));
-      -webkit-backdrop-filter: blur(6px) saturate(112%); backdrop-filter: blur(6px) saturate(112%);
-    }
-    .dots { position: absolute; left: 27px; top: 16px; display: flex; gap: 2.6px; }
-    .dots i { width: 7.6px; height: 7.6px; border-radius: 50%; }
-    .omni {
-      position: absolute; left: 246px; top: 7px; width: 336px; height: 26px; border-radius: 5px;
-      background: rgba(9,13,26,.93); box-shadow: inset 0 0 0 1px rgba(255,255,255,.045);
-      display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
-    }
-    .omni svg { width: 9px; height: 9px; opacity: .72; }
-    .omni span { font-size: 9.5px; color: rgba(255,255,255,.9); letter-spacing: .005em; font-weight: 600; }
-    .tools { position: absolute; right: 27px; top: 14px; display: flex; align-items: center; gap: 8px; opacity: .9; }
-    .tools svg { width: 11px; height: 12px; cursor: pointer; }
-
-    .page {
-      position: absolute; left: 7px; right: 6px; top: 42px; bottom: 0; background: #0b0f19;
-      color: #fff; overflow-y: hidden; border-radius: 10px 10px 0 0; z-index: 1;
-    }
-    .ann {
-      position: absolute; left: 0; top: 0; width: 100%; height: 20px; background: #101726;
-      display: grid; place-items: center; border-radius: 10px 10px 0 0; z-index: 2; border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .ann span { font-size: 7.5px; letter-spacing: .08em; color: #38bdf8; font-weight: 700; }
-    .ann u { position: absolute; font-size: 8px; color: #94a3b8; text-decoration: none; }
-
-    .pagebody { position: absolute; left: 0; right: 0; top: 20px; bottom: 0; background: #0b0f19; }
-
-    /* Open-Dot Hero GIF Banner */
-    .pghero {
-      position: relative; margin: 6px 12px 0; height: 200px; border-radius: 8px; overflow: hidden;
-      background: #090c15; box-shadow: 0 4px 12px rgba(0,0,0,.3); border: 1px solid #1f293d;
-    }
-    .pghero img.demo-gif { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .pghero .scrim {
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(9,12,21,.2) 0%, rgba(9,12,21,0) 40%, rgba(9,12,21,.85) 100%);
-      pointer-events: none;
-    }
-    .pghero .demo-badge {
-      position: absolute; left: 12px; top: 10px; padding: 4px 10px; border-radius: 12px;
-      background: rgba(14,165,233,.95); color: #fff; font-size: 7.5px; font-weight: 800; letter-spacing: .08em;
-      box-shadow: 0 2px 6px rgba(0,0,0,.4); display: flex; align-items: center; gap: 5px; z-index: 3;
-    }
-    .pghero .demo-badge .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.5s infinite; }
-    .pghero .copy { position: absolute; left: 14px; bottom: 12px; color: #fff; z-index: 3; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
-    .pghero .copy u { font-size: 6.5px; letter-spacing: .2em; text-transform: uppercase; color: #38bdf8; font-weight: 700; text-decoration: none; display: block; }
-    .pghero .copy em { font-family: Poppins, sans-serif; font-style: normal; font-weight: 800; font-size: 15px; line-height: 1.15; margin-top: 2px; display: block; color: #fff; }
-
-    /* =====================================================================
-       FULL LANDING PAGE SCROLLING SECTIONS
-       ===================================================================== */
-    .landing-content {
-      position: relative; z-index: 400; background: #020204;
-      padding: 60px 0 100px; color: #fff; border-top: 1px solid rgba(255,255,255,.08);
-    }
-    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-
-    .section-header { text-align: center; margin-bottom: 60px; }
-    .section-tag {
-      display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 11px;
-      font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
-      background: rgba(56,189,248,.1); color: #38bdf8; border: 1px solid rgba(56,189,248,.25); margin-bottom: 14px;
-    }
-    .section-title { font-size: 38px; font-weight: 800; letter-spacing: -.02em; color: #fff; line-height: 1.2; margin-bottom: 16px; }
-    .section-subtitle { font-size: 16px; color: #94a3b8; max-width: 680px; margin: 0 auto; line-height: 1.6; }
-
-    /* Interactive Scrolling App Showcase Gallery */
-    .showcase-gallery { display: flex; flex-direction: column; gap: 80px; margin-top: 40px; }
-    .showcase-item {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
-      background: rgba(15,23,42,.6); border: 1px solid rgba(255,255,255,.08); border-radius: 24px;
-      padding: 32px; backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,.4);
-      transition: transform .3s ease, border-color .3s ease;
-    }
-    .showcase-item:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.3); }
-    .showcase-item.reverse { grid-template-columns: 1fr 1fr; }
-    .showcase-item.reverse .showcase-img-box { order: 2; }
-    .showcase-item.reverse .showcase-text-box { order: 1; }
-
-    .showcase-img-box {
-      position: relative; width: 100%; border-radius: 16px; overflow: hidden;
-      border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 30px rgba(0,0,0,.6);
-      background: #090d16;
-    }
-    .showcase-img-box img { width: 100%; height: auto; display: block; object-fit: cover; transition: transform .4s ease; }
-    .showcase-item:hover .showcase-img-box img { transform: scale(1.02); }
-
-    .showcase-text-box h3 { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.3; }
-    .showcase-text-box p { font-size: 15px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px; }
-    .showcase-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .showcase-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #e2e8f0; }
-    .showcase-features li svg { width: 18px; height: 18px; color: #38bdf8; flex-shrink: 0; }
-
-    /* CONTINUOUS GIF & FULL HD VIDEO SECTION (#full-demo) */
-    .full-demo-section {
-      scroll-margin-top: 40px; margin-top: 100px; padding: 60px 32px;
-      background: linear-gradient(180deg, rgba(14,165,233,.05) 0%, rgba(9,12,21,.95) 100%);
-      border-radius: 32px; border: 1px solid rgba(56,189,248,.2); box-shadow: 0 30px 60px rgba(0,0,0,.7);
-    }
-
-    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 40px; }
-    .demo-card {
-      background: #090d16; border: 1px solid rgba(255,255,255,.1); border-radius: 20px;
-      padding: 24px; display: flex; flex-direction: column; gap: 16px;
-    }
-    .demo-card-header { display: flex; align-items: center; justify-content: space-between; }
-    .demo-card-title { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .demo-status-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px;
-      background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); font-size: 11px; font-weight: 600;
-    }
-    .demo-status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite; }
-
-    .continuous-gif-container {
-      position: relative; width: 100%; border-radius: 12px; overflow: hidden;
-      border: 1px solid rgba(56,189,248,.3); box-shadow: 0 8px 24px rgba(0,0,0,.6); background: #000;
-    }
-    .continuous-gif-container img { width: 100%; height: auto; display: block; object-fit: cover; }
-
-    .video-player-container {
-      position: relative; width: 100%; border-radius: 12px; overflow: hidden;
-      border: 1px solid rgba(56,189,248,.3); box-shadow: 0 8px 24px rgba(0,0,0,.6); background: #000;
-    }
-    .video-player-container video { width: 100%; height: auto; display: block; object-fit: cover; }
-
-    /* Features Grid */
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
-    .feature-card {
-      background: rgba(15,23,42,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 20px;
-      padding: 28px; transition: transform .25s ease, border-color .25s ease;
-    }
-    .feature-card:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.3); }
-    .feature-icon {
-      width: 48px; height: 48px; border-radius: 12px; background: rgba(56,189,248,.1);
-      border: 1px solid rgba(56,189,248,.2); display: grid; place-items: center; color: #38bdf8; margin-bottom: 18px;
-    }
-    .feature-card h4 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-    .feature-card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
-
-    /* FAQ & CTA Footer */
-    .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
-    .faq-card {
-      background: rgba(15,23,42,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 24px;
-    }
-    .faq-card h5 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-    .faq-card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
-
-    .cta-banner {
-      margin-top: 100px; text-align: center; padding: 60px 32px; border-radius: 28px;
-      background: linear-gradient(135deg, rgba(14,165,233,.2) 0%, rgba(3,105,161,.4) 100%);
-      border: 1px solid rgba(56,189,248,.4); box-shadow: 0 20px 50px rgba(14,165,233,.15);
-    }
-    .cta-banner h2 { font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 14px; }
-    .cta-banner p { font-size: 16px; color: #e0f2fe; margin-bottom: 28px; max-width: 540px; margin-left: auto; margin-right: auto; }
-
-    footer { margin-top: 80px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,.08); text-align: center; color: #64748b; font-size: 13px; }
-
-    /* =====================================================================
-       10. RESPONSIVE BREAKPOINTS
-       ===================================================================== */
-    @media (max-width: 1080px) {
-      .burger {
-        display: grid; place-content: center; gap: 4px; position: absolute; right: 12px; top: 11px;
-        width: 42px; height: 42px; padding: 0; border: 0; border-radius: 14px; background: transparent;
-        cursor: pointer; -webkit-tap-highlight-color: transparent; z-index: 401;
-      }
-      .burger span {
-        display: block; width: 19px; height: 1.6px; border-radius: 2px;
-        background: rgba(255,255,255,.92);
-        transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .18s;
-      }
-      .burger:focus-visible { outline: 2px solid rgba(120,225,255,.7); outline-offset: 2px; }
-      .nav.open .burger span:nth-child(1) { transform: translateY(5.6px) rotate(45deg); }
-      .nav.open .burger span:nth-child(2) { opacity: 0; }
-      .nav.open .burger span:nth-child(3) { transform: translateY(-5.6px) rotate(-45deg); }
-      .navmenu {
-        display: block; position: absolute; left: 0; right: 0; top: 74px; padding: 12px;
-        border-radius: 22px; border: 1px solid rgba(255,255,255,.10);
-        background: linear-gradient(180deg, rgba(11,15,22,.985), rgba(7,10,16,.99));
-        -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%);
-        box-shadow: 0 26px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
-        opacity: 0; visibility: hidden; transform: translateY(-8px);
-        transition: opacity .24s ease, transform .28s cubic-bezier(.4,0,.2,1), visibility .28s;
-      }
-      .nav.open .navmenu { opacity: 1; visibility: visible; transform: none; }
-      .links {
-        position: static; display: flex; flex-direction: column; align-items: stretch;
-        height: auto; gap: 2px; transform: none!important;
-      }
-      .links a {
-        font-size: 15px; padding: 11px 14px; border-radius: 12px; color: rgba(255,255,255,.9);
-        transition: background .2s, color .2s;
-      }
-      .nav .btn { position: static; width: 100%; height: 46px; margin-top: 10px; font-size: 15px; }
-      .nav .btn span { margin-top: 3px; }
-
-      .nav { left: 286px; width: 620px; }
-      .badge { left: 448px; width: 277px; }
-      .stack { transform: translateY(var(--stshift, 0px)); }
-      .showcase { transform: translateY(var(--sshift, 0px)); }
-      .ring { transform: scale(var(--rs, 1)); transform-origin: 586px 595px; }
-
-      .showcase-item, .showcase-item.reverse { grid-template-columns: 1fr; gap: 24px; }
-      .showcase-item.reverse .showcase-img-box { order: 1; }
-      .showcase-item.reverse .showcase-text-box { order: 2; }
-      .demo-grid { grid-template-columns: 1fr; }
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
-      .faq-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (hover: hover) and (max-width: 1080px) {
-      .burger:hover span { background: #fff; }
-      .links a:hover { background: rgba(255,255,255,.055); color: #fff; opacity: 1; }
-    }
-
-    /* PHONE <=700px : FLOW COLUMN */
-    @media (max-width: 700px) {
-      .hero-wrapper { height: auto; min-height: 100vh; overflow: visible; }
-      .stage { position: relative; inset: auto; width: 100%; min-height: 100vh; overflow: visible; }
-      .canvas {
-        position: relative; left: auto; top: auto; width: 100%; height: auto; transform: none!important;
-        display: flex; flex-direction: column; align-items: center; padding: 0 20px 60px;
-      }
-      .canvas > * { position: static; }
-      .stack { display: contents; }
-      .nav {
-        position: relative; left: auto; top: auto; width: 100%; max-width: 500px; height: 58px;
-        margin-top: clamp(10px, 1.5vh, 15px); flex: 0 0 auto;
-      }
-      .mark { left: 16px; top: calc(50% - 13px); width: 26px; height: 26px; }
-      .wm { left: 49px; top: 0; height: 100%; }
-      .wm .kick { top: calc(50% - 15px); font-size: 5px; letter-spacing: .2em; }
-      .wm .name { top: calc(50% - 9px); font-size: 18px; transform: scaleX(.88)!important; transform-origin: left center; }
-      .burger { right: 8px; top: 7px; width: 44px; height: 44px; }
-      .navmenu { top: 68px; padding: 12px; }
-      .links a { font-size: 16px; padding: 12px 15px; border-radius: 12px; }
-      .nav .btn { height: 48px; margin-top: 10px; font-size: 16px; }
-
-      .badge {
-        position: relative; left: auto; top: auto; margin-top: clamp(16px, 2.6vh, 26px);
-        width: auto; max-width: 100%; height: 36px; flex: 0 0 auto; border-radius: 18px;
-      }
-      .badge b { position: relative; left: auto; top: auto; height: 36px; padding: 0 15px 0 42px; font-size: 12.5px; transform: none!important; }
-      .badge i { top: 4px; left: 4px; width: 28px; height: 28px; }
-      .badge i svg { width: 13px; height: 19px; }
-
-      .h1 {
-        position: relative; left: auto; top: auto; transform: none!important; white-space: normal;
-        text-align: center; font-size: clamp(29px, 8.4vw, 36px); line-height: 1.06;
-        letter-spacing: -.01em; max-width: 7.4em;
-      }
-      .h1.l1 { margin-top: clamp(12px, 2.2vh, 20px); }
-      .sub {
-        position: relative; left: auto; top: auto; transform: none!important; white-space: normal;
-        text-align: center; font-size: clamp(14px, 3.9vw, 15.5px); line-height: 1.5; max-width: 340px;
-      }
-      .sub.s1 { margin-top: clamp(10px, 1.8vh, 16px); }
-      .cta2 {
-        position: relative; left: auto; top: auto; margin-top: clamp(16px, 2.6vh, 26px);
-        flex: 0 0 auto; width: auto; min-width: 158px; height: 52px; padding: 0 26px; font-size: 16px;
-      }
-
-      .showcase { position: relative; left: auto; top: auto; flex: 1 1 auto; width: 100%; height: auto; min-height: 224px; margin-top: 30px; }
-      .ring {
-        position: absolute; left: 50%; margin-left: -586px; top: -446px; bottom: auto;
-        width: 1172px; height: 657px; transform-origin: 586px 466px; transform: scale(1.02);
-      }
-      .browser {
-        position: relative; left: auto; transform: none; top: 0; margin-top: 180px;
-        width: 100%; height: auto; min-height: 380px; border-radius: 22px 22px 0 0;
-      }
-      .browser .bar { height: 36px; }
-      .omni { left: 50%; transform: translateX(-50%); width: 58%; height: 24px; top: 6px; }
-      .omni span { font-size: 9px; }
-      .dots { top: 14px; }
-      .tools { display: none; }
-      .ann { height: 15px; }
-      .ann span { font-size: 6px; }
-      .page { top: 36px; height: auto; min-height: 340px; }
-      .pagebody { top: 16px; position: relative; }
-      .pghero { margin: 0 14px; height: 160px; border-radius: 10px; }
-      .pghero .copy { left: 14px; bottom: 10px; }
-      .pghero .copy u { font-size: 7.5px; letter-spacing: .2em; }
-      .pghero .copy em { font-size: 14px; margin-top: 3px; }
-
-      .features-grid { grid-template-columns: 1fr; }
-      .section-title { font-size: 28px; }
-    }
-
-    /* Accessibility reduced motion */
-    @media (prefers-reduced-motion: reduce) {
-      .navmenu, .burger span, .btn, .wa::after { transition: none!important; animation: none!important; }
-      html.intro .nav, html.intro .mark, html.intro .wm, html.intro .links a, html.intro .nav .btn,
-      html.intro .burger, html.intro .badge, html.intro .h1, html.intro .sub, html.intro .cta2,
-      html.intro .ring, html.intro .browser, html.intro .wa {
-        opacity: 1!important; translate: none!important; scale: none!important; clip-path: none!important;
-      }
-    }
-
-    /* §12 Master Entrance Resting States */
-    html.intro .nav { opacity: 0; translate: 0 -9px; }
-    html.intro .mark, html.intro .wm, html.intro .links a, html.intro .nav .btn, html.intro .burger { opacity: 0; translate: 0 6px; }
-    html.intro .badge { opacity: 0; translate: 0 11px; scale: .985; }
-    html.intro .h1 { opacity: 0; translate: 0 15px; clip-path: inset(100% 0 -30% 0); }
-    html.intro .sub { opacity: 0; translate: 0 10px; }
-    html.intro .cta2 { opacity: 0; translate: 0 13px; scale: .985; }
-    html.intro .ring { opacity: 0; translate: 0 18px; scale: .99; }
-    html.intro .browser { opacity: 0; translate: 0 26px; }
-    html.intro .wa { opacity: 0; scale: .88; }
-  </style>
+@media(max-width:900px){
+  .nav ul{display:none}
+  .nav .btn{margin-left:auto}
+  .split{grid-template-columns:1fr;gap:44px}
+  .abilities{grid-template-columns:1fr}
+  .status div.r{grid-template-columns:1fr;gap:6px}
+  .tag{justify-self:start}
+  .sec{padding:72px 0}
+  .hero{padding-top:150px}
+  .close{padding-top:150px}
+  .dot.hide-m{display:none}
+  .dot{top:min(var(--y),62px)}
+  .dot{--s:calc(var(--sm,60px))!important}
+}
+@media(max-width:520px){
+  .stats{grid-template-columns:1fr 1fr;gap:24px}
+  .btn{height:46px}
+  .term{font-size:13px;padding:22px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .dot .px,.dot .eyes{animation:none}
+  .btn{transition:none}
+}
+</style>
 </head>
 <body>
 
-  <!-- HERO VIEWPORT WRAPPER -->
-  <div class="hero-wrapper">
-    <div class="stage">
-      <!-- Stage background -->
-      <div class="bg"></div>
-      <div class="stars" id="stA"></div>
-      <div class="stars" id="stB"></div>
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/logo.png" alt="" width="34" height="34">OpenDot-local</a>
+    <ul>
+      <li><a href="#demo">Demo</a></li>
+      <li><a href="#small-models">How it works</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#status">Status</a></li>
+      <li><a href="#start">Get started</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn solid sm" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+      Star <span class="count" data-stars></span>
+    </a>
+  </div>
+</header>
 
-      <!-- Scaled Fixed Design Canvas -->
-      <div class="canvas" id="canvas">
+<main id="top">
+<section class="hero">
+  <div class="field" aria-hidden="true">
+    <div class="dot" data-z="1.1" style="--x:4%;--y:10%;--s:120px;--sm:64px;--c:#111114;--d:6s;--delay:-0s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="0.7" style="--x:11%;--y:50%;--s:150px;--sm:70px;--c:var(--lime);--d:7.5s;--delay:-2s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.4" style="--x:23%;--y:4%;--s:78px;--sm:48px;--c:var(--lilac);--d:5.5s;--delay:-1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1" style="--x:84%;--y:8%;--s:132px;--sm:66px;--c:var(--blue);--d:6.5s;--delay:-3s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.3" style="--x:88%;--y:50%;--s:92px;--sm:56px;--c:var(--orange);--d:5s;--delay:-0.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.6" style="--x:68%;--y:2%;--s:64px;--sm:44px;--c:var(--lime);--d:7s;--delay:-4s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.5" style="--x:25%;--y:66%;--s:68px;--sm:44px;--c:var(--blue);--d:6s;--delay:-2.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.2" style="--x:71%;--y:70%;--s:78px;--sm:50px;--c:#111114;--d:7.2s;--delay:-1.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+  </div>
+  <div class="wrap">
+    <div class="pill"><b>Alpha</b> Free and open source</div>
+    <h1>Your own AI coworkers, on your own laptop.</h1>
+    <p class="lead">Give each task its own helper with a browser and a computer to work in. OpenDot-local runs on Ollama, so there is no API key, no bill, and nothing leaves your machine.</p>
+    <div class="cta">
+      <a class="btn solid" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2 2 9.3l6.9-1L12 2Z"/></svg>
+        Star on GitHub <span class="count" data-stars></span>
+      </a>
+      <a class="btn ghost" href="#demo">Watch the demo</a>
+    </div>
+    <p class="fine">Built and tested on a laptop with a 4GB RTX 3050 and a 4B model.</p>
+  </div>
+</section>
 
-        <!-- 3D Perspective Carousel Ring -->
-        <div class="showcase">
-          <div class="ring" id="ring"></div>
-        </div>
-
-        <!-- Browser Mock Overlapping Ring -->
-        <div class="browser" id="browser">
-          <!-- Chrome Bar -->
-          <div class="bar">
-            <div class="dots">
-              <i style="background:#ee5c62"></i>
-              <i style="background:#f6b719"></i>
-              <i style="background:#12c02f"></i>
-            </div>
-            <div class="omni" onclick="location.href='#full-demo'" title="Click to go to full demo section">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
-              <span>Open-Dot AI Agent — Local Workspace</span>
-            </div>
-            <div class="tools">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v5h16v-5"/></svg>
-            </div>
-          </div>
-
-          <!-- Inner Web Page Surface -->
-          <div class="page">
-            <div class="ann">
-              <u>&#8249;</u>
-              <span>OPEN-DOT • AUTONOMOUS AGENT SUITE PREVIEW</span>
-              <u>&#8250;</u>
-            </div>
-
-            <div class="pagebody">
-              <!-- Open-Dot Demo GIF Banner -->
-              <div class="pghero">
-                <img src="assets/images/app-demo.gif" alt="Open-Dot AI Agent Continuous Demo GIF" class="demo-gif">
-                <div class="scrim"></div>
-                <div class="demo-badge">
-                  <span class="live-dot"></span>
-                  <span>CONTINUOUS LIVE DEMO</span>
-                </div>
-                <div class="copy">
-                  <u>Autonomous Workflows</u>
-                  <em>Watch Open-Dot Execute<br>Multi-Step Tasks Live</em>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Layout Stack containing Nav, Badge, Typography & Hero CTA -->
-        <div class="stack">
-          <!-- PIXEL CONTRACT A — THE BADGE -->
-          <div class="badge">
-            <i>
-              <svg viewBox="5 1 14 22" preserveAspectRatio="none" fill="rgba(16,112,152,.72)" stroke="rgba(190,236,255,.6)" stroke-width="1.6" stroke-linejoin="round">
-                <path d="M13.9 1.6 5.5 13.6a.7.7 0 0 0 .6 1.1h4.2l-1 7.7a.7.7 0 0 0 1.25.55l8.3-12.1a.7.7 0 0 0-.6-1.1h-4.2l1-7.7a.7.7 0 0 0-1.25-.55Z"/>
-              </svg>
-            </i>
-            <b id="badgeTxt">Autonomous Local AI Workflows</b>
-          </div>
-
-          <!-- HERO TYPE -->
-          <div class="h1 l1" id="h1a">Streamline AI Agent</div>
-          <div class="h1" id="h1b">Workflows</div>
-
-          <div class="sub s1" id="sub1"><b>Local-First AI Agents / <span class="nb">Multi-Agent Fleet</span></b> orchestrated with</div>
-          <div class="sub" id="sub2">Ollama, deep code analysis, and privacy-first web research.</div>
-
-          <!-- PIXEL CONTRACT B — HERO CTA (.cta2) -->
-          <a class="btn cta2" href="#full-demo" id="watchDemoCta"><span id="vpLabel">Watch Demo</span></a>
-
-          <!-- NAV PILL -->
-          <div class="nav" id="navPill">
-            <!-- Logo Mark -->
-            <div class="mark">
-              <svg viewBox="0 0 48 48" width="24" height="24">
-                <defs>
-                  <linearGradient id="sw" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stop-color="#8ef4ff"/>
-                    <stop offset="0.5" stop-color="#35d8ff"/>
-                    <stop offset="1" stop-color="#0a86d8"/>
-                  </linearGradient>
-                  <linearGradient id="sw2" x1="40" y1="10" x2="10" y2="40" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stop-color="#a6f7ff"/>
-                    <stop offset="1" stop-color="#0f9ae0" stop-opacity="0.25"/>
-                  </linearGradient>
-                </defs>
-                <g transform="rotate(-32 24 24)">
-                  <ellipse cx="24" cy="24" rx="18.5" ry="9.6" stroke="url(#sw2)" stroke-width="3.1" stroke-linecap="round" stroke-dasharray="58 30" stroke-dashoffset="14" fill="none"/>
-                  <circle cx="41.4" cy="20.6" r="3.1" fill="#bff6ff"/>
-                </g>
-                <circle cx="24" cy="24" r="6.6" fill="url(#sw)"/>
-                <circle cx="24" cy="24" r="2.6" fill="#fff"/>
-              </svg>
-            </div>
-
-            <!-- Wordmark -->
-            <div class="wm">
-              <span class="kick">AUTONOMOUS</span>
-              <span class="name" id="wmName">OPEN-DOT</span>
-            </div>
-
-            <!-- Links -->
-            <div class="links" id="links">
-              <a href="#showcase">Features</a>
-              <a href="#workflows">Workflows</a>
-              <a href="#core">Code Analysis</a>
-              <a href="#full-demo">Video Demo</a>
-              <a href="#faq">FAQ</a>
-            </div>
-
-            <!-- PIXEL CONTRACT B — NAV CTA -->
-            <a class="btn" href="#full-demo" id="navCta"><span id="ctaLabel">Try Open-Dot</span></a>
-
-            <!-- Mobile Burger Toggle Button -->
-            <button class="burger" id="burgerBtn" type="button" aria-label="Opens menu" aria-expanded="false" aria-controls="navmenu">
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-
-            <!-- Mobile Nav Menu Panel -->
-            <div class="navmenu" id="navmenu"></div>
-          </div>
-        </div>
-
-      </div>
+<section class="demo" id="demo">
+  <div class="wrap">
+    <div class="window">
+      <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <video id="vid" src="assets/demo.mp4" poster="assets/poster.jpg" muted loop playsinline controls preload="none" aria-label="OpenDot-local demo, 2 minutes"></video>
     </div>
   </div>
+</section>
 
-  <!-- FLOATING WHATSAPP BUTTON -->
-  <a class="wa" href="https://whatsapp.com" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-    <svg viewBox="0 0 32 32">
-      <path d="M16 2a13.9 13.9 0 0 0-12 21l-1.9 7 7.2-1.9A13.9 13.9 0 1 0 16 2zm0 25.5a11.5 11.5 0 0 1-5.9-1.6l-.4-.2-4.4 1.1 1.2-4.3-.3-.4A11.6 11.6 0 1 1 16 27.5zm6.4-8.6c-.3-.2-2-.9-2.3-1s-.6-.2-.8.2-.9 1.1-1.1 1.3-.4.2-.7 0a9.2 9.2 0 0 1-2.7-1.7 10.1 10.1 0 0 1-1.9-2.3c-.2-.3 0-.5.1-.7s.3-.4.5-.6.2-.4.3-.6 0-.4-.1-.6c-.1-.2-.8-2-.1-2.8.3-.7.6-.6.8-.6h.6c.2 0 .5 0 .8.6.3.7 1 2.4 1.1 2.5s.1.4 0 .6c-.1.2-.2.4-.4.6s-.3.4-.2.7a11.4 11.4 0 0 0 2 2.5 10.4 10.4 0 0 0 3 1.8c.4.2.6.2.8-.1s.9-1.1 1.1-1.4.5-.2.8-.1 2 .9 2.3 1.1.6.3.6.5-.1 1.2-.7 1.8z"/>
-    </svg>
-  </a>
-
-  <!-- =====================================================================
-     FULL LANDING PAGE SCROLLING CONTENT
-     ===================================================================== -->
-  <div class="landing-content">
-    <div class="container">
-
-      <!-- SECTION 1: INTERACTIVE APP SHOWCASE SCROLLING GALLERY -->
-      <div id="showcase" style="scroll-margin-top: 40px;">
-        <div class="section-header">
-          <span class="section-tag">INTERFACE SHOWCASE</span>
-          <h2 class="section-title">Designed for Power Developers & Autonomous Workflows</h2>
-          <p class="section-subtitle">Experience a local-first desktop and CLI interface built for multi-agent execution, deep code analysis, and privacy-first AI research.</p>
-        </div>
-
-        <div class="showcase-gallery">
-          <!-- Item 1: Main Dashboard -->
-          <div class="showcase-item">
-            <div class="showcase-img-box">
-              <img src="assets/images/dashboard.png" alt="Open-Dot Main Dashboard">
-            </div>
-            <div class="showcase-text-box">
-              <h3>Unified Command Center & Real-Time Trajectory Monitoring</h3>
-              <p>Monitor your autonomous agent trajectories in real-time with clean step-by-step logs, live tool execution tracking, and instant prompt execution controls.</p>
-              <ul class="showcase-features">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Live trajectory step visualizer with expandable log tracebacks
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Unified CLI and Electron desktop workspace controls
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Instant abort, pause, and step-by-step manual overrides
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Item 2: Multi-Agent Fleet -->
-          <div class="showcase-item reverse" id="workflows">
-            <div class="showcase-img-box">
-              <img src="assets/images/agent-fleet.png" alt="Open-Dot Agent Fleet Dispatcher">
-            </div>
-            <div class="showcase-text-box">
-              <h3>Multi-Agent Fleet Orchestrator & Parallel Subagent Swarm</h3>
-              <p>Dispatch specialized subagents in parallel contexts. Let researcher, code fixer, and test runner subagents work simultaneously without polluting your primary thread.</p>
-              <ul class="showcase-features">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Parallel subagent execution with isolated workspace memory
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Automated agent-to-agent inter-process messaging
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Granular tool permission scoping per subagent task
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Item 3: Code Analysis -->
-          <div class="showcase-item" id="core">
-            <div class="showcase-img-box">
-              <img src="assets/images/code-analysis.png" alt="Open-Dot Code Analysis Engine">
-            </div>
-            <div class="showcase-text-box">
-              <h3>Deep AST Code Analysis & Automated Refactoring</h3>
-              <p>Analyze entire monorepos with intelligent AST parsing, automated lint error resolution, and strict empirical test verification before committing.</p>
-              <ul class="showcase-features">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Empirical traceback diagnosis before making code edits
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Precision line-range replacement to avoid whole-file re-writes
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Integrated test suite execution with zero-hallucination verification
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Item 4: Web Research & Summarizer -->
-          <div class="showcase-item reverse">
-            <div class="showcase-img-box">
-              <img src="assets/images/web-summarizer.png" alt="Open-Dot Web Research & Summarizer">
-            </div>
-            <div class="showcase-text-box">
-              <h3>Autonomous Web Research & Smart Document Synthesis</h3>
-              <p>Fetch web pages, extract markdown text, chunk documents into SQLite vector stores, and summarize key insights with BM25 evidence selection.</p>
-              <ul class="showcase-features">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Headless web scraping with HTML-to-Markdown normalization
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  BM25 chunk ranking for context-budget optimized retrieval
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Secure SSRF & IP-hardening URL validation pipeline
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Item 5: Ollama Local LLM -->
-          <div class="showcase-item">
-            <div class="showcase-img-box">
-              <img src="assets/images/settings-ollama.png" alt="Open-Dot Ollama Settings Integration">
-            </div>
-            <div class="showcase-text-box">
-              <h3>100% Private Offline LLM Inference via Ollama</h3>
-              <p>Run Open-Dot completely offline on your hardware using Ollama models like Llama 3, Qwen 2.5, DeepSeek, and custom GGUFs with zero external API calls.</p>
-              <ul class="showcase-features">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Native Ollama API support with automatic model detection
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Zero telemetry or data collection — 100% local privacy
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  Seamless switching between local Ollama and cloud LLM providers
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+<section class="sec white" id="small-models">
+  <div class="wrap split">
+    <div>
+      <div class="head">
+        <h2>Made for a small model on a small GPU.</h2>
+        <p>A 4B model gets lost when you hand it a whole web page or paper. So a dot reads everything, keeps it on disk, and only puts the best passages in front of the model.</p>
       </div>
-
-      <!-- SECTION 2: CONTINUOUS GIF & FULL HD VIDEO DEMO SECTION (#full-demo) -->
-      <div class="full-demo-section" id="full-demo">
-        <div class="section-header">
-          <span class="section-tag">LIVE DEMO & VIDEO SHOWCASE</span>
-          <h2 class="section-title">See Open-Dot in Action Live</h2>
-          <p class="section-subtitle">Watch the continuous high-resolution GIF demo or play the full HD video demonstration below.</p>
-        </div>
-
-        <div class="demo-grid">
-          <!-- Continuous GIF Card -->
-          <div class="demo-card">
-            <div class="demo-card-header">
-              <div class="demo-card-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                Continuously Running GIF Demo
-              </div>
-              <div class="demo-status-pill">
-                <span class="dot"></span>
-                <span>LIVE LOOPING</span>
-              </div>
-            </div>
-            <div class="continuous-gif-container">
-              <img src="assets/images/app-demo.gif" alt="Open-Dot Continuous Live GIF Demo">
-            </div>
-          </div>
-
-          <!-- Full HD MP4 Video Player Card -->
-          <div class="demo-card">
-            <div class="demo-card-header">
-              <div class="demo-card-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Original Full HD Video Demo (MP4)
-              </div>
-              <div class="demo-status-pill">
-                <span class="dot" style="background:#38bdf8"></span>
-                <span>HD QUALITY</span>
-              </div>
-            </div>
-            <div class="video-player-container">
-              <video controls loop muted playsinline preload="metadata">
-                <source src="assets/videos/app-demo.mp4" type="video/mp4">
-                <source src="assets/videos/app-demo-web.mp4" type="video/mp4">
-                Your browser does not support the video element.
-              </video>
-            </div>
-          </div>
-        </div>
+      <div class="stats">
+        <div><b>2,500</b><span>tokens of evidence per answer</span></div>
+        <div><b>4 GB</b><span>VRAM is enough</span></div>
+        <div><b>0</b><span>API keys needed</span></div>
       </div>
-
-      <!-- SECTION 3: KEY ARCHITECTURE & BENEFITS GRID -->
-      <div style="margin-top: 100px;">
-        <div class="section-header">
-          <span class="section-tag">CORE ARCHITECTURE</span>
-          <h2 class="section-title">Built for Reliability, Speed & Privacy</h2>
-          <p class="section-subtitle">Everything you need to orchestrate autonomous AI coding and research workflows with total control.</p>
-        </div>
-
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <h4>Security Hardened</h4>
-            <p>Built-in SSRF protection, loopback IP filtering, UNC path denials, and command alias blocking for safe script execution.</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            </div>
-            <h4>Empirical Test Verification</h4>
-            <p>Every code edit is verified by running real build and test suites. No guessing or superficial symptom patches.</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            </div>
-            <h4>Context Budget Optimization</h4>
-            <p>Intelligent token trimming, memory compression, and BM25 document chunking ensure fast model inference times.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- SECTION 4: FREQUENTLY ASKED QUESTIONS -->
-      <div id="faq" style="margin-top: 100px; scroll-margin-top: 40px;">
-        <div class="section-header">
-          <span class="section-tag">SUPPORT & FAQ</span>
-          <h2 class="section-title">Frequently Asked Questions</h2>
-        </div>
-
-        <div class="faq-grid">
-          <div class="faq-card">
-            <h5>Can I run Open-Dot completely offline without an API key?</h5>
-            <p>Yes! Open-Dot seamlessly integrates with Ollama. Simply launch Ollama locally, and Open-Dot will detect your local models (Llama 3, Qwen, DeepSeek) for 100% private inference.</p>
-          </div>
-
-          <div class="faq-card">
-            <h5>How does Open-Dot handle multi-agent execution?</h5>
-            <p>Open-Dot uses a subagent dispatcher that launches isolated background subagents. Each subagent runs with its own prompt, context budget, and scoped tool permissions.</p>
-          </div>
-
-          <div class="faq-card">
-            <h5>What operating systems are supported?</h5>
-            <p>Open-Dot runs natively on Windows, macOS, and Linux via Node.js CLI and Electron Desktop app packaging.</p>
-          </div>
-
-          <div class="faq-card">
-            <h5>How does Open-Dot verify code edits?</h5>
-            <p>Open-Dot follows a strict zero-hallucination verification rule: after editing files, it automatically executes `tsc --noEmit`, unit tests, or build commands to empirically verify clean success.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- SECTION 5: FINAL CALL TO ACTION -->
-      <div class="cta-banner">
-        <h2>Ready to Automate Your Development Workflows?</h2>
-        <p>Get started with Open-Dot today. Connect your local models or cloud APIs and experience next-gen autonomous coding.</p>
-        <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-          <a class="btn" href="#full-demo" style="width: 180px; height: 50px; border-radius: 14px; font-weight: 600;"><span>Try Open-Dot Now</span></a>
-        </div>
-      </div>
-
-      <!-- FOOTER -->
-      <footer>
-        <p>&copy; 2026 Open-Dot AI Agent Suite. Built for autonomous developer productivity & local privacy.</p>
-      </footer>
-
+    </div>
+    <div class="chunks" role="img" aria-label="48 stored passages, 8 of them selected for the model">
+      <div class="grid"><i></i><i></i><i></i><i class="k"></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i></div>
+      <div class="legend"><span><i class="k"></i>Sent to the model</span><span><i></i>Stored locally, searched when you ask for more</span></div>
     </div>
   </div>
+</section>
 
-  <script>
-    (function() {
-      /* =====================================================================
-         STARFIELD GENERATOR
-         ===================================================================== */
-      function generateStars(id, count, blurMin, blurMax, alphaMin, alphaMax) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        var shadow = [];
-        for (var i = 0; i < count; i++) {
-          var x = (Math.random() * 100).toFixed(2);
-          var y = (Math.random() * 100).toFixed(2);
-          var blur = (blurMin + Math.random() * (blurMax - blurMin)).toFixed(1);
-          var alpha = (alphaMin + Math.random() * (alphaMax - alphaMin)).toFixed(2);
-          shadow.push(x + 'vw ' + y + 'vh ' + blur + 'px 0 rgba(255,255,255,' + alpha + ')');
-        }
-        el.style.boxShadow = shadow.join(',');
-      }
-      generateStars('stA', 150, 0, 0, 0.05, 0.30);
-      generateStars('stB', 18, 1.2, 1.2, 0.35, 0.70);
+<section class="sec" id="what">
+  <div class="wrap">
+    <div class="head">
+      <h2>One dot, one job.</h2>
+      <p>Make a dot for research, another for code, another for chores on your PC. Each one keeps its own browser, files and memory.</p>
+    </div>
+    <div class="abilities">
+      <div class="ab" style="--c:var(--blue)"><h3><u></u>Read the web</h3><p>Paste a link. The dot opens the page in its own browser, reads it and answers with links you can check.</p></div>
+      <div class="ab" style="--c:var(--lime)"><h3><u></u>Read your PDFs</h3><p>Drop in a paper and ask a question from the last page. It finds the right passage instead of skimming the first few.</p></div>
+      <div class="ab" style="--c:var(--lilac)"><h3><u></u>Run tasks on your PC</h3><p>Check your conda environments, write a script, open an app. It shows the command and waits for your yes.</p></div>
+      <div class="ab" style="--c:var(--orange)"><h3><u></u>Compare products</h3><p>Ask for the best headphones under ₹2,000. It reads real Amazon and Flipkart listings and shows price, rating and link.</p></div>
+      <div class="ab" style="--c:var(--blue)"><h3><u></u>Repeat on a schedule</h3><p>Ask for a briefing every weekday at 8am and set it up once in plain words.</p></div>
+      <div class="ab" style="--c:var(--lime)"><h3><u></u>Take over any time</h3><p>Watch the dot's screen live. Step in to log in or fix something, then hand it back.</p></div>
+    </div>
+  </div>
+</section>
 
-      /* =====================================================================
-         §8: CAROUSEL SHOTS (CloudFront + Open-Dot Screenshots Mix)
-         ===================================================================== */
-      var BASE_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/';
-      var SHOTS = [
-        { v: 'plain', t: 'OPEN-DOT DASHBOARD', url: 'assets/images/dashboard.png' },
-        { v: 'plain', t: 'MULTI-AGENT FLEET', url: 'assets/images/agent-fleet.png' },
-        { v: 'plain', t: 'AST CODE ANALYSIS', url: 'assets/images/code-analysis.png' },
-        { v: 'plain', t: 'WEB SUMMARIZER', url: 'assets/images/web-summarizer.png' },
-        { v: 'plain', t: 'OLLAMA LOCAL LLM', url: 'assets/images/settings-ollama.png' },
-        { v: 'pay', url: BASE_URL + 'hf_20260912_110422_0fc34393-7417-41b0-a200-43fd2b08a37f.png' },
-        { v: 'launch', url: BASE_URL + 'hf_20260912_110423_ba46182e-43bc-43a8-9007-a8234acf442d.png' },
-        { v: 'shop', url: BASE_URL + 'hf_20260912_110423_06cfbb84-6f96-48f6-be45-e03516510e48.png' },
-        { v: 'brand', url: BASE_URL + 'hf_20260912_110422_634bf390-f171-4f5d-9151-0d2c86c26e7b.png' },
-        { v: 'frete', url: BASE_URL + 'hf_20260912_110423_0cfe058d-db0e-4ee6-9708-7a297cc11a7a.png' }
-      ];
+<section class="sec white" id="safety">
+  <div class="wrap split">
+    <div class="approve">
+      <div class="who"><i></i>Bix wants to run a command</div>
+      <p class="ask">On this computer</p>
+      <code>conda env list</code>
+      <div class="row"><span class="yes">Approve</span><span class="no">Deny</span></div>
+      <p class="also">Or choose Always allow for this kind of command</p>
+    </div>
+    <div>
+      <div class="head">
+        <h2>Nothing risky runs without a yes.</h2>
+        <p>Small models make mistakes, so the app, not the model, decides what is allowed.</p>
+      </div>
+      <ul class="checks">
+        <li><b>Approval cards</b> for commands and anything that changes your files.</li>
+        <li><b>Private addresses blocked.</b> Pages cannot send a dot to localhost or your home network.</li>
+        <li><b>Links must be real.</b> A link in an answer has to come from a page the dot actually opened.</li>
+        <li><b>Secrets stay sealed</b> with Windows DPAPI or the macOS Keychain.</li>
+      </ul>
+    </div>
+  </div>
+</section>
 
-      function creative(d) {
-        var im = '<img alt="" src="' + d.url + '">';
-        if (d.v === 'pay') {
-          return '<div class="fill" style="background:#efedea"></div>' +
-            '<div class="ph" style="top:112px;bottom:0">' + im + '</div>' +
-            '<svg class="ph" style="top:118px;bottom:0" viewBox="0 0 130 182" preserveAspectRatio="none"><g stroke="#e5202f" stroke-width="8" fill="none" opacity=".92" stroke-linecap="square"><path d="M2 42h30M14 30v96M4 100l26-16"/><path d="M96 34v58M120 34v58M96 92q12 15 24 0"/><path d="M92 108l14 34M126 108l-12 34"/></g></svg>' +
-            '<div class="cv" style="top:20px;text-align:right;font-size:3.4px;letter-spacing:.15em;color:#8d9298">METHOD OF CHECKOUTS</div>' +
-            '<div class="cv t-big" style="top:32px;font-size:14px;color:#16171b">Checkouts</div>' +
-            '<div class="cv t-big" style="top:47px;font-size:14px;color:#e5202f">Quick n simple</div>' +
-            '<div class="cv" style="top:76px;font-size:5.2px;font-weight:700;color:#16171b;line-height:1.7"><div><b class="dot"></b>SPEND VIA <b>ACH</b></div><div style="margin-top:8px"><b class="dot sq"></b>OR AT MAX <b>12X</b><br><span style="margin-left:11px">ON CREDIT</span></div></div>';
-        } else if (d.v === 'launch') {
-          return '<div class="fill" style="background:linear-gradient(168deg,#f9d9e5,#f3bdd2 55%,#e8a3c0)"></div>' +
-            '<div class="ph" style="top:100px;bottom:0">' + im + '<div class="fill" style="background:linear-gradient(180deg,rgba(249,217,229,.97),rgba(249,217,229,0) 30%)"></div></div>' +
-            '<div class="cv t-serif" style="top:36px;font-size:17px;color:#b03a63">COLLECTION</div>' +
-            '<div class="cv t-serif" style="top:55px;font-size:17px;color:#b03a63">EXCLUSIVE!</div>';
-        } else if (d.v === 'shop') {
-          return '<div class="fill" style="background:#fff"></div>' +
-            '<div class="ph" style="top:0;height:148px">' + im + '</div>' +
-            '<div class="cv" style="top:158px;font-size:5.4px;font-weight:700;letter-spacing:.09em;color:#16171b">REGIME AT DAWNS</div>' +
-            '<div class="cv" style="top:168px;font-size:4.2px;color:#7b8087">Cleanse Serum Moisturize</div>' +
-            '<div style="position:absolute;left:10px;top:180px;padding:4px 11px;border-radius:20px;background:#16171b;font-size:4.6px;font-weight:600;color:#fff;letter-spacing:.05em">Acquire today</div>';
-        } else if (d.v === 'brand') {
-          return '<div class="fill" style="background:linear-gradient(180deg,#0a2a4a,#0d3a63 50%,#08192b)"></div>' +
-            '<div class="ph" style="top:92px;bottom:0">' + im + '<div class="fill" style="background:linear-gradient(180deg,rgba(10,42,74,.98),rgba(10,42,74,0) 36%)"></div></div>' +
-            '<div class="cv" style="top:16px;font-size:4.2px;line-height:1.7;color:rgba(255,255,255,.82);width:74px">Formulas light, assessed hypoallergenically n designed with a new ritual — revealing since a starting moment.</div>' +
-            '<div style="position:absolute;right:10px;top:16px;font-size:5.4px;font-weight:600;color:#fff;opacity:.92">Open-Dot</div>';
-        } else if (d.v === 'frete') {
-          return '<div class="fill" style="background:linear-gradient(158deg,#4a0c80 0%,#7a16a6 40%,#a81fc6 66%,#5c0e90 100%)"></div>' +
-            '<div class="ph" style="top:140px;bottom:0;opacity:.45;mix-blend-mode:screen">' + im + '</div>' +
-            '<div class="fill" style="background:radial-gradient(44% 16% at 50% 62%, rgba(255,255,255,.92), rgba(255,255,255,0) 72%)"></div>' +
-            '<div style="position:absolute;left:-6px;right:-6px;top:44px;height:13px;background:#ff2d8a;transform:rotate(-2.6deg);box-shadow:0 4px 12px rgba(255,45,138,.5)"></div>' +
-            '<div style="position:absolute;left:0;right:0;top:45.5px;transform:rotate(-2.6deg);text-align:center;font-size:5.6px;font-weight:700;letter-spacing:.05em;color:#fff">AUTONOMOUS WORKFLOWS</div>' +
-            '<div class="cv t-big" style="top:64px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Open</div>' +
-            '<div class="cv t-big" style="top:87px;font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(84,9,124,.6)">Dot</div>' +
-            '<div class="cv t-big" style="top:113px;font-size:19px;color:#fff">+</div>';
-        } else {
-          return '<div class="ph phf">' + im + '</div>' +
-            '<div class="fill" style="background:linear-gradient(180deg,rgba(4,8,16,0) 38%,rgba(4,8,16,.85) 68%)"></div>' +
-            '<div class="cv" style="top:150px;font-size:5.4px;font-weight:600;letter-spacing:.2em;color:#fff">' + (d.t || 'OPEN-DOT') + '</div>';
-        }
-      }
+<section class="sec" id="status">
+  <div class="wrap">
+    <div class="head">
+      <h2>Honest status.</h2>
+      <p>This is an alpha. Here is what has been tried and what has not.</p>
+    </div>
+    <div class="status">
+      <div class="r"><span class="n">Web pages and summaries</span><span class="d">Open a link, read it, answer with sources</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">PDF questions</span><span class="d">Upload a paper, ask about any page</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">Commands with approval</span><span class="d">PowerShell on Windows, shell on macOS</span><span class="tag ok">Works on Windows</span></div>
+      <div class="r"><span class="n">Product search</span><span class="d">Amazon and Flipkart listings with prices</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">Scheduled routines</span><span class="d">Briefings and chores on a timer</span><span class="tag al">Alpha</span></div>
+      <div class="r"><span class="n">Optional cloud model</span><span class="d">Bring your own key for harder tasks. Off by default.</span><span class="tag al">Alpha</span></div>
+      <div class="r"><span class="n">macOS app and installers</span><span class="d">Windows and macOS builds</span><span class="tag al">Not yet tested</span></div>
+      <div class="r"><span class="n">Connect your own apps</span><span class="d">Add tools through MCP servers you choose</span><span class="tag pl">Planned</span></div>
+    </div>
+  </div>
+</section>
 
-      /* =====================================================================
-         3D CAROUSEL RING ENGINE
-         ===================================================================== */
-      var ringEl = document.getElementById('ring');
-      var cards = [];
-      var NUM_CARDS = 37;
-      var R = 891;
-      var STEP = 360 / NUM_CARDS; // 9.7297 deg
-      var CULL = 42;
-      var SPEED = 1.9; // deg/sec
-      var phase = -2;
-      var lastTime = null;
+<section class="sec white" id="start">
+  <div class="wrap">
+    <div class="head">
+      <h2>Running in five commands.</h2>
+      <p>You need Node 20 or newer, pnpm and Ollama.</p>
+    </div>
+    <pre class="term"><code><span class="c"># get the code</span>
+<span class="p">$</span> git clone https://github.com/VedantJadhav701/opendot-local
+<span class="p">$</span> cd opendot-local &amp;&amp; pnpm install
 
-      for (var i = 0; i < NUM_CARDS; i++) {
-        var card = document.createElement('div');
-        card.className = 'card';
-        var d = SHOTS[i % SHOTS.length];
-        card.innerHTML = creative(d) + '<div class="edge"></div>';
-        var imgEl = card.querySelector('img');
-        if (imgEl) {
-          imgEl.addEventListener('error', function() {
-            this.closest('.card').classList.add('broken');
-          });
-        }
-        ringEl.appendChild(card);
-        cards.push(card);
-      }
+<span class="c"># get the model (about 2.5 GB) and the browser</span>
+<span class="p">$</span> ollama pull qwen3:4b-instruct-2507-q4_K_M
+<span class="p">$</span> pnpm exec playwright install chromium
 
-      function placeCards() {
-        cards.forEach(function(card, idx) {
-          var a = ((idx * STEP + phase) % 360 + 540) % 360 - 180; // signed angle -180..180
-          if (Math.abs(a) > CULL) {
-            card.style.visibility = 'hidden';
-            return;
-          }
-          card.style.visibility = 'visible';
-          var r = a * Math.PI / 180;
-          var c = Math.cos(r);
-          var s = Math.sin(r);
-          var x = R * s;
-          var z = R * (1 - c);
-          card.style.transform = 'translate3d(' + x.toFixed(2) + 'px, 0px, ' + z.toFixed(2) + 'px) rotateY(' + (-a).toFixed(2) + 'deg)';
-          var bright = (0.84 + 0.5 * (1 / c - 1)).toFixed(3);
-          card.style.filter = 'brightness(' + bright + ')';
-        });
-      }
+<span class="c"># start</span>
+<span class="p">$</span> pnpm dev</code></pre>
+    <p class="note">Open http://localhost:3000. If a step fails, open an issue on GitHub with the error text.</p>
+  </div>
+</section>
 
-      function tick(t) {
-        if (!lastTime) lastTime = t;
-        var dt = Math.min((t - lastTime) / 1000, 0.1);
-        lastTime = t;
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="head"><h2>Questions.</h2></div>
+    <div class="faq">
+      <details><summary>Is it really free?</summary><p>Yes. The app is open source and the models run on your hardware through Ollama. There is no account and no API key. The optional cloud model is off until you add your own key.</p></details>
+      <details><summary>What computer do I need?</summary><p>It is built around a 16GB RAM laptop with a 4GB NVIDIA GPU. Weaker machines can run smaller models, but expect slower answers and simpler tasks.</p></details>
+      <details><summary>Does my data leave my computer?</summary><p>No, unless you turn on the optional cloud model. Pages you open are fetched from the web, and what a dot reads is stored in a local database.</p></details>
+      <details><summary>How good is a 4B model?</summary><p>Good at reading one source and answering from it, running short tasks and comparing listings. Weaker at long plans and deep reasoning. The cloud option exists for those.</p></details>
+      <details><summary>Which models can I use?</summary><p>Any model you have pulled in Ollama. The default is Qwen3 4B Instruct, chosen because it fits in 4GB and calls tools reliably.</p></details>
+      <details><summary>Can I help?</summary><p>Yes. Try it, open issues, and send pull requests. Benchmarks on different hardware are especially useful.</p></details>
+    </div>
+  </div>
+</section>
 
-        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          phase -= SPEED * dt;
-        }
-        placeCards();
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
+<section class="close">
+  <div class="field" aria-hidden="true">
+    <div class="dot" data-z="1.1" style="--x:6%;--y:14%;--s:110px;--sm:56px;--c:var(--blue);--d:6.4s;--delay:-0s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.4" style="--x:14%;--y:58%;--s:78px;--sm:48px;--c:var(--lime);--d:5.4s;--delay:-1.8s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.2" style="--x:86%;--y:10%;--s:92px;--sm:52px;--c:var(--lilac);--d:6.8s;--delay:-0.7s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="0.8" style="--x:80%;--y:55%;--s:128px;--sm:60px;--c:var(--orange);--d:7.2s;--delay:-2.6s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.5" style="--x:30%;--y:78%;--s:64px;--sm:44px;--c:#111114;--d:5.8s;--delay:-3.1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.3" style="--x:62%;--y:80%;--s:70px;--sm:46px;--c:var(--lime);--d:6.2s;--delay:-1.1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+  </div>
+  <div class="wrap">
+    <h2>Hire a dot. It runs on your laptop.</h2>
+    <div class="cta">
+      <a class="btn solid" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">Get it on GitHub <span class="count" data-stars></span></a>
+      <a class="btn ghost" href="#start">Setup steps</a>
+    </div>
+  </div>
+</section>
+</main>
 
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) lastTime = null;
-      });
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/logo.png" alt="" width="28" height="28">OpenDot-local</a>
+    <span>Open source, built by <a href="https://vedantjadhav-ai.vercel.app/" target="_blank" rel="noopener"><u>Vedant Jadhav</u></a></span>
+    <div class="links">
+      <a href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/VedantJadhav701/opendot-local/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://linkedin.com/in/vedantjadhav-ai" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://vedantjadhav-ai.vercel.app/" target="_blank" rel="noopener">Portfolio</a>
+    </div>
+    <p class="small">Not affiliated with Ollama, OpenAI, Amazon or Flipkart. Product names belong to their owners.</p>
+  </div>
+</footer>
 
-      /* =====================================================================
-         §10: RESPONSIVE CANVAS & LAYOUT SCALER
-         ===================================================================== */
-      var TAB_MAX = 1080, TAB_MIN = 701, DW_MIN = 920;
-      var canvasEl = document.getElementById('canvas');
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  addEventListener('scroll',function(){nav.classList.toggle('scrolled',scrollY>8)},{passive:true});
 
-      function updateScale() {
-        var vw = window.innerWidth;
-        var vh = window.innerHeight;
+  // live star count, silent if blocked
+  try{
+    fetch('https://api.github.com/repos/VedantJadhav701/opendot-local').then(function(r){return r.ok?r.json():null}).then(function(d){
+      if(!d||typeof d.stargazers_count!=='number')return;
+      var n=d.stargazers_count>=1000?(d.stargazers_count/1000).toFixed(1)+'k':String(d.stargazers_count);
+      document.querySelectorAll('[data-stars]').forEach(function(e){e.textContent=n});
+    }).catch(function(){});
+  }catch(e){}
 
-        if (vw <= 700) {
-          canvasEl.style.removeProperty('--k');
-          canvasEl.style.removeProperty('--fill');
-          canvasEl.style.removeProperty('--stshift');
-          canvasEl.style.removeProperty('--sshift');
-          canvasEl.style.removeProperty('--rs');
-          return;
-        }
+  // play demo only while visible
+  var v=document.getElementById('vid');
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){es.forEach(function(e){
+      if(e.isIntersecting){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();
+    })},{threshold:.5}).observe(v);
+  }
 
-        var W = 1172;
-        var tboost = 1;
-
-        if (vw <= TAB_MAX && vw >= TAB_MIN) {
-          W = DW_MIN + (vw - TAB_MIN) * (1172 - DW_MIN) / (TAB_MAX - TAB_MIN);
-          if (vh > vw * 1.15) W = Math.min(W, 900);
-          var ramp = Math.min(1, (TAB_MAX - vw) / 120);
-          tboost = 1 + 0.14 * ramp;
-        }
-
-        var k = Math.min(vw / W, vh / 560);
-        var fill = Math.max(0, vh / k - 657);
-        var stshift = 0, sshift = 0, rs = 1;
-
-        if (vw <= TAB_MAX && fill > 0) {
-          var rampVal = Math.min(1, (TAB_MAX - vw) / 120);
-          sshift = Math.min(fill * 0.55, 420) * rampVal;
-          rs = 1 + Math.min(fill / 1100, 0.75) * rampVal;
-          var slack = 219.5 - 125 * rs + sshift;
-          stshift = Math.max(0, slack / 2 - 28) * rampVal;
-          fill -= sshift;
-        }
-
-        canvasEl.style.setProperty('--k', k.toFixed(4));
-        canvasEl.style.setProperty('--fill', fill.toFixed(1) + 'px');
-        canvasEl.style.setProperty('--stshift', stshift.toFixed(1) + 'px');
-        canvasEl.style.setProperty('--sshift', sshift.toFixed(1) + 'px');
-        canvasEl.style.setProperty('--rs', rs.toFixed(3));
-
-        return tboost;
-      }
-
-      /* =====================================================================
-         §11: THE TYPE FITTER
-         ===================================================================== */
-      var measureCanvas = document.createElement('canvas');
-      var measureCtx = measureCanvas.getContext('2d');
-
-      function capRatio(el) {
-        var comp = window.getComputedStyle(el);
-        measureCtx.font = comp.fontWeight + ' 100px ' + comp.fontFamily;
-        var m = measureCtx.measureText('H');
-        return (m.actualBoundingBoxAscent || 70) / 100;
-      }
-
-      function inkWidth(el, isPhone, kVal) {
-        return el.getBoundingClientRect().width / (isPhone ? 1 : kVal);
-      }
-
-      function fitBox(el, tw, tc, pre, kVal, isPhone) {
-        if (!el) return;
-        if (isPhone) {
-          el.style.fontSize = '';
-          el.style.transform = '';
-          el.style.top = '';
-          return;
-        }
-        var ratio = capRatio(el);
-        var fontSize = tc / ratio;
-        el.style.fontSize = fontSize.toFixed(2) + 'px';
-        var iw = inkWidth(el, false, kVal);
-        if (iw > 0) {
-          var scaleX = tw / iw;
-          el.style.transform = (pre ? pre + ' ' : '') + 'scaleX(' + scaleX.toFixed(4) + ')';
-        }
-      }
-
-      function baseline(el, y, isPhone) {
-        if (!el || isPhone) return;
-        var size = parseFloat(window.getComputedStyle(el).fontSize);
-        var A = size * 0.8, D = size * 0.2;
-        el.style.top = (y - ((size - (A + D)) / 2 + A)).toFixed(2) + 'px';
-      }
-
-      function centreLabel(btn, el, capPx, isPhone) {
-        if (!btn || !el || isPhone) return;
-        var btnH = btn.getBoundingClientRect().height;
-        var base = parseFloat(window.getComputedStyle(el).fontSize);
-        var bias = 1.1;
-        el.style.top = ((btnH / 2) - (base - capPx / 2) + bias).toFixed(2) + 'px';
-      }
-
-      function layout() {
-        var tboost = updateScale();
-        var vw = window.innerWidth;
-        var isPhone = (vw <= 700);
-
-        var h1a = document.getElementById('h1a');
-        var h1b = document.getElementById('h1b');
-        var sub1 = document.getElementById('sub1');
-        var sub2 = document.getElementById('sub2');
-        var badgeTxt = document.getElementById('badgeTxt');
-        var wmName = document.getElementById('wmName');
-        var ctaLabel = document.getElementById('ctaLabel');
-        var vpLabel = document.getElementById('vpLabel');
-        var linksEl = document.getElementById('links');
-
-        if (isPhone) {
-          [h1a, h1b, sub1, sub2, badgeTxt, wmName, ctaLabel, vpLabel].forEach(function(el) {
-            if (el) {
-              el.style.fontSize = '';
-              el.style.transform = '';
-              el.style.top = '';
-            }
-          });
-          if (linksEl) {
-            linksEl.style.transform = '';
-            linksEl.querySelectorAll('a').forEach(function(a) { a.style.fontSize = ''; });
-          }
-          placeCards();
-          return;
-        }
-
-        var kVal = parseFloat(canvasEl.style.getPropertyValue('--k') || 1);
-        var T = (vw <= TAB_MAX && vw >= TAB_MIN) ? tboost : 1;
-
-        fitBox(h1a, 563.5 * T, 37.2 * T, 'translateX(-50%)', kVal, false); baseline(h1a, 204.5, false);
-        fitBox(h1b, 197.5 * T, 37.2 * T, 'translateX(-50%)', kVal, false); baseline(h1b, 258.5, false);
-        fitBox(sub1, 389 * T, 8.4 * T, 'translateX(-50%)', kVal, false); baseline(sub1, 300.5, false);
-        fitBox(sub2, 311 * T, 8.4 * T, 'translateX(-50%)', kVal, false); baseline(sub2, 316.5, false);
-        fitBox(badgeTxt, 184 * T, 9.4 * T, 'translate(2px,-1px)', kVal, false);
-        fitBox(wmName, 51 * T, 11.4 * T, '', kVal, false); baseline(wmName, 38.5, false);
-
-        var navBtn = document.getElementById('navCta');
-        var watchBtn = document.getElementById('watchDemoCta');
-
-        fitBox(ctaLabel, 87 * T, 8.9 * T, '', kVal, false);
-        centreLabel(navBtn, ctaLabel, 8.9 * T, false);
-
-        fitBox(vpLabel, 76 * T, 9.5 * T, '', kVal, false);
-        centreLabel(watchBtn, vpLabel, 9.5 * T, false);
-
-        if (linksEl) {
-          linksEl.style.transform = '';
-          var firstLink = linksEl.querySelector('a');
-          if (firstLink) {
-            var cRatio = capRatio(firstLink);
-            var fs = 7.9 / cRatio;
-            linksEl.querySelectorAll('a').forEach(function(a) { a.style.fontSize = fs.toFixed(2) + 'px'; });
-            var rowW = inkWidth(linksEl, false, kVal);
-            if (rowW > 0) {
-              linksEl.style.transform = 'scaleX(' + (317 / rowW).toFixed(4) + ')';
-            }
-          }
-        }
-
-        placeCards();
-      }
-
-      window.addEventListener('resize', layout);
-      if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
-      document.fonts.ready.then(layout);
-      setTimeout(layout, 400);
-      setTimeout(layout, 1400);
-
-      /* =====================================================================
-         §10: MOBILE BURGER MENU INTERACTION
-         ===================================================================== */
-      var navPill = document.getElementById('navPill');
-      var burgerBtn = document.getElementById('burgerBtn');
-      var navmenu = document.getElementById('navmenu');
-      var linksEl = document.getElementById('links');
-      var navCta = document.getElementById('navCta');
-
-      function setupMobileMenu() {
-        if (window.innerWidth <= 1080 && navmenu.children.length === 0) {
-          navmenu.appendChild(linksEl);
-          if (navCta) navmenu.appendChild(navCta);
-        } else if (window.innerWidth > 1080 && navmenu.children.length > 0) {
-          navPill.insertBefore(linksEl, navCta);
-          navPill.insertBefore(navCta, burgerBtn);
-          navPill.classList.remove('open');
-          burgerBtn.setAttribute('aria-expanded', 'false');
-        }
-      }
-      setupMobileMenu();
-      window.addEventListener('resize', setupMobileMenu);
-
-      burgerBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var isOpen = navPill.classList.toggle('open');
-        burgerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      });
-
-      document.addEventListener('click', function(e) {
-        if (!navPill.contains(e.target)) {
-          navPill.classList.remove('open');
-          burgerBtn.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && navPill.classList.contains('open')) {
-          navPill.classList.remove('open');
-          burgerBtn.setAttribute('aria-expanded', 'false');
-          burgerBtn.focus();
-        }
-      });
-
-      /* =====================================================================
-         §12: MASTER ENTRANCE TIMELINE
-         ===================================================================== */
-      (function() {
-        if (!document.documentElement.classList.contains('intro')) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          settle();
-          return;
-        }
-        if (typeof Element.prototype.animate !== 'function') {
-          settle();
-          return;
-        }
-
-        var D = window.innerWidth <= 700 ? 0.66 : 1;
-        var EXPO = 'cubic-bezier(.16,1,.3,1)';
-        var SOFT = 'cubic-bezier(.22,.61,.36,1)';
-        var animId = 0;
-        var animations = [];
-
-        function Y(px) {
-          return '0 ' + (px * D) + 'px';
-        }
-
-        function play(selector, from, dur, delay, ease) {
-          var els = document.querySelectorAll(selector);
-          els.forEach(function(el) {
-            var keyframes = [from, { opacity: 1 }];
-            if (from.translate) keyframes[1].translate = '0 0';
-            if (from.scale) keyframes[1].scale = '1';
-            if (from.clipPath) keyframes[1].clipPath = 'inset(-30% 0 -30% 0)';
-
-            var a = el.animate(keyframes, {
-              duration: dur,
-              delay: delay,
-              easing: ease,
-              fill: 'both'
-            });
-            a.id = 'intro:' + (animId++);
-            animations.push(a);
-          });
-        }
-
-        function settle() {
-          document.getAnimations().forEach(function(a) {
-            if (a.id && a.id.indexOf('intro:') === 0) a.cancel();
-          });
-          document.documentElement.classList.remove('intro');
-        }
-
-        play('.nav', { opacity: 0, translate: Y(-9) }, 620, 60, EXPO);
-        play('.mark', { opacity: 0, translate: Y(6) }, 520, 150, SOFT);
-        play('.wm', { opacity: 0, translate: Y(6) }, 520, 185, SOFT);
-
-        var linkEls = document.querySelectorAll('.links a');
-        linkEls.forEach(function(el, i) {
-          var a = el.animate([
-            { opacity: 0, translate: Y(6) },
-            { opacity: 1, translate: '0 0' }
-          ], { duration: 460, delay: 215 + i * 45, easing: SOFT, fill: 'both' });
-          a.id = 'intro:' + (animId++);
-          animations.push(a);
-        });
-
-        play('.burger', { opacity: 0, translate: Y(6) }, 460, 300, SOFT);
-        play('.nav .btn', { opacity: 0, translate: Y(6) }, 500, 400, SOFT);
-
-        play('.badge', { opacity: 0, translate: Y(11), scale: .985 }, 560, 270, EXPO);
-        play('#h1a', { opacity: 0, translate: Y(15), clipPath: 'inset(100% 0 -30% 0)' }, 900, 380, EXPO);
-        play('#h1b', { opacity: 0, translate: Y(15), clipPath: 'inset(100% 0 -30% 0)' }, 900, 470, EXPO);
-        play('#sub1', { opacity: 0, translate: Y(10) }, 620, 690, EXPO);
-        play('#sub2', { opacity: 0, translate: Y(10) }, 620, 745, EXPO);
-        play('.cta2', { opacity: 0, translate: Y(13), scale: .985 }, 620, 830, EXPO);
-
-        play('.ring', { opacity: 0, translate: Y(18), scale: .99 }, 950, 700, EXPO);
-        play('.browser', { opacity: 0, translate: Y(26) }, 900, 900, EXPO);
-        play('.wa', { opacity: 0, scale: .88 }, 500, 1260, EXPO);
-
-        if (animations.length > 0) {
-          var last = animations[animations.length - 1];
-          last.finished.then(settle).catch(settle);
-        } else {
-          settle();
-        }
-      })();
-
-    })();
-  </script>
+  // dot parallax
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var fields=document.querySelectorAll('.field'),mx=0,my=0,tx=0,ty=0,run=false;
+  addEventListener('pointermove',function(e){
+    mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;
+    if(!run){run=true;requestAnimationFrame(tick)}
+  },{passive:true});
+  function tick(){
+    tx+=(mx-tx)*.08;ty+=(my-ty)*.08;
+    fields.forEach(function(f){f.querySelectorAll('.dot').forEach(function(d){
+      var k=parseFloat(d.dataset.z)||1;
+      d.style.transform='translate('+(tx*-22*k).toFixed(1)+'px,'+(ty*-22*k).toFixed(1)+'px)';
+    })});
+    if(Math.abs(mx-tx)>.002||Math.abs(my-ty)>.002)requestAnimationFrame(tick);else run=false;
+  }
+})();
+</script>
 </body>
 </html>
