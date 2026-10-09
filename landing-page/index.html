@@ -228,7 +228,7 @@ footer p.small{flex-basis:100%;font-size:13px}
       </a>
       <a class="btn ghost" href="#demo">Watch the demo</a>
     </div>
-    <p class="fine">Built and tested on a laptop with a 4GB RTX 3050 and a 4B model.</p>
+    <p class="fine">Runs 100% locally on your machine with Ollama — zero subscription, zero API cost, total privacy.</p>
   </div>
 </section>
 
@@ -245,13 +245,13 @@ footer p.small{flex-basis:100%;font-size:13px}
   <div class="wrap split">
     <div>
       <div class="head">
-        <h2>Made for a small model on a small GPU.</h2>
-        <p>A 4B model gets lost when you hand it a whole web page or paper. So a dot reads everything, keeps it on disk, and only puts the best passages in front of the model.</p>
+        <h2>Optimized for any local model on any hardware.</h2>
+        <p>Whether you run a 4B model on a laptop or a 27B+ model on a DGX rig, OpenDot-local keeps your work 100% local, costs zero, and keeps your data strictly on your machine. Dots connect your apps, index long documents, and feed only the most relevant evidence into the model for maximum precision.</p>
       </div>
       <div class="stats">
-        <div><b>2,500</b><span>tokens of evidence per answer</span></div>
-        <div><b>4 GB</b><span>VRAM is enough</span></div>
-        <div><b>0</b><span>API keys needed</span></div>
+        <div><b>100%</b><span>Local & private data</span></div>
+        <div><b>$0</b><span>API cost or subscription</span></div>
+        <div><b>Any Model</b><span>From 4B to 27B+ local LLMs</span></div>
       </div>
     </div>
     <div class="chunks" role="img" aria-label="48 stored passages, 8 of them selected for the model">
@@ -346,10 +346,10 @@ footer p.small{flex-basis:100%;font-size:13px}
     <div class="head"><h2>Questions.</h2></div>
     <div class="faq">
       <details><summary>Is it really free?</summary><p>Yes. The app is open source and the models run on your hardware through Ollama. There is no account and no API key. The optional cloud model is off until you add your own key.</p></details>
-      <details><summary>What computer do I need?</summary><p>It is built around a 16GB RAM laptop with a 4GB NVIDIA GPU. Weaker machines can run smaller models, but expect slower answers and simpler tasks.</p></details>
+      <details><summary>What computer do I need?</summary><p>Any machine capable of running Ollama locally. From standard laptops running 4B models up to workstation rigs or DGX servers running 27B+ models, OpenDot-local adapts seamlessly to your hardware.</p></details>
       <details><summary>Does my data leave my computer?</summary><p>No, unless you turn on the optional cloud model. Pages you open are fetched from the web, and what a dot reads is stored in a local database.</p></details>
-      <details><summary>How good is a 4B model?</summary><p>Good at reading one source and answering from it, running short tasks and comparing listings. Weaker at long plans and deep reasoning. The cloud option exists for those.</p></details>
-      <details><summary>Which models can I use?</summary><p>Any model you have pulled in Ollama. The default is Qwen3 4B Instruct, chosen because it fits in 4GB and calls tools reliably.</p></details>
+      <details><summary>How does context handling work?</summary><p>Dots read full web pages, PDFs, and files, store them locally, and retrieve precise passages for the model. This keeps your local inference fast and accurate regardless of model size.</p></details>
+      <details><summary>Which models can I use?</summary><p>Any model you pull in Ollama — from 4B models up to 27B, 70B, or custom GGUFs. You choose the best model for your hardware.</p></details>
       <details><summary>Can I help?</summary><p>Yes. Try it, open issues, and send pull requests. Benchmarks on different hardware are especially useful.</p></details>
     </div>
   </div>
