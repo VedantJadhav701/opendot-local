@@ -64,6 +64,50 @@ export async function listAvailableModels(): Promise<ModelInfo[]> {
   return models;
 }
 
+export function pickBestAvailableModel(available: string[], preferredTarget?: string): string {
+  if (!available || available.length === 0) {
+    return preferredTarget || DEFAULT_MODEL;
+  }
+
+  const genModels = available.filter((m) => !m.toLowerCase().includes("embed"));
+  const pool = genModels.length > 0 ? genModels : available;
+
+  if (preferredTarget && pool.includes(preferredTarget)) {
+    return preferredTarget;
+  }
+
+  const defaultSaved = getSetting("default_model");
+  if (defaultSaved && pool.includes(defaultSaved)) {
+    return defaultSaved;
+  }
+
+  const preferredPatterns = [
+    /qwen3:4b/i,
+    /qwen3/i,
+    /4b/i,
+    /7b/i,
+    /8b/i,
+    /14b/i,
+    /27b/i,
+    /32b/i,
+    /70b/i,
+    /qwen2\.5/i,
+    /gemma/i,
+    /llama/i,
+    /vero/i,
+  ];
+
+  for (const pattern of preferredPatterns) {
+    const found = pool.find((m) => pattern.test(m));
+    if (found) return found;
+  }
+
+  const nonTiny = pool.find((m) => !/1b|1\.5b|1\.7b|2b|nano|micro|tiny/i.test(m));
+  if (nonTiny) return nonTiny;
+
+  return pool[0];
+}
+
 let lastResolved: { main: string; review: string; available: string[] } = {
   main: DEFAULT_MODEL,
   review: DEFAULT_MODEL,
@@ -87,7 +131,7 @@ export function getResolvedSync(): { main: string; review: string; available: st
 
 export async function resolveModels(): Promise<{ main: string; review: string; available: string[] }> {
   const models = await listAvailableModels();
-  const modelIds = models.map((m) => m.id);
+  const modelIds = models.filter((m) => !m.id.toLowerCase().includes("embed")).map((m) => m.id);
 
   const envMain = process.env.DOTS_MODEL;
   const envReview = process.env.DOTS_REVIEW_MODEL;
@@ -95,8 +139,7 @@ export async function resolveModels(): Promise<{ main: string; review: string; a
   const main =
     envMain ||
     getSetting("default_model") ||
-    DEFAULT_MAIN_MODELS[0] ||
-    DEFAULT_MODEL;
+    pickBestAvailableModel(modelIds, DEFAULT_MODEL);
 
   const review =
     envReview ||
@@ -113,24 +156,15 @@ export async function activeModel(override?: string | null): Promise<string> {
   const available = res.available;
   const target = override || getSetting("default_model") || DEFAULT_MODEL;
 
-  if (target && available.length > 0 && !available.includes(target)) {
-    console.warn(`[ollama] Model '${target}' not installed locally. Please run \`ollama pull ${target}\`. Falling back to '${available[0]}'.`);
-    return available[0];
-  }
-
-  return target || res.main;
+  return pickBestAvailableModel(available, target);
 }
 
 export async function activeReviewModel(): Promise<string> {
   const res = await resolveModels();
   const available = res.available;
-  const target = getSetting("review_model");
+  const target = getSetting("review_model") || DEFAULT_MODEL;
 
-  if (target && available.length > 0 && !available.includes(target)) {
-    return available[0];
-  }
-
-  return target || res.review;
+  return pickBestAvailableModel(available, target);
 }
 
 export function setDefaultModel(modelId: string) {

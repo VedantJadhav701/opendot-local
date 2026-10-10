@@ -27,6 +27,16 @@ async function runTests() {
   console.log(`Test 3: hasKey = ${keyStatus}, keySource = ${source}`);
   console.log("PASS: Honest client functions executed cleanly.");
 
+  // Test 4: pickBestAvailableModel prefers 4B+ models over smaller models
+  console.log("Test 4: pickBestAvailableModel selection");
+  const { pickBestAvailableModel } = require("../llm/registry");
+  const sampleModels = ["vidya-1.7b:latest", "nomic-embed-text:latest", "llama3.2:1b", "qwen3:4b", "gemma2:2b"];
+  const chosen = pickBestAvailableModel(sampleModels, "non-existent:99b");
+  if (chosen !== "qwen3:4b") {
+    throw new Error(`Test 4 Failed: Expected 'qwen3:4b', but got '${chosen}'!`);
+  }
+  console.log("PASS: pickBestAvailableModel accurately selected 'qwen3:4b' over smaller models.");
+
   console.log("All Item 15 & 16 Unit Tests PASSED!");
 }
 
