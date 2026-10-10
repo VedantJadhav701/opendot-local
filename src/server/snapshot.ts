@@ -15,7 +15,7 @@ export function computerInfo(): ComputerInfo {
     mode: defaultMode(),
     docker: dockerAvailable(),
     image: BOX_IMAGE,
-    model: DEFAULT_MODEL,
+    model: m.defaultModel || m.main || DEFAULT_MODEL,
     models: m.available,
     computerTool: COMPUTER_ENABLED ? "computer" : "off",
     hasKey: hasKey(),

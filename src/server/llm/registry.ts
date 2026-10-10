@@ -46,9 +46,26 @@ export async function isOllamaConnected(): Promise<boolean> {
   return activeProvider.health();
 }
 
+export function isOriginalStandardModel(modelId: string): boolean {
+  if (!modelId) return false;
+  const lower = modelId.toLowerCase();
+  if (lower.includes("embed")) return false;
+  if (
+    lower.startsWith("vidya") ||
+    lower.startsWith("promethicc") ||
+    lower.startsWith("telco") ||
+    lower.startsWith("win_action") ||
+    lower.startsWith("action_model")
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export async function listAvailableModels(): Promise<ModelInfo[]> {
   const isHealthy = await isOllamaConnected();
-  const models = isHealthy ? await activeProvider.listModels() : [];
+  const rawModels = isHealthy ? await activeProvider.listModels() : [];
+  const models = rawModels.filter((m) => isOriginalStandardModel(m.id));
 
   const { hasCloudBoostKey } = require("../vault");
   if (hasCloudBoostKey()) {
@@ -69,21 +86,23 @@ export function pickBestAvailableModel(available: string[], preferredTarget?: st
     return preferredTarget || DEFAULT_MODEL;
   }
 
-  const genModels = available.filter((m) => !m.toLowerCase().includes("embed"));
-  const pool = genModels.length > 0 ? genModels : available;
+  const pool = available.filter((m) => isOriginalStandardModel(m));
+  const candidatePool = pool.length > 0 ? pool : available;
 
-  if (preferredTarget && pool.includes(preferredTarget)) {
+  if (preferredTarget && candidatePool.includes(preferredTarget)) {
     return preferredTarget;
   }
 
   const defaultSaved = getSetting("default_model");
-  if (defaultSaved && pool.includes(defaultSaved)) {
+  if (defaultSaved && candidatePool.includes(defaultSaved)) {
     return defaultSaved;
   }
 
   const preferredPatterns = [
+    /qwen3:4b-instruct-2507/i,
     /qwen3:4b/i,
     /qwen3/i,
+    /ornith/i,
     /4b/i,
     /7b/i,
     /8b/i,
@@ -98,14 +117,14 @@ export function pickBestAvailableModel(available: string[], preferredTarget?: st
   ];
 
   for (const pattern of preferredPatterns) {
-    const found = pool.find((m) => pattern.test(m));
+    const found = candidatePool.find((m) => pattern.test(m));
     if (found) return found;
   }
 
-  const nonTiny = pool.find((m) => !/1b|1\.5b|1\.7b|2b|nano|micro|tiny/i.test(m));
+  const nonTiny = candidatePool.find((m) => !/1b|1\.5b|1\.7b|2b|nano|micro|tiny/i.test(m));
   if (nonTiny) return nonTiny;
 
-  return pool[0];
+  return candidatePool[0];
 }
 
 let lastResolved: { main: string; review: string; available: string[] } = {
