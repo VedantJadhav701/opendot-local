@@ -2,13 +2,15 @@
 
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bell, Cpu, KeyRound, Lock, LogOut, Plus, RefreshCw, Server, ShieldCheck } from "lucide-react";
-import { connectApp, deletePassword, getModelManagerState, installBrowserEngine, refreshApps, savePassword, setDefaultModel, signInComposio, signOutComposio, startDockerDesktop } from "@/app/actions";
+import { Bell, Cpu, KeyRound, Lock, LogOut, Plus, RefreshCw, Server, ShieldCheck, AlertTriangle } from "lucide-react";
+import { connectApp, deletePassword, getModelManagerState, installBrowserEngine, refreshApps, resetSetupDone, savePassword, setDefaultModel, signInComposio, signOutComposio, startDockerDesktop } from "@/app/actions";
 import { useStore } from "@/lib/store";
 import { openAfter } from "@/lib/popup";
 import { Empty, PageHeader, RemoveButton, RuleEditor, Section } from "./SettingsKit";
 import ModelPicker from "./ModelPicker";
 import ModelSetup from "./ModelSetup";
+import PrivacyView from "./PrivacyView";
+import McpSection from "./McpSection";
 import { TriggersKey } from "./Triggers";
 
 const noop = () => () => {};
@@ -31,12 +33,22 @@ export default function SettingsView() {
         <Section eyebrow="Engine" title="Local AI & Models" description="OpenDot-local runs fully on your machine using Ollama. No paid cloud inference required.">
           <OllamaCard />
           <ModelManagerCard />
-          <div className="surface mb-3 flex items-center gap-3 p-4">
+          <div className="surface mb-3 flex items-center justify-between gap-3 p-4">
             <div className="flex-1">
               <div className="text-[14px] font-medium">Default Model</div>
               <div className="text-body-sm text-foreground/55">Used by every dot that doesn&apos;t pick its own model.</div>
             </div>
-            <ModelPicker allowDefault={false} value={computer.model || null} onChange={(m) => start(() => setDefaultModel(m))} />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn-secondary h-8 px-3 text-[13px]"
+                onClick={() => start(() => resetSetupDone())}
+                disabled={pending}
+              >
+                Run setup again
+              </button>
+              <ModelPicker allowDefault={false} value={computer.model || null} onChange={(m) => start(() => setDefaultModel(m))} />
+            </div>
           </div>
           <dl className="surface divide-y divide-black/[0.06]">
             {[
@@ -56,6 +68,10 @@ export default function SettingsView() {
 
         <Section eyebrow="Cloud Boost" title="Optional Cloud Provider" description="Optionally paste an API key for NVIDIA API Catalog or OpenAI-compatible endpoints. Stored encrypted in OS Vault. Local Ollama remains default.">
           <CloudBoostCard />
+        </Section>
+
+        <Section eyebrow="Privacy" title="Privacy & Network Ledger" description="OpenDot-local keeps your work on this computer. Inspect every outbound request, configure search endpoints, or switch on strict offline mode.">
+          <PrivacyView />
         </Section>
 
         <Section
@@ -114,12 +130,28 @@ export default function SettingsView() {
         </Section>
 
         <Section
-          id="apps"
-          eyebrow="Apps"
-          title="Your apps, via Composio (Optional)"
-          description="Optionally sign in with your Composio account to connect Gmail, Calendar, Slack, Notion, GitHub, and more."
+          id="connectors"
+          eyebrow="Connectors"
+          title="Connectors & External Tools"
+          description="Two ways to connect tools: local MCP servers without a broker using your own credentials, or optional Composio for one-click cloud apps."
         >
-          <AppsList />
+          <div className="space-y-6">
+            <div>
+              <div className="text-[14px] font-medium mb-1">Your own tools (MCP, no broker)</div>
+              <div className="text-body-sm text-foreground/55 mb-3">
+                Run MCP servers on this machine. Tools and credentials stay local in your OS vault.
+              </div>
+              <McpSection />
+            </div>
+
+            <div className="border-t border-black/[0.06] pt-5">
+              <div className="text-[14px] font-medium mb-1">Apps via Composio (optional account)</div>
+              <div className="text-body-sm text-foreground/55 mb-3">
+                Connect your everyday apps (Gmail, Slack, Notion) through Composio.
+              </div>
+              <AppsList />
+            </div>
+          </div>
         </Section>
 
         <Section
@@ -252,7 +284,99 @@ function ModelManagerCard() {
           )}
         </div>
       </div>
+
+      <PerformanceTuningSection />
       {error && <div className="border-t border-black/[0.06] px-4 py-2.5 text-caption text-destructive">{error}</div>}
+    </div>
+  );
+}
+
+function PerformanceTuningSection() {
+  const [tuningData, setTuningData] = useState<{ tuning: any; perfMode: string } | null>(null);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const loadTuning = () => {
+    import("@/app/model-actions").then(({ getTuning }) => {
+      getTuning().then(setTuningData).catch(() => {});
+    });
+  };
+
+  useEffect(() => {
+    loadTuning();
+  }, []);
+
+  const handleModeChange = (mode: string) => {
+    start(async () => {
+      const { setPerfMode } = await import("@/app/model-actions");
+      await setPerfMode(mode);
+      loadTuning();
+    });
+  };
+
+  const copyText = (txt: string, label: string) => {
+    navigator.clipboard.writeText(txt);
+    setCopiedCmd(label);
+    setTimeout(() => setCopiedCmd(null), 2500);
+  };
+
+  return (
+    <div className="border-t border-black/[0.06] px-4 py-4 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="text-[14px] font-medium">Hardware Performance Mode</div>
+          <div className="text-body-sm text-foreground/55 mt-0.5">
+            Controls context window size and memory usage for local models.
+          </div>
+        </div>
+        <select
+          value={tuningData?.perfMode || "auto"}
+          onChange={(e) => handleModeChange(e.target.value)}
+          disabled={pending}
+          className="input h-8 px-2 text-[13px] bg-background w-36"
+        >
+          <option value="auto">Auto (Hardware)</option>
+          <option value="quality">Quality (16k)</option>
+          <option value="balanced">Balanced (8k)</option>
+          <option value="fast">Fast (4k)</option>
+        </select>
+      </div>
+
+      {tuningData && (
+        <div className="rounded-lg bg-black/[0.03] p-3 text-caption text-foreground/75">
+          <span className="font-semibold text-foreground/90 capitalize">{tuningData.tuning.mode} Mode:</span> {tuningData.tuning.reason} (Context: {tuningData.tuning.numCtx.toLocaleString()} tokens)
+        </div>
+      )}
+
+      {/* Make it faster recommendations */}
+      <div className="rounded-xl border border-black/[0.08] bg-background p-4 space-y-3">
+        <div className="font-medium text-[14px]">Make it faster (Ollama Server Optimizations)</div>
+        <p className="text-caption text-foreground/60 leading-relaxed">
+          Enable Flash Attention and quantized KV-cache in your system environment to increase throughput:
+        </p>
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between gap-2 rounded bg-black/[0.03] px-3 py-2 text-caption font-mono">
+            <span className="truncate">setx OLLAMA_FLASH_ATTENTION 1 && setx OLLAMA_KV_CACHE_TYPE q8_0</span>
+            <button
+              type="button"
+              onClick={() => copyText("setx OLLAMA_FLASH_ATTENTION 1\nsetx OLLAMA_KV_CACHE_TYPE q8_0", "win")}
+              className="btn-secondary h-6 px-2 text-[11px] shrink-0"
+            >
+              {copiedCmd === "win" ? "Copied!" : "Copy (Windows)"}
+            </button>
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded bg-black/[0.03] px-3 py-2 text-caption font-mono">
+            <span className="truncate">launchctl setenv OLLAMA_FLASH_ATTENTION 1</span>
+            <button
+              type="button"
+              onClick={() => copyText("launchctl setenv OLLAMA_FLASH_ATTENTION 1\nlaunchctl setenv OLLAMA_KV_CACHE_TYPE q8_0", "mac")}
+              className="btn-secondary h-6 px-2 text-[11px] shrink-0"
+            >
+              {copiedCmd === "mac" ? "Copied!" : "Copy (macOS)"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,9 +387,26 @@ function AppsList() {
   const signInError = useSearchParams().get("composio_error");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showConsent, setShowConsent] = useState(false);
   const [pending, start] = useTransition();
   const connected = apps.filter((a) => a.connected);
   const suggested = apps.filter((a) => !a.connected);
+
+  const handleSignInClick = () => {
+    if (typeof window !== "undefined" && !localStorage.getItem("composio_consent")) {
+      setShowConsent(true);
+      return;
+    }
+    start(() => openAfter(signInComposio, setError));
+  };
+
+  const handleConfirmConsent = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("composio_consent", "1");
+    }
+    setShowConsent(false);
+    start(() => openAfter(signInComposio, setError));
+  };
 
   if (!signedIn) {
     return (
@@ -274,7 +415,7 @@ function AppsList() {
           <div className="flex -space-x-2">
             {["gmail", "googlecalendar", "slack", "notion", "github"].map((slug) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={slug} src={`https://logos.composio.dev/api/${slug}`} alt="" className="size-8 rounded-full border-2 border-card bg-card object-contain p-1 shadow-sm" />
+              <img key={slug} src={`/app-icons/${slug}.svg`} alt="" className="size-8 rounded-full border-2 border-card bg-card object-contain p-1 shadow-sm" />
             ))}
           </div>
           <div className="min-w-0 flex-1">
@@ -284,11 +425,38 @@ function AppsList() {
           <button
             className="btn-primary shrink-0"
             disabled={pending}
-            onClick={() => start(() => openAfter(signInComposio, setError))}
+            onClick={handleSignInClick}
           >
             Sign in with Composio
           </button>
         </div>
+        {showConsent && (
+          <div className="border-t border-black/[0.08] bg-popover p-4 space-y-3">
+            <div className="text-[13px] font-medium text-warning flex items-center gap-1.5">
+              <AlertTriangle className="size-4 shrink-0" />
+              <span>Third-party cloud service notice</span>
+            </div>
+            <p className="text-body-sm text-foreground/75">
+              Composio is a third-party service. If you connect an app, its data (for example your email) passes through Composio&apos;s servers and your app logins are stored by Composio. OpenDot-local itself still runs locally. Continue?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-primary h-7 px-3 text-[12px]"
+                onClick={handleConfirmConsent}
+              >
+                Continue to sign in
+              </button>
+              <button
+                type="button"
+                className="btn-quiet h-7 px-2.5 text-[12px]"
+                onClick={() => setShowConsent(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         {(error || signInError) && <div className="border-t border-black/[0.06] px-5 py-2.5 text-caption text-destructive">{error ?? signInError}</div>}
       </div>
     );
@@ -303,7 +471,7 @@ function AppsList() {
     <div className="space-y-3">
       <div className="surface flex items-center gap-3 px-4 py-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="https://logos.composio.dev/api/composio" alt="" className="size-6 rounded-xs object-contain" />
+        <img src="/app-icons/default.svg" alt="" className="size-6 rounded-xs object-contain" />
         <div className="flex-1">
           <div className="text-[14px]">Composio Apps</div>
           <div className="text-caption text-foreground/50">Signed in · {connected.length} app{connected.length === 1 ? "" : "s"} connected</div>

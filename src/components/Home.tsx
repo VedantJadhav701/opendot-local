@@ -10,11 +10,13 @@ import { DEFAULT_LOOK } from "@/lib/look";
 import { statusDot, statusLabel, timeAgo } from "@/lib/status";
 import Dot3DLazy from "./Dot3DLazy";
 import DotOrb from "./DotOrb";
+import FirstRun from "./FirstRun";
 
 export default function Home() {
   const router = useRouter();
   const dots = useStore((s) => s.dots);
   const loaded = useStore((s) => s.loaded);
+  const computer = useStore((s) => s.computer);
   const messages = useStore((s) => s.messages);
   const [picked, setPicked] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -24,6 +26,10 @@ export default function Home() {
     () => messages.filter((m) => !m.channelId && ((m.role === "dot" && m.text) || (m.role === "card" && m.card?.status === "pending"))).slice(-6).reverse(),
     [messages],
   );
+
+  if (loaded && !computer.setupDone) {
+    return <FirstRun />;
+  }
 
   if (loaded && !dots.length) {
     return (
@@ -178,15 +184,16 @@ function AppsStrip() {
   const apps = useStore((s) => s.apps);
   const signedIn = useStore((s) => s.computer.composio);
   const connected = apps.filter((a) => a.connected);
+  const known = new Set(["gmail", "googlecalendar", "slack", "notion", "github", "googledrive", "linear", "outlook"]);
   const logos = (slugs: string[]) =>
     slugs.slice(0, 8).map((slug) => (
       // eslint-disable-next-line @next/next/no-img-element
-      <img key={slug} src={`https://logos.composio.dev/api/${slug}`} alt="" className="size-7 rounded-full border-2 border-card bg-card object-contain p-1 shadow-sm" />
+      <img key={slug} src={`/app-icons/${known.has(slug) ? slug : "default"}.svg`} alt="" className="size-7 rounded-full border-2 border-card bg-card object-contain p-1 shadow-sm" />
     ));
 
   return (
     <Link
-      href="/settings#apps"
+      href="/settings#connectors"
       className="surface mx-auto -mt-2 mb-10 grid max-w-[640px] grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:flex transition-[border-color,box-shadow] hover:border-black/15 hover:shadow-elevated"
     >
       <div className="flex -space-x-2">{logos(signedIn && connected.length ? connected.map((a) => a.slug) : ["gmail", "googlecalendar", "slack", "notion", "github"])}</div>

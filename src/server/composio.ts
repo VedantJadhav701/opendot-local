@@ -123,6 +123,8 @@ async function ensureClient(): Promise<Client | null> {
 }
 
 export async function signIn(): Promise<string | null> {
+  const { offlineMode } = await import("./net/netlog");
+  if (offlineMode()) throw new Error("Offline mode is on.");
   if (st.client) return null;
   const r = await connect();
   return r?.url ?? null;
@@ -147,6 +149,8 @@ export async function signOut() {
 
 export async function refresh() {
   try {
+    const { offlineMode } = await import("./net/netlog");
+    if (offlineMode()) return;
     const client = st.client ?? (await ensureClient());
     if (!client) return;
     const { tools } = await client.listTools();
@@ -162,7 +166,13 @@ export async function refresh() {
 
 export function apps(): ToolkitState[] {
   const slugs = [...st.connected, ...SUGGESTED.filter((s) => !st.connected.includes(s))];
-  return slugs.map((slug) => ({ slug, name: prettyName(slug), logo: `https://logos.composio.dev/api/${slug}`, connected: st.connected.includes(slug) }));
+  const known = new Set(["gmail", "googlecalendar", "slack", "notion", "github", "googledrive", "linear", "outlook"]);
+  return slugs.map((slug) => ({
+    slug,
+    name: prettyName(slug),
+    logo: `/app-icons/${known.has(slug) ? slug : "default"}.svg`,
+    connected: st.connected.includes(slug),
+  }));
 }
 
 function publish() {
@@ -179,6 +189,8 @@ const prettyName = (slug: string) => NAMES[slug] ?? slug.replace(/[_-]+/g, " ").
 const clip = (s: string, n = 30_000) => (s.length > n ? `${s.slice(0, n)}…[truncated]` : s);
 
 export async function callTool(name: string, args: Record<string, unknown>): Promise<string> {
+  const { offlineMode } = await import("./net/netlog");
+  if (offlineMode()) return "Offline mode is on.";
   const run = async () => {
     const client = await ensureClient();
     if (!client) return "Composio app is not connected.";

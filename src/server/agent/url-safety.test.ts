@@ -56,6 +56,22 @@ async function runItem2Tests() {
     console.log("PASS: fetchSafe blocked private IP access with Security error.");
   }
 
+  // Test DOTS_BENCH exception behavior
+  delete process.env.DOTS_BENCH;
+  const noBenchRes = await validateUrlSafety("http://127.0.0.1:4010/aldervale.html");
+  if (noBenchRes.safe) throw new Error("FAIL: 127.0.0.1:4010 must be blocked when DOTS_BENCH is not set");
+  console.log("PASS: 127.0.0.1:4010 blocked without DOTS_BENCH");
+
+  process.env.DOTS_BENCH = "1";
+  const benchRes = await validateUrlSafety("http://127.0.0.1:4010/aldervale.html");
+  if (!benchRes.safe) throw new Error(`FAIL: 127.0.0.1:4010 should be allowed with DOTS_BENCH=1: ${benchRes.reason}`);
+  console.log("PASS: 127.0.0.1:4010 allowed with DOTS_BENCH=1");
+
+  const ollamaBlocked = await validateUrlSafety("http://127.0.0.1:11434/api/tags");
+  if (ollamaBlocked.safe) throw new Error("FAIL: 127.0.0.1:11434 must remain blocked even with DOTS_BENCH=1");
+  console.log("PASS: 127.0.0.1:11434 remains blocked with DOTS_BENCH=1");
+  delete process.env.DOTS_BENCH;
+
   console.log("All Item 2 URL Safety Tests PASSED!");
 }
 

@@ -1,111 +1,123 @@
-# OpenDot-Local
+# OpenDot-local
 
-🌐 **Live Landing Page & Demo**: [https://opendot-local.vercel.app/](https://opendot-local.vercel.app/)
+A local-first, privacy-respecting personal AI desktop agent that runs on your computer using Ollama.
 
-**OpenDot-Local** is a free, 100% private, local-first, cross-platform (Windows & macOS) personal AI desktop agent runtime powered by local Ollama models and optional cloud acceleration.
+🌐 **Website & Documentation**: [https://opendot-local.vercel.app/](https://opendot-local.vercel.app/)
 
 ---
 
-## 🎬 Auto-Playing Demo
+## 🎬 Demo
 
 <p align="center">
-  <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-Local Live Auto-Playing Demo" />
-</p>
-
-### 📸 App Showcase
-
-<p align="center">
-  <img src="app-images/dashboard.png" width="48%" alt="Main Dashboard & Agent Handoff" />
-  <img src="app-images/agent-fleet.png" width="48%" alt="Autonomous Agent Fleet" />
-</p>
-
-<p align="center">
-  <img src="app-images/shopping-research.png" width="48%" alt="Real-time Web Search & Comparison" />
-  <img src="app-images/web-summarizer.png" width="48%" alt="Web Page & Document Reader" />
-</p>
-
-<p align="center">
-  <img src="app-images/code-analysis.png" width="48%" alt="Workspace Code & Tech Stack Analysis" />
-  <img src="app-images/settings-ollama.png" width="48%" alt="Local Ollama AI Engine Settings" />
+  <img src="app-images/app-demo.gif" width="100%" alt="OpenDot-local Auto-Playing Demo" />
 </p>
 
 ---
 
-## 🌟 Key Features
+## 📥 Download
 
-- **Local LLM Engine**: Powered 100% locally by [Ollama](https://ollama.com). Zero required cloud subscriptions or API keys. Supports Qwen, Llama, Mistral, Gemma, and custom models.
-- **Optional Cloud Boost**: Integrated OpenAI-compatible provider (NVIDIA API Catalog / OpenRouter / OpenAI) for cloud escalation when desired.
-- **Cross-Platform Automation**: Safe shell execution on **Windows (PowerShell)** and **macOS/Linux (POSIX shell)**.
-- **Docker Sandbox Support**: Optionally isolates agent execution inside Docker containers with local folder workspace fallback.
-- **Browser Automation**: Playwright-powered local browser engine with persistent session cookies per agent.
-- **Local SQLite Storage**: Stores conversations, routines, memories, and rules locally in SQLite (`node:sqlite`).
-- **Encrypted Secret Vault**: Encrypts sensitive logins and API keys with native OS security (DPAPI on Windows, Keychain on macOS).
-- **Rules & Human-in-the-Loop Approvals**: Hardened security checks for risky commands and file modifications with interactive approval cards.
+Prebuilt installers are attached to every tagged release:
+
+- **Windows Installer**: [Download latest `.exe` from GitHub Releases](https://github.com/VedantJadhav701/opendot-local/releases)
+- **macOS Installer (Experimental)**: [Download latest `.dmg` from GitHub Releases](https://github.com/VedantJadhav701/opendot-local/releases)
+
+> [!NOTE]
+> Because Windows installers are currently community-built and unsigned, Windows Defender SmartScreen may display an "unrecognized app" warning. Click **More info**, then **Run anyway**. Free open-source code signing is planned. On macOS, right-click the app and choose **Open**.
 
 ---
 
-## 🚀 Getting Started
+## 💻 Requirements
 
-### Prerequisites
+- **Operating System**: Windows 10/11 (64-bit), macOS 12+ (Apple Silicon or Intel), or Linux
+- **Memory**: 8 GB RAM minimum (16 GB+ recommended for 7B+ models)
+- **Ollama**: Installed and running locally ([ollama.com/download](https://ollama.com/download))
+- **Node.js**: v22.5.0 or higher (for building from source)
 
-1. **Node.js**: v22.0.0 or higher
-2. **pnpm**: `npm install -g pnpm`
-3. **Ollama**: Installed and running locally (`http://127.0.0.1:11434`)
-   ```bash
-   ollama pull qwen3:4b
-   ```
+---
 
-### Run from Source
+## ⚡ 3-Step Quick Start
+
+1. **Install and start Ollama**:
+   Download from [ollama.com/download](https://ollama.com/download) and verify it is running at `http://127.0.0.1:11434`.
+2. **Launch OpenDot-local**:
+   Run the installed application or `pnpm dev`.
+3. **Follow the Onboarding Wizard**:
+   The built-in setup wizard verifies Ollama, inspects your hardware, downloads a recommended model with a progress bar, tests your browser engine, and runs your first task.
+
+---
+
+## 🔒 What Leaves Your Computer
+
+> Your chats, files, folders, memory and the AI model stay on your computer. When you ask for web search or to open a page, only the search words and the page requests go out, like any browser. Optional Cloud Boost sends your prompts to the provider you choose, and it is off by default.
+
+Specifically:
+- **Search words**: Sent to search engines when using web search.
+- **Web page requests**: Outbound HTTP/HTTPS requests to websites you ask the agent to inspect, including page assets.
+- **Model downloads**: Ollama contacts its own registry when pulling models.
+- **Optional Cloud Boost**: Prompts are sent only to the provider you explicitly configure in Settings (off by default).
+- **Optional Apps via Composio**: If you connect third-party apps through Composio (Phase F), app data (emails, calendar events, messages) passes through Composio's servers. This is off by default and clearly indicated.
+
+---
+
+## 🛠 Run from Source
 
 ```bash
 # Clone the repository
 git clone https://github.com/VedantJadhav701/opendot-local.git
 cd opendot-local
 
-# Install dependencies
+# Install dependencies (Node >= 22.5 required)
 pnpm install
 
-# Run web dev server
-pnpm dev
+# Run type checks and tests
+pnpm run check
 
-# (Optional) Run Electron desktop application
-pnpm desktop:dev
+# Launch the development server
+pnpm dev
 ```
 
-### Desktop Installers
+Open [http://127.0.0.1:3100](http://127.0.0.1:3100) in your browser.
 
-Build standalone OS installers:
-
+To package the standalone desktop app:
 ```bash
-# Prepare desktop server bundle
-pnpm desktop:prepare
-
-# Build Windows NSIS installer (.exe)
+# Prepare and build Windows installer
 pnpm desktop:build:win
 
-# Build macOS DMG installer (.dmg)
+# Prepare and build macOS DMG
 pnpm desktop:build:mac
 ```
 
 ---
 
-## 🛠 Architecture
+## ❓ Troubleshooting
 
-```
-electron/main.mjs         Cross-platform desktop application host (Windows & macOS)
-scripts/desktop-*.mjs     Packages Next.js production server into Electron app
-src/server/
-  llm/                    Local & Cloud LLM Providers (Ollama & OpenAI-Compat)
-  agent/runtime.ts        Provider-independent streaming agent loop & approvals
-  agent/tools.ts          Agent tools and safety rule checks
-  agent/review.ts         Local rule evaluation engine
-  computer/platform/      Cross-platform shell execution (Windows PowerShell / macOS POSIX)
-  computer/shell.ts       Workspace file operations & Docker sandbox manager
-  computer/browser.ts     Playwright browser automation engine
-  vault.ts, secrets/      Native OS secret store (Windows DPAPI / macOS Keychain)
-  repo.ts, db.ts          Local SQLite database
-```
+- **Ollama not found**:
+  Ensure Ollama is running in your system tray or terminal (`ollama serve`). You can verify in your browser at `http://127.0.0.1:11434`.
+- **Model is slow or unresponsive**:
+  Large models require significant RAM or GPU VRAM. In Settings or First-Run, choose a smaller model (such as `qwen3:4b-instruct-2507-q4_K_M`) that fits comfortably within your hardware.
+- **Windows SmartScreen warning**:
+  Click **More info** and select **Run anyway**.
+- **Antivirus or Firewall flags**:
+  OpenDot-local binds exclusively to loopback (`127.0.0.1:3100`). If your local firewall alerts you to Node.js or Electron opening a port, allow local network loopback access.
 
 ---
 
-Not affiliated with Composio, OpenAI, or Ollama.
+## 🔌 Optional Apps via Composio
+
+OpenDot-local is completely functional offline and locally with Ollama.
+
+If you choose to connect third-party productivity services (such as Gmail, Google Calendar, Slack, GitHub, or Notion):
+- These integrations use Composio.
+- They require a free Composio account.
+- When an app integration is active, actions and contents related to that specific integration pass through Composio's servers.
+- This is completely optional and disabled by default.
+
+---
+
+## 📄 License & Attribution
+
+- Released under the [MIT License](LICENSE).
+- Upstream Copyright (c) 2025 Composio Community.
+- Modifications Copyright (c) 2026 Vedant Jadhav.
+- See [NOTICE.md](NOTICE.md) and [CITATION.cff](CITATION.cff) for citations and provenance details.
+- Not affiliated with Composio, OpenAI, or Ollama.

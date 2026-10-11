@@ -1,0 +1,27 @@
+name: Feature Request
+description: Suggest an idea or enhancement for OpenDot-local
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Share your ideas for making OpenDot-local better!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      placeholder: Is your feature request related to a problem or specific workflow?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      placeholder: Describe the solution or capability you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      placeholder: Any alternative solutions or features considered.

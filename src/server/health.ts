@@ -57,16 +57,32 @@ export async function checkSystemHealth(): Promise<HealthStatus> {
   let browserError: string | undefined;
   let channel = "chromium";
 
-  try {
-    execPath = chromium.executablePath();
-    if (execPath && fs.existsSync(execPath)) {
-      browserOk = true;
-    } else {
-      // Check default fallback or chromium install
-      browserError = `Chromium executable not found at '${execPath || "default path"}'. Run 'pnpm exec playwright install chromium' or 'npx playwright install chromium' to install.`;
+  // Check system installed browser candidates (Edge, Chrome)
+  const candidateChannels = process.platform === "win32" ? ["msedge", "chrome"] : ["chrome"];
+  for (const ch of candidateChannels) {
+    try {
+      const p = (chromium as unknown as { executablePath(opts?: { channel?: string }): string }).executablePath({ channel: ch });
+      if (p && fs.existsSync(p)) {
+        browserOk = true;
+        channel = ch;
+        execPath = p;
+        break;
+      }
+    } catch {}
+  }
+
+  if (!browserOk) {
+    try {
+      execPath = chromium.executablePath();
+      if (execPath && fs.existsSync(execPath)) {
+        browserOk = true;
+        channel = "chromium";
+      } else {
+        browserError = `No browser found (Edge, Chrome, or Chromium). Click 'Install browser engine' to download Chromium.`;
+      }
+    } catch (err: any) {
+      browserError = `No browser found: ${err.message}. Click 'Install browser engine' to download Chromium.`;
     }
-  } catch (err: any) {
-    browserError = `Playwright Chromium check failed: ${err.message}. Run 'pnpm exec playwright install chromium' to install.`;
   }
 
   return {

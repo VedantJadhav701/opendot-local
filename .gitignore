@@ -42,21 +42,32 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# dots runtime data
+# dots runtime data & local uploads
 /.data
+/.data/
+/uploads
+/uploads/
+session.md
 .env*.local
 
-# desktop builds
+# desktop builds & videos
 /dist
+/dist/
 /.desktop
+/.desktop/
 /videos
 *.mp4
-!landing-page/assets/demo.mp4
-!landing-page/assets/*.mp4
-!landing-page/demo.mp4
-!public/assets/*.mp4
-!landing-page/public/*.mp4
-!landing-page/public/assets/*.mp4
-!landing-page/public/assets/videos/app-demo-web.mp4
 .gstack/
+
+# temporary folders
+/temp-cluade
+/opendot-model-update
+/opendot-bench-update
+/tem-img
+
+# benchmark generated
+/bench/fixtures/out
+/bench/fixtures/out/
+/bench/results
+/bench/results/
 

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import Sidebar from "@/components/Sidebar";
 import Toasts from "@/components/Toasts";
@@ -8,9 +7,9 @@ import VoicePanel from "@/components/VoicePanel";
 import MobileBar from "@/components/MobileBar";
 import "./globals.css";
 
-// Same pairing as the Composio landing site: Geist Sans (local variable font) + JetBrains Mono.
+// Local variable fonts: Geist Sans + Mono, fully offline-ready
 const geistSans = localFont({ src: "../fonts/Geist-Variable.woff2", weight: "100 900", variable: "--font-geist-sans" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono", display: "swap" });
+const jetbrainsMono = localFont({ src: "../fonts/GeistMono-Variable.woff2", weight: "100 900", variable: "--font-jetbrains-mono" });
 
 export const metadata: Metadata = {
   title: "OpenDot-local",

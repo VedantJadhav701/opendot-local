@@ -2,7 +2,7 @@
 // so nothing else needs installing) and shows it in a window. Closing the window keeps the server running,
 // so dots keep working and routines keep firing; quit from the menu or with ⌘Q.
 
-import { app, BrowserWindow, shell, session, dialog } from "electron";
+import { app, BrowserWindow, shell, session, dialog, ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import http from "node:http";
@@ -121,7 +121,19 @@ function createWindow() {
     title: "Open Dot Local",
     backgroundColor: "#f6f6f6",
     show: false,
-    webPreferences: { contextIsolation: true, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      sandbox: true,
+      preload: path.join(import.meta.dirname, "preload.mjs"),
+    },
+  });
+
+  ipcMain.handle("pick-folder", async () => {
+    const result = await dialog.showOpenDialog(win, {
+      properties: ["openDirectory"],
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
   });
   win.once("ready-to-show", () => win.show());
 

@@ -77,6 +77,12 @@ export async function validateUrlSafety(inputUrl: string): Promise<UrlSafetyResu
     return { safe: false, url: inputUrl, reason: `Blocked protocol "${parsed.protocol}". Only http and https are allowed.` };
   }
 
+  // Test-only. The packaged app never sets DOTS_BENCH. Covered by a unit test that proves the block still holds without it.
+  const benchOrigins = process.env.DOTS_BENCH === "1" ? new Set(["http://127.0.0.1:4010"]) : new Set<string>();
+  if (benchOrigins.has(parsed.origin)) {
+    return { safe: true, url: parsed.href, resolvedIp: "127.0.0.1" };
+  }
+
   const hostname = parsed.hostname.toLowerCase();
 
   // Block localhost or .localhost or .local
@@ -120,6 +126,9 @@ export async function fetchSafe(
   let redirects = 0;
 
   while (redirects <= maxRedirects) {
+    const { assertAllowed } = await import("../net/netlog");
+    assertAllowed(currentUrl);
+
     const safety = await validateUrlSafety(currentUrl);
     if (!safety.safe) {
       throw new Error(`Security error: ${safety.reason}`);

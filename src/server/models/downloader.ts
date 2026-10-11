@@ -34,6 +34,11 @@ export function startPull(model: string): PullStatus {
   if (existing?.state === "pulling") return existing;
   const status: PullStatus = { id: model, state: "pulling", completed: 0, total: 0, startedAt: Date.now() };
   pulls.set(model, status);
+
+  import("../net/netlog").then(({ logRequest }) => {
+    logRequest("https://registry.ollama.ai/", "GET", undefined, { reason: "model_download", note: `via Ollama (${model})` });
+  }).catch(() => {});
+
   void run(model, status);
   return status;
 }

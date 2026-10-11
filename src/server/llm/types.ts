@@ -57,6 +57,8 @@ export type ChatRequest = {
   temperature?: number;
   context_length?: number;
   num_predict?: number;
+  num_batch?: number;
+  keep_alive?: string;
   stream?: boolean;
 };
 

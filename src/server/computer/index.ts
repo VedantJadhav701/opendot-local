@@ -71,6 +71,7 @@ export async function listFiles(dotId: string): Promise<FileEntry[]> {
 
 // ---------- browser & screen ----------
 
+export const launchBrowser = browser.launchBrowser;
 export const openUrl = (dotId: string, url: string) => browser.openUrl(dotId, url);
 export const readPage = (dotId: string, userQuery = "") => browser.readPage(dotId, userQuery);
 export const currentPageInfo = (dotId: string) => browser.currentPageInfo(dotId);

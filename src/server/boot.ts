@@ -18,6 +18,13 @@ export function boot() {
   // Learn which models are installed locally & cloud, then broadcast to UI (fills the model pickers).
   const { resolveModels } = require("./llm");
   void resolveModels().then(() => emit({ type: "computer", data: computerInfo() })).catch(() => {});
+  // Start background folder indexing scanner
+  const { startFolderScanner } = require("./context/folder-index");
+  startFolderScanner();
+
   // Reconnect to Composio For You with the saved sign-in (fills Settings → Apps and the dots' tools).
   if (signedIn()) void refreshComposio().catch((err) => console.warn("[dots] Composio:", err instanceof Error ? err.message : err));
+
+  // Connect configured MCP servers in background
+  void import("./mcp/manager").then((m) => m.connectAll()).catch((err) => console.warn("[dots] MCP connectAll:", err));
 }

@@ -6,6 +6,7 @@ import { DATA_DIR } from "../db";
 import { emit } from "../bus";
 import { clickScript, typeScript } from "./dom-actions";
 import { validateUrlSafety } from "../agent/url-safety";
+import * as repo from "../repo";
 
 // Each dot gets its own persistent Chrome profile, so logins survive restarts. It always runs headless:
 // the Computer tab streams its screen and forwards your mouse and keyboard when you take over.
@@ -45,9 +46,37 @@ function track(dotId: string, p: Page) {
   });
 }
 
-// The real installed Chrome, not Playwright's test build: Google refuses sign-in on the test build.
-// Falls back to Playwright's Chromium if Chrome isn't installed.
-let channel: "chrome" | "chromium" = "chrome";
+// Prefer real installed browsers over Playwright's test Chromium:
+// On Windows: msedge (present on all Win 10/11) -> chrome -> chromium
+// On macOS / Linux: chrome -> chromium
+export function getBrowserCandidateChannels(): (string | undefined)[] {
+  if (process.platform === "win32") {
+    return ["msedge", "chrome", undefined];
+  }
+  return ["chrome", undefined];
+}
+
+/**
+ * Common helper to launch a non-persistent browser instance, trying installed system browsers first.
+ */
+export async function launchBrowser(options: Parameters<typeof chromium.launch>[0] = {}) {
+  const candidates = getBrowserCandidateChannels();
+  let lastErr: unknown = null;
+  for (const ch of candidates) {
+    try {
+      return await chromium.launch({
+        ...options,
+        channel: ch,
+      });
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+let preferredChannel: string | undefined = undefined;
+let channelInitialized = false;
 // Headless Chrome still says "HeadlessChrome" in its user agent, which sites treat as a bot. Use the normal one.
 let chromeUA: string | null = null;
 
@@ -93,9 +122,14 @@ async function freeProfile(dir: string) {
 
 async function launch(dotId: string): Promise<Session> {
   await freeProfile(profileDir(dotId));
-  const open = () =>
+
+  const candidates = channelInitialized && preferredChannel !== undefined
+    ? [preferredChannel, undefined]
+    : getBrowserCandidateChannels();
+
+  const openWithChannel = (ch: string | undefined) =>
     chromium.launchPersistentContext(profileDir(dotId), {
-      channel,
+      channel: ch,
       headless: true,
       timeout: 30_000,
       viewport: SCREEN,
@@ -108,31 +142,58 @@ async function launch(dotId: string): Promise<Session> {
       ignoreDefaultArgs: ["--enable-automation", "--unsafely-disable-devtools-self-xss-warnings"],
       args: ["--disable-blink-features=AutomationControlled", ...(chromeUA ? [`--user-agent=${chromeUA}`] : [])],
     });
-  let context: BrowserContext;
-  try {
-    context = await open();
-  } catch (err) {
-    if (channel !== "chrome") throw err;
-    channel = "chromium";
-    context = await open();
+
+  let activeContext: BrowserContext | null = null;
+  let lastErr: unknown = null;
+  for (const ch of candidates) {
+    try {
+      activeContext = await openWithChannel(ch);
+      preferredChannel = ch;
+      channelInitialized = true;
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  if (!activeContext) {
+    throw lastErr;
   }
   if (!chromeUA) {
     // First launch: learn this Chrome's version, then relaunch looking like the normal browser.
-    const probe = context.pages()[0] ?? (await context.newPage());
+    const probe = activeContext.pages()[0] ?? (await activeContext.newPage());
     const ua = await probe.evaluate(() => navigator.userAgent);
     chromeUA = ua.replace("HeadlessChrome/", "Chrome/");
     if (ua !== chromeUA) {
-      await context.close();
-      context = await open();
+      await activeContext.close();
+      activeContext = await openWithChannel(preferredChannel);
     }
   }
-  for (const p of context.pages()) track(dotId, p);
-  context.on("page", (p) => track(dotId, p));
-  // Forget the session only if it's still this one.
-  context.on("close", () => {
-    sessions.get(dotId)?.then((cur) => cur.context === context && sessions.delete(dotId), () => {});
+  const finalContext = activeContext;
+  finalContext.on("request", (r) => {
+    import("../net/netlog").then(({ logRequest }) => {
+      logRequest(r.url(), r.method(), undefined, { reason: "browser" });
+    }).catch(() => {});
   });
-  return { context, lastShot: null, shotAt: 0, v: SESSION_V };
+
+  await finalContext.route("**/*", async (route) => {
+    const { offlineMode, isLocalHost } = await import("../net/netlog");
+    try {
+      const u = new URL(route.request().url());
+      if (offlineMode() && !isLocalHost(u.hostname)) {
+        return route.abort("internetdisconnected");
+      }
+    } catch {}
+    return route.continue();
+  });
+
+  for (const p of finalContext.pages()) track(dotId, p);
+  finalContext.on("page", (p) => track(dotId, p));
+  // Forget the session only if it's still this one.
+  finalContext.on("close", () => {
+    sessions.get(dotId)?.then((cur) => cur.context === finalContext && sessions.delete(dotId), () => {});
+  });
+  return { context: finalContext, lastShot: null, shotAt: 0, v: SESSION_V };
 }
 
 async function session(dotId: string): Promise<Session> {
@@ -181,7 +242,7 @@ export async function lastScreenshot(dotId: string): Promise<Buffer | null> {
 const VISIT_TTL_MS = 2 * 60_000;
 const visitedUrls = new Map<string, Map<string, { text: string; at: number }>>();
 
-export async function openUrl(dotId: string, url: string): Promise<string> {
+export async function openUrl(dotId: string, url: string, userQuery = ""): Promise<string> {
   const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
 
   const initialSafety = await validateUrlSafety(target);
@@ -216,6 +277,16 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
   const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
   const title = await p.title();
 
+  const { contextMode, clipChars } = await import("../context/mode");
+  const mode = contextMode();
+
+  if (mode !== "on") {
+    const limit = clipChars(mode);
+    const clipped = cleanText.slice(0, limit);
+    dotVisited.set(target, { text: clipped, at: Date.now() });
+    return `Opened ${p.url()} — "${title}". Page Content:\n${clipped}`;
+  }
+
   const { chunkText } = await import("../context/chunker");
   const { saveChunks } = await import("../context/db");
   const { filterChunks } = await import("../context/filter");
@@ -224,11 +295,22 @@ export async function openUrl(dotId: string, url: string): Promise<string> {
   const chunks = chunkText({ text: cleanText, source: title || target, taskId, dotId });
   if (chunks.length > 0) {
     saveChunks(chunks);
-    const filterRes = filterChunks("", chunks, { maxEvidenceTokens: 2500 });
+    let query = userQuery;
+    if (!query) {
+      try {
+        const convId = repo.currentConversation(dotId);
+        if (convId) {
+          const msgs = repo.conversationMessages(convId, 6);
+          const userMsg = msgs.slice().reverse().find((m) => m.role === "user");
+          if (userMsg?.text) query = userMsg.text;
+        }
+      } catch {}
+    }
+    const filterRes = filterChunks(query, chunks, { maxEvidenceTokens: 2500 });
     const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
-    const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
+    const evidenceText = selected.map((c) => c.text).join("\n\n");
     dotVisited.set(target, { text: evidenceText, at: Date.now() });
-    return `Opened ${p.url()} — "${title}". Page Content (${selected.length}/${chunks.length} chunks, ~${filterRes.totalTokens} tokens):\n\n${evidenceText}`;
+    return `Opened ${p.url()} — "${title}". Page Content:\n${evidenceText}`;
   }
 
   const truncatedText = cleanText.length > 3500 ? cleanText.slice(0, 3500) + "\n...[content truncated]" : cleanText;
@@ -242,6 +324,15 @@ export async function readPage(dotId: string, userQuery = ""): Promise<string> {
   const cleanText = text.replace(/\n{3,}/g, "\n\n").trim();
   const title = await p.title();
 
+  const { contextMode, clipChars } = await import("../context/mode");
+  const mode = contextMode();
+
+  if (mode !== "on") {
+    const limit = clipChars(mode);
+    const clipped = cleanText.slice(0, limit);
+    return `URL: ${p.url()}\nTitle: ${title}\n\n${clipped}`;
+  }
+
   const { chunkText } = await import("../context/chunker");
   const { saveChunks } = await import("../context/db");
   const { filterChunks } = await import("../context/filter");
@@ -250,7 +341,18 @@ export async function readPage(dotId: string, userQuery = ""): Promise<string> {
   const chunks = chunkText({ text: cleanText, source: title || p.url(), taskId, dotId });
   if (chunks.length > 0) {
     saveChunks(chunks);
-    const filterRes = filterChunks(userQuery, chunks, { maxEvidenceTokens: 2500 });
+    let query = userQuery;
+    if (!query) {
+      try {
+        const convId = repo.currentConversation(dotId);
+        if (convId) {
+          const msgs = repo.conversationMessages(convId, 6);
+          const userMsg = msgs.slice().reverse().find((m) => m.role === "user");
+          if (userMsg?.text) query = userMsg.text;
+        }
+      } catch {}
+    }
+    const filterRes = filterChunks(query, chunks, { maxEvidenceTokens: 2500 });
     const selected = filterRes.selectedChunks.length > 0 ? filterRes.selectedChunks : chunks.slice(0, 5);
     const evidenceText = selected.map((c, i) => `--- Chunk ${i + 1} ---\n${c.text}`).join("\n\n");
     return `URL: ${p.url()}\nTitle: ${title}\n[Evidence Budget ~${filterRes.totalTokens}/2500 tokens (${selected.length}/${chunks.length} chunks)]:\n\n${evidenceText}`;

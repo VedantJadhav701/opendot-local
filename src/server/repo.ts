@@ -1,5 +1,6 @@
 import "server-only";
 import { db, getSetting, id, setSetting } from "./db";
+export { getSetting, setSetting };
 import { emit } from "./bus";
 import { Cron } from "croner";
 import { normalizeLook } from "@/lib/look";
@@ -43,10 +44,11 @@ export function findDotByName(name: string): Dot | null {
   return r ? toDot(r) : null;
 }
 
-export function createDot(input: { name: string; purpose: string; instructions?: string; look: Look }): Dot {
+export function createDot(input: { name: string; purpose: string; instructions?: string; look?: Look }): Dot {
   const dotId = id("dot");
+  const look = normalizeLook(input.look);
   db().prepare("INSERT INTO dots (id, name, purpose, instructions, look, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-    .run(dotId, input.name, input.purpose, input.instructions ?? "", JSON.stringify(input.look), now());
+    .run(dotId, input.name, input.purpose, input.instructions ?? "", JSON.stringify(look), now());
   const dot = getDot(dotId)!;
   emit({ type: "dot", data: dot });
   return dot;

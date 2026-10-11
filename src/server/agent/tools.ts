@@ -114,12 +114,18 @@ async function executeWebSearch(query: string): Promise<string> {
   if (!q) return "Search query cannot be empty.";
 
   try {
-    let rawResults = await searchDDGHtml(q);
+    const { getSetting } = await import("../db");
+    const customEndpoint = getSetting("search_endpoint") || process.env.SEARXNG_URL;
+    let rawResults: { title: string; url: string; snippet: string }[] = [];
+
+    if (customEndpoint) {
+      rawResults = await searchSearXNG(q, customEndpoint);
+    }
+    if (!rawResults.length) {
+      rawResults = await searchDDGHtml(q);
+    }
     if (!rawResults.length) {
       rawResults = await searchDDGLite(q);
-    }
-    if (!rawResults.length && process.env.SEARXNG_URL) {
-      rawResults = await searchSearXNG(q, process.env.SEARXNG_URL);
     }
     if (!rawResults.length) {
       return `Search unavailable: No results returned for "${q}". Try using open_url to browse directly.`;
@@ -172,8 +178,7 @@ async function scrapeAmazonListing(category: string, maxPrice: number): Promise<
   const source = "amazon.in";
   let browserInstance: import("playwright").Browser | null = null;
   try {
-    const { chromium } = await import("playwright");
-    browserInstance = await chromium.launch({
+    browserInstance = await computer.launchBrowser({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
@@ -266,8 +271,7 @@ async function scrapeFlipkartListing(category: string, maxPrice: number): Promis
   const source = "flipkart.com";
   let browserInstance: import("playwright").Browser | null = null;
   try {
-    const { chromium } = await import("playwright");
-    browserInstance = await chromium.launch({
+    browserInstance = await computer.launchBrowser({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
@@ -395,8 +399,7 @@ async function fallbackDDGPageExtraction(category: string, maxPrice: number): Pr
 
   let browserInstance: import("playwright").Browser | null = null;
   try {
-    const { chromium } = await import("playwright");
-    browserInstance = await chromium.launch({ headless: true });
+    browserInstance = await computer.launchBrowser({ headless: true });
     const context = await browserInstance.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     });
@@ -488,6 +491,11 @@ export const TOOLS: ToolDef[] = [
     description: "Compare facts, prices, or technical specifications across multiple retrieved web sources or document chunks.",
     parameters: obj({ topic: str("Topic or product specs to compare") }),
     execute: async (a, ctx) => {
+      const { contextMode, clipChars } = await import("../context/mode");
+      const mode = contextMode();
+      if (mode !== "on") {
+        return "Document search and source comparison are not available in baseline mode.";
+      }
       const { getDotChunks } = await import("../context/db");
       const { filterChunks } = await import("../context/filter");
       const chunks = getDotChunks(ctx.dot.id, 100);
@@ -781,6 +789,8 @@ export const TOOLS: ToolDef[] = [
     description: "Search indexed workspace documents and uploaded PDFs for relevant keywords or topics.",
     parameters: obj({ query: str("Keyword query to search in workspace documents") }),
     execute: async (a, ctx) => {
+      const { contextMode } = await import("../context/mode");
+      if (contextMode() !== "on") return "Document search is not available.";
       const { getDotChunks } = await import("../context/db");
       const { filterChunks } = await import("../context/filter");
       const chunks = getDotChunks(ctx.dot.id, 200);
@@ -822,6 +832,8 @@ export const TOOLS: ToolDef[] = [
     description: "Find specific facts, sections, or answers across all indexed workspace documents.",
     parameters: obj({ query: str("Specific fact or question to look up in local documents") }),
     execute: async (a, ctx) => {
+      const { contextMode } = await import("../context/mode");
+      if (contextMode() !== "on") return "Document search is not available.";
       const { getDotChunks } = await import("../context/db");
       const { filterChunks } = await import("../context/filter");
       const chunks = getDotChunks(ctx.dot.id, 250);
@@ -830,6 +842,41 @@ export const TOOLS: ToolDef[] = [
       if (!res.selectedChunks.length) return `No evidence found for "${s(a.query)}".`;
       return `Found ${res.selectedChunks.length} evidence sections (~${res.totalTokens} tokens):\n\n` +
         res.selectedChunks.map((c, i) => `[Source: ${c.source}] Evidence ${i + 1}:\n${c.text}`).join("\n\n");
+    },
+  },
+  {
+    name: "list_folders",
+    label: "Listing knowledge folders",
+    description: "List knowledge folders attached to this dot, along with their path and indexed file counts.",
+    parameters: obj({}),
+    execute: async (_a, ctx) => {
+      const { listFolders } = await import("../context/folder-index");
+      const folders = listFolders(ctx.dot.id);
+      if (!folders.length) return "No knowledge folders attached to this dot.";
+      return folders
+        .map((f) => `- Folder [${f.id}]: "${f.path}" (${f.files} files, ${f.chunks} chunks, status: ${f.status})`)
+        .join("\n");
+    },
+  },
+  {
+    name: "search_folder",
+    label: "Searching knowledge folders",
+    description: "Search attached knowledge folders for facts or notes. Cite every fact with the [[path#page]] token exactly as shown in the retrieved evidence.",
+    parameters: obj({ query: str("Search query to look up across attached folders") }),
+    execute: async (a, ctx) => {
+      const { listFolders, searchFolder } = await import("../context/folder-index");
+      const folders = listFolders(ctx.dot.id);
+      if (!folders.length) return "No knowledge folders attached to this dot.";
+      const results: string[] = [];
+      for (const f of folders) {
+        const res = searchFolder(f.id, s(a.query), 2500);
+        for (const c of res.selectedChunks) {
+          const cite = c.page ? `[[${c.source}#p${c.page}]]` : `[[${c.source}]]`;
+          results.push(`${cite} ${c.text}`);
+        }
+      }
+      if (!results.length) return `No matches found for "${s(a.query)}" in attached folders.`;
+      return results.join("\n\n");
     },
   },
   {
@@ -1050,6 +1097,39 @@ export const TOOLS: ToolDef[] = [
     parameters: obj({ action: str("What you want to do, one line"), details: str("Exactly what will happen: recipients, amounts, content, etc.") }),
     pause: "approval",
   },
+  {
+    name: "list_folders",
+    label: "Checking knowledge folders",
+    description: "List knowledge folders attached to this dot, along with file counts and status.",
+    parameters: obj({}),
+    execute: async (_a, ctx) => {
+      const { listFolders } = await import("../context/folder-index");
+      const list = listFolders(ctx.dot.id);
+      if (!list.length) return "No knowledge folders attached to this dot.";
+      return list.map((f) => `- ${f.path} (${f.files} files, ${f.chunks} chunks, status: ${f.status})`).join("\n");
+    },
+  },
+  {
+    name: "search_folder",
+    label: "Searching folders",
+    description:
+      "Search knowledge folders attached to this dot for relevant text. Cite every fact with the [[path#page]] token exactly as shown.",
+    parameters: obj({ query: str("Search query keywords") }),
+    execute: async (a, ctx) => {
+      const { listFolders, searchFolder, recordRetrieved } = await import("../context/folder-index");
+      const list = listFolders(ctx.dot.id);
+      if (!list.length) return "No knowledge folders attached to this dot.";
+      const query = s(a.query);
+      const allChunks: import("../context/chunker").ChunkRecord[] = [];
+      for (const f of list) {
+        const res = searchFolder(f.id, query);
+        allChunks.push(...res.selectedChunks);
+      }
+      recordRetrieved(ctx.dot.id, allChunks);
+      if (!allChunks.length) return `No matches found in ${list.length} folder(s) for "${query}".`;
+      return allChunks.map((c) => `[[${c.source}${c.page ? `#p${c.page}` : ""}]] ${c.text}`).join("\n\n");
+    },
+  },
 ];
 
 // ---------- Composio For You: the user's apps (Gmail, Calendar, Slack, Notion, GitHub…) ----------
@@ -1100,11 +1180,20 @@ function composioTools(): ToolDef[] {
   });
 }
 
+function mcpTools(): ToolDef[] {
+  try {
+    const { mcpToolDefs } = require("../mcp/manager");
+    return mcpToolDefs();
+  } catch {
+    return [];
+  }
+}
+
 export const TOOL_BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
-/** Look up a tool by name, including Composio's dynamic ones. */
+/** Look up a tool by name, including Composio's dynamic ones and MCP tools. */
 export function findTool(name: string): ToolDef | undefined {
-  return TOOL_BY_NAME.get(name) ?? composioTools().find((t) => t.name === name);
+  return TOOL_BY_NAME.get(name) ?? composioTools().find((t) => t.name === name) ?? mcpTools().find((t) => t.name === name);
 }
 
 export function toolsForDot(dot: Dot): ToolDef[] {
@@ -1112,6 +1201,7 @@ export function toolsForDot(dot: Dot): ToolDef[] {
   return [
     ...TOOLS.filter((t) => (t.name !== "run_on_my_computer" || dot.localAccess) && (t.name !== "app_connect" || signedIn)),
     ...(signedIn ? composioTools() : []),
+    ...mcpTools(),
   ];
 }
 
@@ -1126,6 +1216,8 @@ const TOOL_GROUPS = {
     "search_documents",
     "read_document",
     "find_in_documents",
+    "search_folder",
+    "list_folders",
     "ask_user",
     "request_approval",
     "remember",
@@ -1174,6 +1266,8 @@ const TOOL_GROUPS = {
     "search_documents",
     "read_document",
     "find_in_documents",
+    "search_folder",
+    "list_folders",
   ],
 
   coding: [
@@ -1230,7 +1324,7 @@ export function toolsForRequest(dot: Dot, request: string): ToolDef[] {
     /\b(click|type|open browser|chrome|brave|login|sign in|button|page|website)\b/i.test(text);
 
   const isFiles =
-    /\b(file|folder|document|pdf|xlsx|csv|docx|read file|write file|download|upload)\b/i.test(text);
+    /\b(file|files|folder|folders|document|documents|note|notes|pdf|xlsx|csv|docx|read file|write file|download|upload)\b/i.test(text);
 
   const isCoding =
     /\b(code|coding|program|script|python|javascript|typescript|npm|node|git|github|terminal|command|compile|build|debug|error)\b/i.test(text);
@@ -1255,8 +1349,27 @@ export function toolsForRequest(dot: Dot, request: string): ToolDef[] {
   if (isCommunication) add("communication");
 
   const available = toolsForDot(dot);
+  const baseTools = available.filter((tool) => names.has(tool.name));
 
-  return available.filter((tool) => names.has(tool.name));
+  // MCP tools: include only when the request mentions the server/tool by name or keywords, capped at 12 per turn
+  const mcpList = available.filter((tool) => tool.name.startsWith("mcp__"));
+  const matchedMcp: ToolDef[] = [];
+  for (const tool of mcpList) {
+    const parts = tool.name.split("__");
+    const serverSlug = (parts[1] || "").toLowerCase();
+    const toolSlug = (parts[2] || "").toLowerCase();
+    const isMentioned =
+      text.includes(serverSlug) ||
+      text.includes(toolSlug) ||
+      (serverSlug === "github" && /\b(github|repo|issue|issues|pull\s*request|pr|commit)\b/i.test(text)) ||
+      (serverSlug === "calendar" && /\b(calendar|schedule|meeting|event)\b/i.test(text)) ||
+      (serverSlug === "mail" && /\b(mail|email|inbox|send mail)\b/i.test(text)) ||
+      (serverSlug === "files" && /\b(files|folder|fs)\b/i.test(text));
+    if (isMentioned) matchedMcp.push(tool);
+  }
+  const cappedMcp = matchedMcp.slice(0, 12);
+
+  return [...baseTools, ...cappedMcp];
 }
 
 export const COMPUTER_ENABLED = (process.env.DOTS_COMPUTER_TOOL ?? "computer") !== "off";

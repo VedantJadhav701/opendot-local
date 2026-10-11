@@ -341,10 +341,16 @@ export class OllamaProvider implements LLMProvider {
         num_ctx: targetNumCtx,
         num_predict: req.num_predict ?? Number(process.env.DOTS_NUM_PREDICT || DEFAULT_NUM_PREDICT),
       };
+      if (typeof req.num_batch === "number") {
+        optionsObj.num_batch = req.num_batch;
+      }
       if (typeof req.temperature === "number") {
         optionsObj.temperature = req.temperature;
       }
       body.options = optionsObj;
+      if (req.keep_alive) {
+        body.keep_alive = req.keep_alive;
+      }
 
       const startTime = Date.now();
       let ttftMs = 0;
@@ -372,6 +378,10 @@ export class OllamaProvider implements LLMProvider {
               },
             },
             (res) => {
+              import("../net/netlog").then(({ logRequest }) => {
+                logRequest(targetUrl.href, "POST", res.statusCode, { reason: "model" });
+              }).catch(() => {});
+
               if (res.statusCode && res.statusCode >= 400) {
                 let errText = "";
                 res.on("data", (c) => (errText += c));

@@ -1,14 +1,26 @@
 {
-  "name": "open-dot",
-  "version": "0.1.0",
+  "name": "opendot-local",
+  "version": "0.2.0",
+  "license": "MIT",
+  "author": "Vedant Jadhav",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VedantJadhav701/opendot-local.git"
+  },
+  "homepage": "https://opendot-local.vercel.app",
+  "engines": {
+    "node": ">=22.5"
+  },
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3100",
+    "dev": "next dev --hostname 127.0.0.1 --port 3100",
     "build": "next build",
-    "start": "next start --port 3100",
+    "start": "next start --hostname 127.0.0.1 --port 3100",
     "lint": "eslint",
-    "test": "npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/security-hardening-task-a.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/answer-style.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/think-filter.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/prompt.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/context-budget.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/read-page-chunking.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/llm-queue.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/url-validator.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/client-and-ollama.test.ts",
-    "check": "npx tsc --noEmit && pnpm test && pnpm build",
+    "test": "npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/security-hardening-task-a.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/answer-style.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/think-filter.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/prompt.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/context-budget.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/read-page-chunking.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/llm/llm-queue.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/url-validator.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/agent/client-and-ollama.test.ts && npx tsx src/proxy.test.ts && npx tsx bench/score.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/net/netlog.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/models/tuning.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/context/folder-index.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/mcp/manager.test.ts && npx tsx -r ./scripts/shim-server-only.cjs src/server/packs.test.ts",
+    "bench:fixtures": "npx tsx bench/fixtures/build.ts",
+    "bench": "npx tsx -r ./scripts/shim-server-only.cjs bench/run.ts",
+    "check": "next typegen && tsc --noEmit && pnpm test && pnpm build",
     "desktop:dev": "OPEN_DOT_DEV_URL=http://localhost:3100 electron electron",
     "desktop:prepare": "next build && node scripts/desktop-prepare.mjs",
     "desktop": "electron electron",
@@ -56,6 +68,7 @@
     "appId": "dev.opendot.local",
     "productName": "Open Dot Local",
     "electronVersion": "44.4.5",
+    "artifactName": "OpenDot-local-Setup-${version}.${ext}",
     "directories": {
       "app": "electron",
       "output": "dist",

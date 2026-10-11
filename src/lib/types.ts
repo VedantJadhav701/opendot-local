@@ -169,6 +169,7 @@ export type ComputerInfo = {
     diskFreeGB: number | null;
   };
   defaultModelInstalled?: boolean;
+  setupDone?: boolean;
 };
 
 export type ServerEvent =
@@ -197,4 +198,16 @@ export type ServerEvent =
   | { type: "channel"; data: Channel }
   | { type: "channel_deleted"; id: string }
   | { type: "conversation"; data: Conversation }
-  | { type: "conversation_deleted"; id: string };
+  | { type: "conversation_deleted"; id: string }
+  | { type: "folder"; dotId: string; folderId: string; status: string; files?: number; chunks?: number };
+
+export type FolderInfo = {
+  id: string;
+  dotId: string;
+  path: string;
+  addedAt: number;
+  lastScanAt: number | null;
+  files: number;
+  chunks: number;
+  status: string;
+};

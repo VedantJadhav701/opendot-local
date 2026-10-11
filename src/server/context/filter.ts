@@ -64,39 +64,34 @@ export function filterChunks(
   const targetCount = Math.max(1, Math.ceil(validChunks.length * topPercent));
   const topRanked = rankedResults.slice(0, targetCount);
 
-  // Collect candidate chunk set
-  const candidateIds = new Set<string>();
+  // Select chunks within token budget: always include Chunk 1, then top BM25 ranked chunks
+  const selectedList: ChunkRecord[] = [];
+  const selectedIds = new Set<string>();
+  let totalTokens = 0;
+
   if (alwaysIncludeChunk1 && chunk1) {
-    candidateIds.add(chunk1.id);
+    selectedList.push(chunk1);
+    selectedIds.add(chunk1.id);
+    totalTokens += countTokens(chunk1.text);
   }
 
   for (const item of topRanked) {
-    candidateIds.add(item.chunk.id);
-  }
-
-  // Filter candidate chunks and sort by original position ASC to preserve narrative order
-  const candidates = validChunks
-    .filter((c) => candidateIds.has(c.id))
-    .sort((a, b) => a.position - b.position);
-
-  // Budget enforcement up to maxEvidenceTokens (2500 tokens)
-  const selectedChunks: ChunkRecord[] = [];
-  let totalTokens = 0;
-
-  for (const chunk of candidates) {
-    const tokens = countTokens(chunk.text);
+    if (selectedIds.has(item.chunk.id)) continue;
+    const tokens = countTokens(item.chunk.text);
     if (totalTokens + tokens <= maxTokens) {
-      selectedChunks.push(chunk);
+      selectedList.push(item.chunk);
+      selectedIds.add(item.chunk.id);
       totalTokens += tokens;
-    } else if (selectedChunks.length === 0) {
-      // Always include at least 1 chunk even if it slightly exceeds
-      selectedChunks.push(chunk);
-      totalTokens += tokens;
-      break;
-    } else {
-      break;
     }
   }
+
+  if (selectedList.length === 0 && validChunks.length > 0) {
+    selectedList.push(validChunks[0]);
+    totalTokens += countTokens(validChunks[0].text);
+  }
+
+  // Sort selected chunks by original position ASC to preserve narrative document order
+  const selectedChunks = selectedList.sort((a, b) => a.position - b.position);
 
   const endTime = Date.now();
 

@@ -237,9 +237,19 @@ function Grid({ title, action, count, children }: { title: React.ReactNode; acti
 }
 
 function AppLogo({ app, size = 36 }: { app: CatalogApp; size?: number }) {
+  const [src, setSrc] = useState(app.logo);
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={app.logo} alt="" width={size} height={size} loading="lazy" className="shrink-0 rounded-md object-contain" style={{ width: size, height: size }} />
+    <img
+      src={src}
+      alt={app.name}
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setSrc("/app-icons/default.svg")}
+      className="shrink-0 rounded-md object-contain"
+      style={{ width: size, height: size }}
+    />
   );
 }
 

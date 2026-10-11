@@ -413,7 +413,27 @@ export function MessageRow({ m, dot, showName = false }: { m: Message; dot: Dot;
           </div>
         )}
         <div className="dot-prose">
-          <Markdown remarkPlugins={[remarkGfm]}>{m.text || "…"}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children, ...props }) => {
+                if (href === "#citation") {
+                  return (
+                    <span className="inline-flex items-center gap-1 rounded bg-black/[0.06] hover:bg-black/[0.1] px-1.5 py-0.5 font-mono text-[11px] text-foreground/75 cursor-default transition-colors">
+                      📄 {children}
+                    </span>
+                  );
+                }
+                return (
+                  <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                    {children}
+                  </a>
+                );
+              },
+            }}
+          >
+            {(m.text || "…").replace(/\[\[([^\]]+)\]\]/g, "[$1](#citation)")}
+          </Markdown>
         </div>
         {!!m.attachments?.length && <Attachments items={m.attachments} />}
       </div>

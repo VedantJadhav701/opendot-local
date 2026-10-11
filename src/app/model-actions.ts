@@ -32,3 +32,20 @@ export async function getModelOptions(): Promise<{ models: string[]; defaultMode
   const local = resolved.available.filter((m) => isOfficialModel(m));
   return { models: resolved.available, defaultModel: resolved.main, connected, needsSetup: connected && local.length === 0 };
 }
+
+export async function getTuning(): Promise<{ tuning: import("@/server/models/tuning").Tuning; perfMode: string }> {
+  const { detectCapabilities } = await import("@/server/models/detector");
+  const { resolveTuning } = await import("@/server/models/tuning");
+  const { getSetting } = await import("@/server/db");
+  const { activeModel } = await import("@/server/llm");
+  const profile = await detectCapabilities();
+  const perfMode = (getSetting("perf_mode") as any) ?? "auto";
+  const model = await activeModel();
+  const tuning = resolveTuning(profile, model, perfMode);
+  return { tuning, perfMode };
+}
+
+export async function setPerfMode(mode: string): Promise<void> {
+  const { setSetting } = await import("@/server/db");
+  setSetting("perf_mode", mode);
+}

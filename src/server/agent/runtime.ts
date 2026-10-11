@@ -30,6 +30,18 @@ type RunState = { running: boolean; abort: AbortController | null; inbox: InboxI
 
 export const MAX_STEPS = Number(process.env.DOTS_MAX_STEPS || 6);
 
+let cachedTuning: { tuning: import("../models/tuning").Tuning; at: number } | null = null;
+async function currentTuning(model: string) {
+  if (cachedTuning && Date.now() - cachedTuning.at < 60_000) return cachedTuning.tuning;
+  const { detectCapabilities } = await import("../models/detector");
+  const { resolveTuning } = await import("../models/tuning");
+  const profile = await detectCapabilities();
+  const perfMode = (repo.getSetting("perf_mode") as any) ?? "auto";
+  const tuning = resolveTuning(profile, model, perfMode);
+  cachedTuning = { tuning, at: Date.now() };
+  return tuning;
+}
+
 function isShoppingRequest(text: string): boolean {
   return /\b(find|best|buy|purchase|price|cheap|budget|headphone|headphones|earphone|earphones|earbuds|tws|laptop|phone|smartphone|monitor|keyboard|mouse|camera|tablet|watch|speaker)\b/i.test(text) &&
   (
@@ -432,11 +444,14 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
       turnTotalTimeMs += m.totalTimeMs;
       turnPromptTokens += m.promptTokens;
       turnCompletionTokens += m.completionTokens;
-      const numCtx = Math.min(Math.max(4096, Number(process.env.DOTS_CONTEXT_LENGTH || 16384)), 32768);
+
+      const tuning = await currentTuning(dot.model || "default");
+      const configuredContextLength = process.env.DOTS_CONTEXT_LENGTH ? Number(process.env.DOTS_CONTEXT_LENGTH) : tuning.numCtx;
+      const numCtx = Math.min(Math.max(4096, configuredContextLength), 32768);
       const pct = Math.round((m.promptTokens / numCtx) * 100);
       const genTokPerSec = m.totalTimeMs > m.ttftMs && m.completionTokens > 0 ? Math.round((m.completionTokens / ((m.totalTimeMs - m.ttftMs) / 1000)) * 10) / 10 : 0;
       console.log(
-        `[dots] Step ${totalSteps}/${MAX_STEPS} | Model: ${dot.model || "default"} | Prompt: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Gen: ${m.completionTokens} tok (${genTokPerSec} tok/s) | Total: ${m.totalTimeMs}ms`
+        `[dots] Step ${totalSteps}/${MAX_STEPS} | Mode: ${tuning.mode} | Model: ${dot.model || "default"} | Prompt: ${m.promptTokens}/${numCtx} (${pct}%) | TTFT: ${m.ttftMs}ms | Gen: ${m.completionTokens} tok (${genTokPerSec} tok/s) | Total: ${m.totalTimeMs}ms`
       );
       if (pct >= 85) {
         console.warn(`[dots] WARNING: Prompt token budget usage at ${pct}% of context (${m.promptTokens}/${numCtx})`);
@@ -517,9 +532,10 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     content: systemPrompt(dot, trigger, latestUserText),
   };
 
-  const configuredContextLength = Number(
-    process.env.DOTS_CONTEXT_LENGTH || 16384
-  );
+  const tuning = await currentTuning(dot.model || "default");
+  const configuredContextLength = process.env.DOTS_CONTEXT_LENGTH
+    ? Number(process.env.DOTS_CONTEXT_LENGTH)
+    : tuning.numCtx;
 
   const defaultContextLength = Math.min(
     Math.max(4096, configuredContextLength),
@@ -572,8 +588,34 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     const { sanitizeAnswerStyle } = await import("./answer-style");
     let cleanText = sanitizeResponseUrls(accumulatedText, fullMessages);
     cleanText = sanitizeAnswerStyle(cleanText);
+    try {
+      const { verifyCitations, getRetrieved } = await import("../context/folder-index");
+      const retrieved = getRetrieved(dot.id);
+      if (/\[\[[^\]]+\]\]/.test(cleanText)) {
+        const check = verifyCitations(cleanText, retrieved);
+        for (const bad of check.invalid) {
+          cleanText = cleanText.replaceAll(`[[${bad}]]`, "");
+        }
+      }
+    } catch {}
     const refused = hideRefusal && !(responseMsg.tool_calls && responseMsg.tool_calls.length) && isRefusalText(cleanText);
     repo.updateMessage(draftMessageId, { text: refused ? "Retrying with tools…" : cleanText || "…" });
+    responseMsg.content = cleanText;
+  } else if (responseMsg.content) {
+    const { sanitizeResponseUrls } = await import("./url-validator");
+    const { sanitizeAnswerStyle } = await import("./answer-style");
+    let cleanText = sanitizeResponseUrls(responseMsg.content, fullMessages);
+    cleanText = sanitizeAnswerStyle(cleanText);
+    try {
+      const { verifyCitations, getRetrieved } = await import("../context/folder-index");
+      const retrieved = getRetrieved(dot.id);
+      if (/\[\[[^\]]+\]\]/.test(cleanText)) {
+        const check = verifyCitations(cleanText, retrieved);
+        for (const bad of check.invalid) {
+          cleanText = cleanText.replaceAll(`[[${bad}]]`, "");
+        }
+      }
+    } catch {}
     responseMsg.content = cleanText;
   }
 
@@ -684,9 +726,10 @@ async function execTool(dot: Dot, call: FunctionToolCall, signal: AbortSignal): 
   repo.setActivity(dot.id, def.label);
   activity(dot.id, def.label, summarize(args));
   try {
-    const res = await def.execute!(args, { dot, signal, depth: 0 });
-    const contentFetchingTools = new Set(["web_search", "search_web", "open_url", "read_page", "inspect_page_links", "summarize_site", "download_file", "read_file"]);
-    if (contentFetchingTools.has(def.name)) {
+    const { withNetReason } = await import("../net/netlog");
+    const res = await withNetReason(def.name, dot.id, () => def.execute!(args, { dot, signal, depth: 0 }));
+    const contentFetchingTools = new Set(["web_search", "search_web", "open_url", "read_page", "inspect_page_links", "summarize_site", "download_file", "read_file", "search_folder"]);
+    if (contentFetchingTools.has(def.name) || def.name.startsWith("mcp__") || def.name.startsWith("COMPOSIO_")) {
       setTurnTainted(dot.id, true);
     }
     return res;

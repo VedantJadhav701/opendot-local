@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Play } from "lucide-react";
+import { Play, Folder, RefreshCw, FolderPlus, Upload } from "lucide-react";
 import * as actions from "@/app/actions";
+import { addFolderAction, removeFolderAction, rescanFolderAction, listFoldersAction } from "@/app/folder-actions";
 import { useStore } from "@/lib/store";
 import LookEditor from "./LookEditor";
 import { DotTriggers } from "./Triggers";
 import Dot3DLazy from "./Dot3DLazy";
 import { Empty, PageHeader, RemoveButton, RuleEditor, Section } from "./SettingsKit";
-import type { Dot } from "@/lib/types";
+import { ExportPackButton, ImportPackDialog } from "./PackDialog";
+import type { Dot, FolderInfo } from "@/lib/types";
 
 const SCHEDULES = [
   { label: "Every morning", cron: "0 8 * * *" },
@@ -36,7 +38,71 @@ export default function SetupPane({ dot }: { dot: Dot }) {
   const [routineError, setRoutineError] = useState<string | null>(null);
   const [skillOpen, setSkillOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [pending, start] = useTransition();
+
+  const [folders, setFolders] = useState<FolderInfo[]>([]);
+  const [folderInput, setFolderInput] = useState("");
+  const [folderError, setFolderError] = useState<string | null>(null);
+  const [scanningFolderId, setScanningFolderId] = useState<string | null>(null);
+
+  const loadFolders = () => {
+    listFoldersAction(dot.id).then(setFolders).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadFolders();
+  }, [dot.id]);
+
+  const handlePickFolder = async () => {
+    setFolderError(null);
+    if (typeof window !== "undefined" && (window as any).electronAPI?.pickFolder) {
+      try {
+        const picked = await (window as any).electronAPI.pickFolder();
+        if (picked) {
+          const res = await addFolderAction(dot.id, picked);
+          if (res.ok) {
+            loadFolders();
+          } else {
+            setFolderError(res.error || "Could not add folder");
+          }
+        }
+      } catch (err: any) {
+        setFolderError(err?.message || "Failed to pick folder");
+      }
+    }
+  };
+
+  const handleAddFolderManual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!folderInput.trim()) return;
+    setFolderError(null);
+    start(async () => {
+      const res = await addFolderAction(dot.id, folderInput.trim());
+      if (res.ok) {
+        setFolderInput("");
+        loadFolders();
+      } else {
+        setFolderError(res.error || "Could not add folder");
+      }
+    });
+  };
+
+  const handleRescan = async (id: string) => {
+    setScanningFolderId(id);
+    start(async () => {
+      await rescanFolderAction(id);
+      setScanningFolderId(null);
+      loadFolders();
+    });
+  };
+
+  const handleRemoveFolder = async (id: string) => {
+    start(async () => {
+      await removeFolderAction(id);
+      loadFolders();
+    });
+  };
 
   const dirty = name !== dot.name || purpose !== dot.purpose || instructions !== dot.instructions || JSON.stringify(look) !== JSON.stringify(dot.look);
 
@@ -44,6 +110,20 @@ export default function SetupPane({ dot }: { dot: Dot }) {
     <div className="flex-1 overflow-y-auto">
       <div className="rails mx-auto min-h-full max-w-[1080px] px-4 sm:px-8 pb-16">
         <PageHeader eyebrow="Setup" title={`How ${dot.name} works`} description="Personality, rules, routines, memory, and skills. Your dot also updates these itself as you work together." />
+
+        <div className="mb-6 flex items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+          <div className="flex items-center gap-2">
+            <ExportPackButton dot={dot} />
+            <button
+              type="button"
+              onClick={() => setShowImportDialog(true)}
+              className="btn-secondary flex items-center gap-1.5 h-8 px-3 text-[13px]"
+            >
+              <Upload className="size-3.5" />
+              <span>Import pack…</span>
+            </button>
+          </div>
+        </div>
 
         <Section eyebrow="Identity" title="Personality & appearance" description="Its name, job, and how you want it to work.">
           <div className="grid gap-6 lg:grid-cols-[1fr_220px]">
@@ -185,6 +265,85 @@ export default function SetupPane({ dot }: { dot: Dot }) {
           </div>
         </Section>
 
+        <Section
+          eyebrow="Knowledge"
+          title="Knowledge folders"
+          description={`Point ${dot.name} at folders on this computer. It indexes text and PDFs locally in .data/ so you can ask questions with citations.`}
+        >
+          <div className="space-y-3">
+            {folders.length > 0 ? (
+              <div className="surface divide-y divide-black/[0.06]">
+                {folders.map((f) => (
+                  <div key={f.id} className="flex items-center gap-3 py-3 pr-2 pl-4">
+                    <Folder className="size-4 shrink-0 text-foreground/45" strokeWidth={1.75} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-mono text-[13px] text-foreground/80" title={f.path}>
+                          {f.path}
+                        </span>
+                        <span
+                          className={`rounded-xs px-1.5 py-0.5 font-mono text-[10px] uppercase ${
+                            f.status === "scanning" || scanningFolderId === f.id
+                              ? "bg-warning/15 text-warning font-semibold"
+                              : "bg-black/[0.04] text-foreground/55"
+                          }`}
+                        >
+                          {f.status === "scanning" || scanningFolderId === f.id ? "scanning" : "indexed"}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 text-body-sm text-foreground/50">
+                        {f.files} files · {f.chunks} chunks
+                        {f.lastScanAt ? ` · Last scanned ${new Date(f.lastScanAt).toLocaleTimeString()}` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        className="btn-quiet flex items-center gap-1 h-7 px-2 text-[12px]"
+                        disabled={pending || scanningFolderId === f.id}
+                        onClick={() => handleRescan(f.id)}
+                        title="Rescan folder"
+                      >
+                        <RefreshCw className={`size-3 ${scanningFolderId === f.id ? "animate-spin" : ""}`} />
+                        <span>Rescan</span>
+                      </button>
+                      <RemoveButton label="Remove folder" onClick={() => handleRemoveFolder(f.id)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty>No folders added yet.</Empty>
+            )}
+
+            {folderError && <div className="text-body-sm text-destructive">{folderError}</div>}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {typeof window !== "undefined" && (window as any).electronAPI?.pickFolder && (
+                <button
+                  type="button"
+                  className="btn-secondary flex items-center gap-2"
+                  onClick={handlePickFolder}
+                  disabled={pending}
+                >
+                  <FolderPlus className="size-4" />
+                  <span>Choose folder…</span>
+                </button>
+              )}
+              <form className="flex flex-1 min-w-[280px] gap-2" onSubmit={handleAddFolderManual}>
+                <input
+                  className="field flex-1"
+                  placeholder="Or enter absolute folder path…"
+                  value={folderInput}
+                  onChange={(e) => setFolderInput(e.target.value)}
+                />
+                <button className="btn-secondary shrink-0" disabled={!folderInput.trim() || pending}>
+                  Add folder
+                </button>
+              </form>
+            </div>
+          </div>
+        </Section>
+
         <Section eyebrow="Skills" title="Repeatable know-how" description="Markdown instructions it follows for tasks it repeats. Ask your dot to save one after it figures something out.">
           {skills.length > 0 ? (
             <div className="surface divide-y divide-black/[0.06]">
@@ -222,6 +381,10 @@ export default function SetupPane({ dot }: { dot: Dot }) {
             </button>
           )}
         </Section>
+
+        {showImportDialog && (
+          <ImportPackDialog onClose={() => setShowImportDialog(false)} />
+        )}
       </div>
     </div>
   );

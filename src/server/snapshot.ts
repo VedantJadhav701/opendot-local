@@ -25,6 +25,7 @@ export function computerInfo(): ComputerInfo {
     triggersKey: triggersKeySource(),
     sky: false,
     composio: signedIn(),
+    setupDone: repo.getSetting("setup_done") === "1",
   };
 }
 

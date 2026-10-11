@@ -329,6 +329,25 @@ export async function installBrowserEngine(): Promise<string | null> {
   });
 }
 
+export async function getHealth(): Promise<import("@/server/health").HealthStatus> {
+  const { checkSystemHealth } = await import("@/server/health");
+  return checkSystemHealth();
+}
+
+export async function finishSetup(): Promise<void> {
+  const { setSetting } = await import("@/server/db");
+  const { emit } = await import("@/server/bus");
+  setSetting("setup_done", "1");
+  emit({ type: "snapshot", data: (await import("@/server/snapshot")).snapshot() });
+}
+
+export async function resetSetupDone(): Promise<void> {
+  const { setSetting } = await import("@/server/db");
+  const { emit } = await import("@/server/bus");
+  setSetting("setup_done", "0");
+  emit({ type: "snapshot", data: (await import("@/server/snapshot")).snapshot() });
+}
+
 // ---------- Composio For You (the user's apps) ----------
 
 /** Start signing in to Composio. Returns the Composio sign-in URL to open, or nothing if already signed in. */

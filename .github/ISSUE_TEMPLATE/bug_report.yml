@@ -1,0 +1,49 @@
+name: Bug Report
+description: File a bug report for OpenDot-local
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting an issue! Please provide as much detail as possible.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the bug
+      placeholder: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      placeholder: "e.g. Windows 11, macOS Sequoia, Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware / Specs (RAM & GPU)
+      placeholder: "e.g. 16GB RAM, RTX 3060 6GB VRAM"
+    validations:
+      required: true
+  - type: input
+    id: ollama
+    attributes:
+      label: Ollama Version and Model
+      placeholder: "e.g. Ollama 0.5.12, qwen3:4b-instruct-2507-q4_K_M"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste any relevant terminal or browser console logs (especially `[dots]` log lines).
+      render: shell
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      placeholder: "1. Run pnpm dev\n2. Open http://127.0.0.1:3100\n3. ..."
+    validations:
+      required: true
