@@ -20,6 +20,21 @@ const MIME_TYPES = {
 
 const server = http.createServer((req, res) => {
   let reqPath = req.url.split("?")[0];
+  if (reqPath === "/google2cf97f98ea0dd64b.html") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("google-site-verification: google2cf97f98ea0dd64b.html");
+    return;
+  }
+  if (reqPath === "/robots.txt") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("User-agent: *\nAllow: /\nSitemap: https://opendot-local.vercel.app/sitemap.xml\n");
+    return;
+  }
+  if (reqPath === "/sitemap.xml") {
+    res.writeHead(200, { "Content-Type": "application/xml" });
+    res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://opendot-local.vercel.app/</loc>\n    <lastmod>2026-10-12</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>`);
+    return;
+  }
   if (reqPath === "/") reqPath = "/index.html";
 
   const filePath = path.join(ROOT, reqPath);
