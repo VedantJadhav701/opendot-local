@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://opendot-local.vercel.app/sitemap.xml
