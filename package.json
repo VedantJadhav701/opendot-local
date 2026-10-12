@@ -112,6 +112,7 @@
     },
     "files": [
       "main.mjs",
+      "preload.mjs",
       "package.json",
       "!**/node_modules/**"
     ],

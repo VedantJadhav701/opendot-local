@@ -9,6 +9,7 @@ export default async function afterPack(context) {
   const from = path.join(context.packager.projectDir, ".desktop", "server", "node_modules");
   const to = path.join(resources, "server", "node_modules");
   fs.rmSync(to, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(to), { recursive: true });
   fs.cpSync(from, to, { recursive: true, dereference: false });
   console.log(`  • copied server node_modules → ${path.relative(context.appOutDir, to)}`);
 }

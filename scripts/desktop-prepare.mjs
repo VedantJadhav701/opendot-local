@@ -10,6 +10,9 @@ if (!fs.existsSync(path.join(out, "server.js"))) throw new Error("Run `next buil
 
 fs.cpSync(path.join(root, "public"), path.join(out, "public"), { recursive: true });
 fs.cpSync(path.join(root, ".next/static"), path.join(out, ".next/static"), { recursive: true });
+if (fs.existsSync(path.join(root, "packs"))) {
+  fs.cpSync(path.join(root, "packs"), path.join(out, "packs"), { recursive: true });
+}
 
 const require = createRequire(path.join(root, "package.json"));
 
@@ -82,7 +85,7 @@ for (const d of fs.existsSync(pnpmDir) ? fs.readdirSync(pnpmDir) : []) if (/^ele
 fs.rmSync(path.join(out, "node_modules/electron"), { recursive: true, force: true });
 
 // Keep only what the server runs.
-const KEEP = new Set([".next", "node_modules", "public", "server.js", "package.json"]);
+const KEEP = new Set([".next", "node_modules", "public", "server.js", "package.json", "packs"]);
 for (const entry of fs.readdirSync(out)) if (!KEEP.has(entry)) fs.rmSync(path.join(out, entry), { recursive: true, force: true });
 
 const app = path.join(root, ".desktop/server");
