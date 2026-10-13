@@ -571,7 +571,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
         tools: toolDefs.length ? toolDefs : undefined,
         temperature: 0.2,
         context_length: contextLength,
-        num_predict: numPredict ?? Number(process.env.DOTS_NUM_PREDICT || 1024),
+        num_predict: numPredict ?? Number(process.env.DOTS_NUM_PREDICT || 4096),
       },
       onChunk,
       signal
@@ -584,7 +584,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
     if (!isTimeoutError(err) || signal.aborted) throw err;
     draftMessageId = null;
     accumulatedText = "";
-    responseMsg = await streamOnce(4096, 512);
+    responseMsg = await streamOnce(4096, 2048);
   }
 
   if (draftMessageId) {

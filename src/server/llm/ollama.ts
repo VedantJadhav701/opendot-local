@@ -95,7 +95,7 @@ export const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
 
 const DEFAULT_CONTEXT_LENGTH = 16384;
 const MAX_CONTEXT_LENGTH = 32768;
-const DEFAULT_NUM_PREDICT = 1024;
+const DEFAULT_NUM_PREDICT = 4096;
 
 export function enqueueLLMRequest<T>(
   fn: (queueWaitMs: number) => Promise<T>,
