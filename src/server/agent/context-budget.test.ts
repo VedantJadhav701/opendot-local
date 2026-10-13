@@ -5,12 +5,12 @@ import type { Dot } from "@/lib/types";
 function runTests() {
   console.log("=== Testing Item 10 & 11: Context Budget, MAX_STEPS, & Token Trimming ===");
 
-  // Test 1: MAX_STEPS configurable & default 12
+  // Test 1: MAX_STEPS configurable & default 40
   console.log(`Test 1: MAX_STEPS default value = ${MAX_STEPS}`);
-  if (MAX_STEPS !== 12) {
-    throw new Error(`Test 1 Failed: Expected MAX_STEPS to default to 12, got ${MAX_STEPS}`);
+  if (MAX_STEPS !== 40) {
+    throw new Error(`Test 1 Failed: Expected MAX_STEPS to default to 40, got ${MAX_STEPS}`);
   }
-  console.log("PASS: MAX_STEPS defaults to 12.");
+  console.log("PASS: MAX_STEPS defaults to 40.");
 
   // Test 2: Memory & Skill token budget capping in prompt
   const mockDot: Dot = {
