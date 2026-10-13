@@ -88,6 +88,7 @@ export type QueueTask<T> = {
   enqueueTime: number;
   signal?: AbortSignal;
   abortHandler?: () => void;
+  timeoutMs?: number;
 };
 
 const gQueue = globalThis as unknown as { __llmQueue?: QueueTask<any>[]; __isProcessingLLMQueue?: boolean };
@@ -96,11 +97,12 @@ export const queue: QueueTask<any>[] = (gQueue.__llmQueue ??= []);
 const DEFAULT_CONTEXT_LENGTH = 16384;
 const MAX_CONTEXT_LENGTH = 32768;
 const DEFAULT_NUM_PREDICT = 8192;
+const DEFAULT_TIMEOUT_MS = 600_000; // 10 minutes default for large code generations
 
 export function enqueueLLMRequest<T>(
   fn: (queueWaitMs: number) => Promise<T>,
   signal?: AbortSignal,
-  timeoutMs = 120_000
+  timeoutMs = Number(process.env.DOTS_LLM_TIMEOUT_MS || DEFAULT_TIMEOUT_MS)
 ): Promise<T> {
   const enqueueTime = Date.now();
   return new Promise<T>((resolve, reject) => {
@@ -120,6 +122,7 @@ export function enqueueLLMRequest<T>(
       },
       enqueueTime,
       signal,
+      timeoutMs,
     };
 
     if (signal) {
@@ -159,10 +162,11 @@ async function processLLMQueue() {
   const queueWaitMs = Date.now() - task.enqueueTime;
 
   let hungTimeout: NodeJS.Timeout | null = null;
+  const timeoutMs = task.timeoutMs ?? Number(process.env.DOTS_LLM_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
   const timeoutPromise = new Promise<never>((_, reject) => {
     hungTimeout = setTimeout(() => {
       reject(new Error("LLM Task execution hung - forced queue unlock"));
-    }, 120_000);
+    }, timeoutMs);
   });
 
   try {
