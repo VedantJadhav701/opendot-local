@@ -571,7 +571,7 @@ async function respond(dot: Dot, messages: ChatMessage[], trigger: Trigger, sign
         tools: toolDefs.length ? toolDefs : undefined,
         temperature: 0.2,
         context_length: contextLength,
-        num_predict: numPredict ?? Number(process.env.DOTS_NUM_PREDICT || 4096),
+        num_predict: numPredict ?? Number(process.env.DOTS_NUM_PREDICT || 8192),
       },
       onChunk,
       signal
