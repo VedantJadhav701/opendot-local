@@ -23,6 +23,7 @@ type Pending = {
   index: number;
   cardId: string | null;
   trigger: Trigger;
+  messages?: ChatMessage[];
 };
 
 type InboxItem = { text: string; trigger: Trigger; conversationId: string; attachments?: Attachment[] };
@@ -222,7 +223,10 @@ export async function resolveCard(messageId: string, choice: "approve" | "deny" 
 
     pending.index++;
     if (await processCalls(dot, pending, signal, new Map())) return;
-    await drive(dot, pending.outputs, pending.trigger, signal);
+    const history = pending.messages && pending.messages.length > 0
+      ? [...pending.messages, ...pending.outputs]
+      : [...rebuildContextMessages(dot.id, ""), { role: "user" as const, content: "Continue." }, ...pending.outputs];
+    await drive(dot, history, pending.trigger, signal);
   });
 }
 
@@ -488,7 +492,7 @@ async function drive(dot: Dot, messages: ChatMessage[], trigger: Trigger, signal
     }
 
     const responseId = `resp_${Date.now()}`;
-    const pending: Pending = { responseId, calls, outputs: [], index: 0, cardId: null, trigger };
+    const pending: Pending = { responseId, calls, outputs: [], index: 0, cardId: null, trigger, messages: [...messages] };
 
     if (await processCalls(dot, pending, signal, seenCalls)) return; // Waiting for user input/card
 

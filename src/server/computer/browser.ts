@@ -60,12 +60,18 @@ export function getBrowserCandidateChannels(): (string | undefined)[] {
  * Common helper to launch a non-persistent browser instance, trying installed system browsers first.
  */
 export async function launchBrowser(options: Parameters<typeof chromium.launch>[0] = {}) {
+  const isLinux = process.platform === "linux";
   const candidates = getBrowserCandidateChannels();
   let lastErr: unknown = null;
   for (const ch of candidates) {
     try {
       return await chromium.launch({
         ...options,
+        chromiumSandbox: !isLinux,
+        args: [
+          ...(isLinux ? ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] : []),
+          ...(options.args ?? []),
+        ],
         channel: ch,
       });
     } catch (err) {
@@ -127,6 +133,7 @@ async function launch(dotId: string): Promise<Session> {
     ? [preferredChannel, undefined]
     : getBrowserCandidateChannels();
 
+  const isLinux = process.platform === "linux";
   const openWithChannel = (ch: string | undefined) =>
     chromium.launchPersistentContext(profileDir(dotId), {
       channel: ch,
@@ -136,11 +143,15 @@ async function launch(dotId: string): Promise<Session> {
       deviceScaleFactor: 1,
       locale: "en-US",
       timezoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      // Keep Chrome's sandbox on (Playwright turns it off by default, which shows an "unsupported flag" warning).
-      chromiumSandbox: true,
+      // Keep Chrome's sandbox on Windows/macOS; on Linux disable sandbox to avoid unprivileged user namespace crashes
+      chromiumSandbox: !isLinux,
       // No "Chrome is being controlled by automated software" flag, and no navigator.webdriver.
       ignoreDefaultArgs: ["--enable-automation", "--unsafely-disable-devtools-self-xss-warnings"],
-      args: ["--disable-blink-features=AutomationControlled", ...(chromeUA ? [`--user-agent=${chromeUA}`] : [])],
+      args: [
+        ...(isLinux ? ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] : []),
+        "--disable-blink-features=AutomationControlled",
+        ...(chromeUA ? [`--user-agent=${chromeUA}`] : []),
+      ],
     });
 
   let activeContext: BrowserContext | null = null;

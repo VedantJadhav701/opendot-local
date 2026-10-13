@@ -298,8 +298,10 @@ export class OllamaProvider implements LLMProvider {
           content: m.content || "",
         };
         if (m.name) msg.name = m.name;
+        if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
         if (m.tool_calls && m.tool_calls.length > 0) {
           msg.tool_calls = m.tool_calls.map((tc) => ({
+            id: tc.id,
             function: {
               name: tc.function.name,
               arguments: typeof tc.function.arguments === "string" ? safeJsonParse(tc.function.arguments) : tc.function.arguments,
@@ -308,6 +310,17 @@ export class OllamaProvider implements LLMProvider {
         }
         return msg;
       });
+
+      if (!formattedMessages.some((m) => m.role === "user")) {
+        // Ollama requires at least one message with role 'user'
+        const insertIdx = formattedMessages.findIndex((m) => m.role !== "system");
+        const fallbackUserMsg = { role: "user", content: "Continue." };
+        if (insertIdx === -1) {
+          formattedMessages.push(fallbackUserMsg);
+        } else {
+          formattedMessages.splice(insertIdx, 0, fallbackUserMsg);
+        }
+      }
 
       const body: Record<string, unknown> = {
         model: req.model,
