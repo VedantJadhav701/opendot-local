@@ -30,11 +30,16 @@ function nvidia(): Gpu | null {
       .split(/\r?\n/)
       .map((line) => {
         const [name, mem] = line.split(",").map((part) => part.trim());
-        return { name, mb: Number(mem) };
+        const mb = Number(mem);
+        return { name, mb: Number.isFinite(mb) && mb > 0 ? mb : 0 };
       })
-      .filter((g) => g.name && Number.isFinite(g.mb) && g.mb > 0);
+      .filter((g) => g.name);
     if (!gpus.length) continue;
     const best = gpus.reduce((a, b) => (b.mb > a.mb ? b : a));
+    // Grace Hopper / Blackwell GB10 report [N/A] memory because memory is unified with system RAM
+    if (best.mb === 0 || best.name.toUpperCase().includes("GB10")) {
+      return { gpu: best.name, vramGB: null, unifiedMemory: true };
+    }
     return { gpu: best.name, vramGB: Math.round((best.mb / 1024) * 10) / 10, unifiedMemory: false };
   }
   return null;

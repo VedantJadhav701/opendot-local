@@ -51,6 +51,17 @@ const OFFICIAL_EXTRA = [
   "qwen3:30b-a3b-q4_K_M",
   "qwen3:32b-q4_K_M",
   "llama3.1:latest",
+  "qwen3.8:27b",
+  "qwen2.5-coder:14b",
+  "qwen2.5-coder:7b",
+  "qwen2.5-coder:32b",
+  "gemma4:26b",
+  "gemma3:12b",
+  "gemma2:9b",
+  "gemma2:27b",
+  "deepseek-r1:14b",
+  "deepseek-r1:8b",
+  "deepseek-r1:32b",
 ];
 
 const OFFICIAL = new Set([...MODEL_CATALOG.map((m) => m.id), ...OFFICIAL_EXTRA].map((id) => id.toLowerCase()));
@@ -63,9 +74,12 @@ function allowAnyModel(): boolean {
 export function isOfficialModel(id: string): boolean {
   if (!id) return false;
   const lower = id.trim().toLowerCase();
-  // Advanced users can switch the check off with DOTS_ALLOW_ANY_MODEL=1 (embedding models stay hidden).
-  if (allowAnyModel()) return !lower.includes("embed");
-  return OFFICIAL.has(lower);
+  // Do not allow embedding models for chat
+  if (lower.includes("embed") || lower.includes("bge") || lower.includes("minilm")) return false;
+  // If it's an explicit official model or doesn't have custom namespaces like hf.co or user/
+  if (OFFICIAL.has(lower)) return true;
+  if (allowAnyModel() && !lower.includes("/") && !lower.startsWith("hf.co")) return true;
+  return false;
 }
 
 export function catalogEntry(id: string): CatalogModel | undefined {
