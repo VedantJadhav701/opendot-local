@@ -29,7 +29,7 @@ type Pending = {
 type InboxItem = { text: string; trigger: Trigger; conversationId: string; attachments?: Attachment[] };
 type RunState = { running: boolean; abort: AbortController | null; inbox: InboxItem[]; after: (() => void)[] };
 
-export const MAX_STEPS = Number(process.env.DOTS_MAX_STEPS || 6);
+export const MAX_STEPS = Number(process.env.DOTS_MAX_STEPS || 12);
 
 let cachedTuning: { tuning: import("../models/tuning").Tuning; at: number } | null = null;
 async function currentTuning(model: string) {
