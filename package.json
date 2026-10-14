@@ -26,7 +26,8 @@
     "desktop": "electron electron",
     "desktop:build": "pnpm desktop:prepare && electron-builder",
     "desktop:build:win": "pnpm desktop:prepare && electron-builder --win",
-    "desktop:build:mac": "pnpm desktop:prepare && electron-builder --mac"
+    "desktop:build:mac": "pnpm desktop:prepare && electron-builder --mac",
+    "desktop:release": "node scripts/upload-release.mjs"
   },
   "dependencies": {
     "@composio/core": "0.22.0",
