@@ -53,7 +53,7 @@ export function resolveTuning(profile: CapabilityProfile, model: string, mode: P
     mode: chosen,
     numCtx: CTX[chosen],
     numBatch: profile.ramGB < 12 ? 256 : undefined,
-    numPredict: 1024,
+    numPredict: 8192,
     keepAlive: "30m",
     reason,
   };
