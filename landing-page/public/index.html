@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenDot-local: Free, Private & Open-Source AI Coworkers Desktop</title>
+<meta name="description" content="Free, 100% private open-source autonomous AI agents desktop application that browses the web, reads PDFs and executes tasks locally with Ollama. No API key, no telemetry.">
+<meta name="keywords" content="opendot-local, open dot local, local AI agent, autonomous AI agents, Ollama agent, private AI desktop, MCP connectors, local LLM agent, AI assistant, Vedant Jadhav">
+<meta name="google-site-verification" content="google2cf97f98ea0dd64b">
+<link rel="canonical" href="https://opendot-local.vercel.app/">
+<meta property="og:title" content="OpenDot-local: Private & Local-First Autonomous AI Agents">
+<meta property="og:description" content="Free, open-source AI coworkers that run entirely on your own laptop with Ollama. 100% private, no API key required.">
+<meta property="og:url" content="https://opendot-local.vercel.app/">
+<meta property="og:image" content="https://opendot-local.vercel.app/assets/poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenDot-local: Private & Local-First Autonomous AI Agents">
+<meta name="twitter:description" content="Free, open-source autonomous AI agents that work entirely on your machine.">
+<meta name="twitter:image" content="https://opendot-local.vercel.app/assets/poster.jpg">
+<meta name="theme-color" content="#f5f6f8">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "OpenDot-Local",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Windows, macOS, Linux",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Open-source personal AI agents that work autonomously on your computer. 100% private and local with Ollama, SQLite FTS5, and local browser automation.",
+      "url": "https://opendot-local.vercel.app",
+      "author": {
+        "@type": "Person",
+        "name": "Vedant Jadhav",
+        "url": "https://github.com/VedantJadhav701"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "name": "OpenDot-Local",
+      "url": "https://opendot-local.vercel.app",
+      "description": "Open-source, private, local-first autonomous AI agents desktop application.",
+      "author": {
+        "@type": "Person",
+        "name": "Vedant Jadhav"
+      }
+    }
+  ]
+}
+</script>
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f6f8; --white:#fff; --ink:#0c0c0e; --mute:#5b5f68; --line:#dfe2e8;
+  --blue:#4da3ff; --lime:#c6f26b; --lilac:#a99bff; --orange:#ff9a5c;
+  --r-lg:28px; --r-md:14px;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,sans-serif;
+  --code:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:8px}
+.wrap{width:min(1120px,100% - 40px);margin-inline:auto}
+h1,h2,h3{font-family:var(--display);line-height:1.04;letter-spacing:-.025em;font-weight:800}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(245,246,248,.82);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nav.scrolled{border-color:var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.02em}
+.brand img{width:34px;height:34px;border-radius:9px}
+.nav ul{display:flex;gap:26px;list-style:none;margin-left:auto;font-size:15px;font-weight:500;color:var(--mute)}
+.nav ul a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:999px;font-weight:600;font-size:16px;border:1.5px solid var(--ink);transition:transform .15s,background .15s,color .15s;cursor:pointer;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn.solid{background:var(--ink);color:#fff}
+.btn.solid:hover{background:#26262b}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+.btn.sm{height:40px;padding:0 16px;font-size:15px}
+.btn svg{width:18px;height:18px;flex:none}
+.count{font-variant-numeric:tabular-nums;padding-left:10px;border-left:1px solid rgba(255,255,255,.3)}
+.count:empty{display:none}
+
+/* hero */
+.hero{position:relative;padding:92px 0 64px;text-align:center;isolation:isolate;overflow:clip}
+.hero .wrap{position:relative;z-index:2}
+.pill{display:inline-flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:7px 16px 7px 8px;font-size:14px;font-weight:500;margin-bottom:28px}
+.pill b{background:var(--lime);border-radius:999px;padding:2px 10px;font-weight:600}
+.hero h1{font-size:clamp(44px,7.4vw,96px);max-width:11.5em;margin-inline:auto}
+.hero p.lead{max-width:36em;margin:26px auto 0;font-size:clamp(18px,2vw,21px);color:var(--mute)}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+.fine{margin-top:18px;font-size:14px;color:var(--mute)}
+.field{position:absolute;inset:0;z-index:1;pointer-events:none}
+.dot{position:absolute;width:var(--s);height:var(--s);left:var(--x);top:var(--y);will-change:transform}
+.dot .px{width:100%;height:100%;animation:bob var(--d) ease-in-out var(--delay) infinite alternate}
+.dot svg{width:100%;height:100%;overflow:visible;color:var(--c);filter:drop-shadow(0 18px 22px rgba(12,12,14,.16))}
+.dot .eyes{transform-origin:50px 46px;animation:blink 5.5s infinite var(--delay)}
+@keyframes bob{from{transform:translateY(-14px) rotate(-4deg)}to{transform:translateY(16px) rotate(5deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+
+/* demo */
+.demo{padding:12px 0 110px}
+.window{background:var(--ink);border-radius:var(--r-lg);padding:12px;box-shadow:0 40px 90px -30px rgba(12,12,14,.45)}
+.bar{display:flex;gap:7px;padding:4px 8px 12px}
+.bar i{width:11px;height:11px;border-radius:50%}
+.bar i:nth-child(1){background:#fff}.bar i:nth-child(2){background:var(--blue)}.bar i:nth-child(3){background:var(--lime)}
+.window video{display:block;width:100%;aspect-ratio:1920/992;border-radius:16px;background:#111;object-fit:cover}
+
+/* sections */
+.sec{padding:100px 0}
+.sec.white{background:var(--white);border-block:1px solid var(--line)}
+.head h2{font-size:clamp(34px,4.6vw,60px);max-width:13em}
+.head p{margin-top:20px;color:var(--mute);font-size:19px;max-width:34em}
+
+/* chunk field */
+.split{display:grid;grid-template-columns:1.05fr 1fr;gap:72px;align-items:center}
+.chunks{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:7px}
+.grid i{aspect-ratio:1;border-radius:6px;background:#d5d9e1}
+.grid i.k{background:var(--lime);outline:2px solid var(--ink);outline-offset:-2px}
+.legend{display:flex;flex-wrap:wrap;gap:22px;margin-top:22px;font-size:14px;color:var(--mute)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:14px;height:14px;border-radius:4px;background:#d5d9e1}
+.legend i.k{background:var(--lime);outline:2px solid var(--ink);outline-offset:-2px}
+.stats{display:grid;grid-template-columns:repeat(3,auto);gap:34px;margin-top:38px;justify-content:start}
+.stats b{display:block;font-family:var(--display);font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.stats span{font-size:14px;color:var(--mute)}
+
+/* abilities */
+.abilities{display:grid;grid-template-columns:1fr 1fr;gap:0 64px;margin-top:56px}
+.ab{padding:30px 0;border-top:1.5px solid var(--ink)}
+.ab h3{font-size:26px;display:flex;align-items:center;gap:14px}
+.ab h3 u{width:18px;height:18px;border-radius:50%;background:var(--c);text-decoration:none;flex:none}
+.ab p{margin-top:12px;color:var(--mute);max-width:30em}
+
+/* safety */
+.approve{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:0 30px 60px -34px rgba(12,12,14,.3)}
+.approve .who{display:flex;align-items:center;gap:12px;font-weight:600}
+.approve .who i{width:34px;height:34px;border-radius:50%;background:var(--blue);display:block;position:relative}
+.approve .who i::after{content:"";position:absolute;left:9px;top:12px;width:5px;height:8px;border-radius:3px;background:#fff;box-shadow:11px 0 #fff}
+.approve .ask{margin-top:18px;color:var(--mute);font-size:15px}
+.approve code{display:block;margin-top:10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;font-family:var(--code);font-size:15px}
+.approve .row{display:flex;gap:10px;margin-top:20px}
+.approve .row span{flex:1;text-align:center;padding:12px;border-radius:999px;font-weight:600;font-size:15px}
+.approve .yes{background:var(--ink);color:#fff}
+.approve .no{border:1.5px solid var(--line)}
+.approve .also{margin-top:16px;font-size:13px;color:var(--mute);text-align:center}
+.checks{list-style:none;margin-top:30px;display:grid;gap:16px}
+.checks li{padding-left:34px;position:relative;color:var(--mute)}
+.checks li b{color:var(--ink);font-weight:600}
+.checks li::before{content:"";position:absolute;left:0;top:6px;width:18px;height:18px;border-radius:50%;background:var(--lime);box-shadow:inset 0 0 0 2px var(--ink)}
+
+/* status */
+.status{margin-top:50px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--white)}
+.status div.r{display:grid;grid-template-columns:1.1fr 2fr 160px;gap:20px;padding:18px 26px;border-top:1px solid var(--line);align-items:center}
+.status div.r:first-child{border-top:0}
+.status .n{font-weight:600}
+.status .d{color:var(--mute);font-size:15px}
+.tag{justify-self:end;font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--lime)}
+.tag.al{background:#d7ecff}
+.tag.pl{background:#ececf1;color:var(--mute)}
+
+/* start */
+.term{background:var(--ink);color:#e9ebf0;border-radius:var(--r-lg);padding:30px;font-family:var(--code);font-size:15px;line-height:1.9;overflow-x:auto;margin-top:44px}
+.term .c{color:#7e8594}
+.term .p{color:var(--lime)}
+.note{margin-top:20px;color:var(--mute);font-size:15px}
+
+/* faq */
+.faq{margin-top:50px;max-width:820px}
+details{border-top:1.5px solid var(--ink);padding:22px 0}
+details:last-child{border-bottom:1.5px solid var(--ink)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-weight:500;font-size:28px;line-height:1;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin-top:14px;color:var(--mute);max-width:40em}
+
+/* closing */
+.close{position:relative;padding:130px 0 120px;text-align:center;overflow:hidden;isolation:isolate}
+.close h2{font-size:clamp(38px,6vw,80px);max-width:11em;margin-inline:auto}
+.close .wrap{position:relative;z-index:2}
+.close .cta{margin-top:38px}
+footer{border-top:1px solid var(--line);padding:34px 0 50px;font-size:15px;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 36px;align-items:center}
+footer .brand{color:var(--ink);font-size:18px}
+footer .brand img{width:28px;height:28px}
+footer .links{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
+footer a:hover{color:var(--ink);text-decoration:underline}
+footer p.small{flex-basis:100%;font-size:13px}
+
+@media(max-width:900px){
+  .nav ul{display:none}
+  .nav .btn{margin-left:auto}
+  .split{grid-template-columns:1fr;gap:44px}
+  .abilities{grid-template-columns:1fr}
+  .status div.r{grid-template-columns:1fr;gap:6px}
+  .tag{justify-self:start}
+  .sec{padding:72px 0}
+  .hero{padding-top:150px}
+  .close{padding-top:150px}
+  .dot.hide-m{display:none}
+  .dot{top:min(var(--y),62px)}
+  .dot{--s:calc(var(--sm,60px))!important}
+}
+@media(max-width:520px){
+  .stats{grid-template-columns:1fr 1fr;gap:24px}
+  .btn{height:46px}
+  .term{font-size:13px;padding:22px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .dot .px,.dot .eyes{animation:none}
+  .btn{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/assets/logo.png" alt="" width="34" height="34">OpenDot-local</a>
+    <ul>
+      <li><a href="#demo">Demo</a></li>
+      <li><a href="#small-models">How it works</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#status">Status</a></li>
+      <li><a href="#start">Get started</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn solid sm" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+      Star <span class="count" data-stars></span>
+    </a>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="field" aria-hidden="true">
+    <div class="dot" data-z="1.1" style="--x:4%;--y:10%;--s:120px;--sm:64px;--c:#111114;--d:6s;--delay:-0s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="0.7" style="--x:11%;--y:50%;--s:150px;--sm:70px;--c:var(--lime);--d:7.5s;--delay:-2s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.4" style="--x:23%;--y:4%;--s:78px;--sm:48px;--c:var(--lilac);--d:5.5s;--delay:-1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1" style="--x:84%;--y:8%;--s:132px;--sm:66px;--c:var(--blue);--d:6.5s;--delay:-3s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.3" style="--x:88%;--y:50%;--s:92px;--sm:56px;--c:var(--orange);--d:5s;--delay:-0.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.6" style="--x:68%;--y:2%;--s:64px;--sm:44px;--c:var(--lime);--d:7s;--delay:-4s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.5" style="--x:25%;--y:66%;--s:68px;--sm:44px;--c:var(--blue);--d:6s;--delay:-2.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.2" style="--x:71%;--y:70%;--s:78px;--sm:50px;--c:#111114;--d:7.2s;--delay:-1.5s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+  </div>
+  <div class="wrap">
+    <div class="pill"><b>Alpha</b> Free and open source</div>
+    <h1>Your own AI coworkers, on your own laptop.</h1>
+    <p class="lead">Give each task its own helper with a browser and a computer to work in. OpenDot-local runs on Ollama, so there is no API key, no bill, and nothing leaves your machine.</p>
+    <div class="cta">
+      <a class="btn solid" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2 2 9.3l6.9-1L12 2Z"/></svg>
+        Star on GitHub <span class="count" data-stars></span>
+      </a>
+      <a class="btn ghost" href="#demo">Watch the demo</a>
+    </div>
+    <p class="fine">Runs 100% locally on your machine with Ollama — zero subscription, zero API cost, total privacy.</p>
+  </div>
+</section>
+
+<section class="demo" id="demo">
+  <div class="wrap">
+    <div class="window">
+      <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <video id="vid" poster="/assets/poster.jpg" muted loop playsinline controls preload="metadata" aria-label="OpenDot-local demo, 2 minutes">
+        <source src="/assets/demo.mp4" type="video/mp4">
+        <img src="/assets/images/app-demo.gif" alt="OpenDot-local demo" style="width:100%; border-radius:16px;">
+      </video>
+    </div>
+  </div>
+</section>
+
+<section class="sec white" id="small-models">
+  <div class="wrap split">
+    <div>
+      <div class="head">
+        <h2>Optimized for any local model on any hardware.</h2>
+        <p>Whether you run a 4B model on a laptop or a 27B+ model on a DGX rig, OpenDot-local keeps your work 100% local, costs zero, and keeps your data strictly on your machine. Dots use your browser, files and shell. Optional app connections via Composio.</p>
+      </div>
+      <div class="stats">
+        <div><b>100%</b><span>Local & private data</span></div>
+        <div><b>$0</b><span>API cost or subscription</span></div>
+        <div><b>Any Model</b><span>From 4B to 27B+ local LLMs</span></div>
+      </div>
+    </div>
+    <div class="chunks" role="img" aria-label="48 stored passages, 8 of them selected for the model">
+      <div class="grid"><i></i><i></i><i></i><i class="k"></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="k"></i><i></i><i></i><i></i></div>
+      <div class="legend"><span><i class="k"></i>Sent to the model</span><span><i></i>Stored locally, searched when you ask for more</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="what">
+  <div class="wrap">
+    <div class="head">
+      <h2>One dot, one job.</h2>
+      <p>Make a dot for research, another for code, another for chores on your PC. Each one keeps its own browser, files and memory.</p>
+    </div>
+    <div class="abilities">
+      <div class="ab" style="--c:var(--blue)"><h3><u></u>Read the web</h3><p>Paste a link. The dot opens the page in its own browser, reads it and answers with links you can check.</p></div>
+      <div class="ab" style="--c:var(--lime)"><h3><u></u>Read your PDFs</h3><p>Drop in a paper and ask a question from the last page. It finds the right passage instead of skimming the first few.</p></div>
+      <div class="ab" style="--c:var(--lilac)"><h3><u></u>Run tasks on your PC</h3><p>Check your conda environments, write a script, open an app. It shows the command and waits for your yes.</p></div>
+      <div class="ab" style="--c:var(--orange)"><h3><u></u>Compare products</h3><p>Ask for the best headphones under ₹2,000. It reads real Amazon and Flipkart listings and shows price, rating and link.</p></div>
+      <div class="ab" style="--c:var(--blue)"><h3><u></u>Repeat on a schedule</h3><p>Ask for a briefing every weekday at 8am and set it up once in plain words.</p></div>
+      <div class="ab" style="--c:var(--lime)"><h3><u></u>Take over any time</h3><p>Watch the dot's screen live. Step in to log in or fix something, then hand it back.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec white" id="safety">
+  <div class="wrap split">
+    <div class="approve">
+      <div class="who"><i></i>Bix wants to run a command</div>
+      <p class="ask">On this computer</p>
+      <code>conda env list</code>
+      <div class="row"><span class="yes">Approve</span><span class="no">Deny</span></div>
+      <p class="also">Or choose Always allow for this kind of command</p>
+    </div>
+    <div>
+      <div class="head">
+        <h2>Nothing risky runs without a yes.</h2>
+        <p>Small models make mistakes, so the app, not the model, decides what is allowed.</p>
+      </div>
+      <ul class="checks">
+        <li><b>Approval cards</b> for commands and anything that changes your files.</li>
+        <li><b>Private addresses blocked.</b> Pages cannot send a dot to localhost or your home network.</li>
+        <li><b>Links must be real.</b> A link in an answer has to come from a page the dot actually opened.</li>
+        <li><b>Secrets stay sealed</b> with Windows DPAPI or the macOS Keychain.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="status">
+  <div class="wrap">
+    <div class="head">
+      <h2>Honest status.</h2>
+      <p>This is an alpha. Here is what has been tried and what has not.</p>
+    </div>
+    <div class="status">
+      <div class="r"><span class="n">Web pages and summaries</span><span class="d">Open a link, read it, answer with sources</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">PDF questions</span><span class="d">Upload a paper, ask about any page</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">Commands with approval</span><span class="d">PowerShell on Windows, shell on macOS</span><span class="tag ok">Works on Windows</span></div>
+      <div class="r"><span class="n">Product search</span><span class="d">Amazon and Flipkart listings with prices</span><span class="tag ok">Works</span></div>
+      <div class="r"><span class="n">Scheduled routines</span><span class="d">Briefings and chores on a timer</span><span class="tag al">Alpha</span></div>
+      <div class="r"><span class="n">Optional cloud model</span><span class="d">Bring your own key for harder tasks. Off by default.</span><span class="tag al">Alpha</span></div>
+      <div class="r"><span class="n">macOS app and installers</span><span class="d">Windows and macOS builds</span><span class="tag al">Not yet tested</span></div>
+      <div class="r"><span class="n">Connect your own apps</span><span class="d">Add tools through MCP servers you choose</span><span class="tag pl">Planned</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec white" id="start">
+  <div class="wrap">
+    <div class="head">
+      <h2>Quick start.</h2>
+      <p>You need Node 22 or newer, pnpm and Ollama.</p>
+    </div>
+    <pre class="term"><code><span class="c"># get the code</span>
+<span class="p">$</span> git clone https://github.com/VedantJadhav701/opendot-local
+<span class="p">$</span> cd opendot-local &amp;&amp; pnpm install
+
+<span class="c"># get the model (about 2.5 GB) and the browser</span>
+<span class="p">$</span> ollama pull qwen3:4b-instruct-2507-q4_K_M
+<span class="p">$</span> pnpm exec playwright install chromium
+
+<span class="c"># start</span>
+<span class="p">$</span> pnpm dev</code></pre>
+    <p class="note">Open http://localhost:3100. If a step fails, open an issue on GitHub with the error text.</p>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="head"><h2>Questions.</h2></div>
+    <div class="faq">
+      <details><summary>Is it really free?</summary><p>Yes. The app is open source and the models run on your hardware through Ollama. There is no account and no API key. The optional cloud model is off until you add your own key.</p></details>
+      <details><summary>What computer do I need?</summary><p>Any machine capable of running Ollama locally. From standard laptops running 4B models up to workstation rigs or DGX servers running 27B+ models, OpenDot-local adapts seamlessly to your hardware.</p></details>
+      <details><summary>Does my data leave my computer?</summary><p>No, unless you turn on the optional cloud model. Pages you open are fetched from the web, and what a dot reads is stored in a local database.</p></details>
+      <details><summary>How does context handling work?</summary><p>Dots read full web pages, PDFs, and files, store them locally, and retrieve precise passages for the model. This keeps your local inference fast and accurate regardless of model size.</p></details>
+      <details><summary>Which models can I use?</summary><p>Any model you pull in Ollama — from 4B models up to 27B, 70B, or custom GGUFs. You choose the best model for your hardware.</p></details>
+      <details><summary>Can I help?</summary><p>Yes. Try it, open issues, and send pull requests. Benchmarks on different hardware are especially useful.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="field" aria-hidden="true">
+    <div class="dot" data-z="1.1" style="--x:6%;--y:14%;--s:110px;--sm:56px;--c:var(--blue);--d:6.4s;--delay:-0s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.4" style="--x:14%;--y:58%;--s:78px;--sm:48px;--c:var(--lime);--d:5.4s;--delay:-1.8s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="1.2" style="--x:86%;--y:10%;--s:92px;--sm:52px;--c:var(--lilac);--d:6.8s;--delay:-0.7s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot" data-z="0.8" style="--x:80%;--y:55%;--s:128px;--sm:60px;--c:var(--orange);--d:7.2s;--delay:-2.6s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.5" style="--x:30%;--y:78%;--s:64px;--sm:44px;--c:#111114;--d:5.8s;--delay:-3.1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+    <div class="dot hide-m" data-z="1.3" style="--x:62%;--y:80%;--s:70px;--sm:46px;--c:var(--lime);--d:6.2s;--delay:-1.1s"><div class="px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="currentColor"/><ellipse cx="36" cy="26" rx="20" ry="11" fill="#fff" opacity=".28" transform="rotate(-24 36 26)"/><g class="eyes"><ellipse cx="36" cy="48" rx="8.5" ry="10" fill="#fff"/><ellipse cx="64" cy="48" rx="8.5" ry="10" fill="#fff"/><circle cx="38" cy="50" r="4.6" fill="#0c0c0e"/><circle cx="66" cy="50" r="4.6" fill="#0c0c0e"/></g><path d="M41 67q9 8 18 0" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/></svg></div></div>
+  </div>
+  <div class="wrap">
+    <h2>Hire a dot. It runs on your laptop.</h2>
+    <div class="cta">
+      <a class="btn solid" href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">Get it on GitHub <span class="count" data-stars></span></a>
+      <a class="btn ghost" href="#start">Setup steps</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/assets/logo.png" alt="" width="28" height="28">OpenDot-local</a>
+    <span>Open source, built by <a href="https://vedantjadhav-ai.vercel.app/" target="_blank" rel="noopener"><u>Vedant Jadhav</u></a></span>
+    <div class="links">
+      <a href="https://github.com/VedantJadhav701/opendot-local" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/VedantJadhav701/opendot-local/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://linkedin.com/in/vedantjadhav-ai" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://vedantjadhav-ai.vercel.app/" target="_blank" rel="noopener">Portfolio</a>
+    </div>
+    <p class="small">Not affiliated with Ollama, OpenAI, Amazon or Flipkart. Product names belong to their owners.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  addEventListener('scroll',function(){nav.classList.toggle('scrolled',scrollY>8)},{passive:true});
+
+  // live star count, silent if blocked
+  try{
+    fetch('https://api.github.com/repos/VedantJadhav701/opendot-local').then(function(r){return r.ok?r.json():null}).then(function(d){
+      if(!d||typeof d.stargazers_count!=='number')return;
+      var n=d.stargazers_count>=1000?(d.stargazers_count/1000).toFixed(1)+'k':String(d.stargazers_count);
+      document.querySelectorAll('[data-stars]').forEach(function(e){e.textContent=n});
+    }).catch(function(){});
+  }catch(e){}
+
+  // play demo only while visible with error fallback
+  var v=document.getElementById('vid');
+  if(v){
+    v.addEventListener('error', function(){
+      var img = document.createElement('img');
+      img.src = '/assets/images/app-demo.gif';
+      img.alt = 'OpenDot-local demo';
+      img.style.width = '100%';
+      img.style.borderRadius = '16px';
+      if(v.parentNode) v.parentNode.replaceChild(img, v);
+    });
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){es.forEach(function(e){
+        if(e.isIntersecting){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();
+      })},{threshold:.25}).observe(v);
+    }
+  }
+
+  // dot parallax
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var fields=document.querySelectorAll('.field'),mx=0,my=0,tx=0,ty=0,run=false;
+  addEventListener('pointermove',function(e){
+    mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;
+    if(!run){run=true;requestAnimationFrame(tick)}
+  },{passive:true});
+  function tick(){
+    tx+=(mx-tx)*.08;ty+=(my-ty)*.08;
+    fields.forEach(function(f){f.querySelectorAll('.dot').forEach(function(d){
+      var k=parseFloat(d.dataset.z)||1;
+      d.style.transform='translate('+(tx*-22*k).toFixed(1)+'px,'+(ty*-22*k).toFixed(1)+'px)';
+    })});
+    if(Math.abs(mx-tx)>.002||Math.abs(my-ty)>.002)requestAnimationFrame(tick);else run=false;
+  }
+})();
+</script>
+</body>
+</html>

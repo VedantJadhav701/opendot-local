@@ -279,7 +279,10 @@ footer p.small{flex-basis:100%;font-size:13px}
   <div class="wrap">
     <div class="window">
       <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <video id="vid" src="/assets/demo.mp4" poster="/assets/poster.jpg" muted loop playsinline controls preload="none" aria-label="OpenDot-local demo, 2 minutes"></video>
+      <video id="vid" poster="/assets/poster.jpg" muted loop playsinline controls preload="metadata" aria-label="OpenDot-local demo, 2 minutes">
+        <source src="/assets/demo.mp4" type="video/mp4">
+        <img src="/assets/images/app-demo.gif" alt="OpenDot-local demo" style="width:100%; border-radius:16px;">
+      </video>
     </div>
   </div>
 </section>
@@ -445,12 +448,22 @@ footer p.small{flex-basis:100%;font-size:13px}
     }).catch(function(){});
   }catch(e){}
 
-  // play demo only while visible
+  // play demo only while visible with error fallback
   var v=document.getElementById('vid');
-  if('IntersectionObserver' in window){
-    new IntersectionObserver(function(es){es.forEach(function(e){
-      if(e.isIntersecting){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();
-    })},{threshold:.5}).observe(v);
+  if(v){
+    v.addEventListener('error', function(){
+      var img = document.createElement('img');
+      img.src = '/assets/images/app-demo.gif';
+      img.alt = 'OpenDot-local demo';
+      img.style.width = '100%';
+      img.style.borderRadius = '16px';
+      if(v.parentNode) v.parentNode.replaceChild(img, v);
+    });
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){es.forEach(function(e){
+        if(e.isIntersecting){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();
+      })},{threshold:.25}).observe(v);
+    }
   }
 
   // dot parallax

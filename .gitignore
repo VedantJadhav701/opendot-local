@@ -57,6 +57,9 @@ session.md
 /.desktop/
 /videos
 *.mp4
+!landing-page/assets/demo.mp4
+!landing-page/public/assets/demo.mp4
+!public/assets/demo.mp4
 .gstack/
 
 # temporary folders
